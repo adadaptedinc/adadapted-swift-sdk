@@ -6,3 +6,7 @@
 //
 
 import Foundation
+
+protocol AdContentListener : AnyObject {
+    func onContentAvailable(zoneId: String, content: AddToListContent)
+}
