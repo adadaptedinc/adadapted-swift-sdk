@@ -58,4 +58,9 @@ class EventStrings {
     static let POPUP_ATL_CLICKED = "popup_atl_clicked"
     static let POPUP_URL_MALFORMED = "POPUP_URL_MALFORMED"
     static let POPUP_URL_LOAD_FAILED = "POPUP_URL_LOAD_FAILED"
+    
+    static let AA_UNIVERSAL_LINK_ROOT = "ul.adadapted.com"
+    static let KEY_MESSAGE = "MESSAGE"
+    static let KEY_CONTENT_PAYLOADS = "CONTENT_PAYLOADS"
+    static let AASDK_NOTIFICATION_CONTENT_PAYLOADS_INBOUND = "AASDK_NOTIFICATION_CONTENT_PAYLOADS_INBOUND"
 }
