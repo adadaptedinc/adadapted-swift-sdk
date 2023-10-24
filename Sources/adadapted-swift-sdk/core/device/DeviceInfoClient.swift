@@ -1,7 +1,4 @@
 //
-//  File.swift
-//
-//
 //  Created by Brett Clifton on 10/23/23.
 //
 
@@ -12,7 +9,7 @@ class DeviceInfoClient {
     private var isProd: Bool = false
     private var params: Dictionary<String, String> = [:]
     private var customIdentifier: String = ""
-    //private var deviceInfoExtractor: DeviceInfoExtractor? = null
+    private var deviceInfoExtractor: DeviceInfoExtractor? = nil
     //private var transporter: TransporterCoroutineScope = Transporter() **NEED?
     private var deviceInfo: DeviceInfo? = nil
     private var deviceCallbacks: Array<DeviceCallback> = []
@@ -33,7 +30,7 @@ class DeviceInfoClient {
     }
     
     private func collectDeviceInfo() {
-        //deviceInfo = deviceInfoExtractor?.extractDeviceInfo(appId, isProd, customIdentifier, params)
+        deviceInfo = deviceInfoExtractor?.extractDeviceInfo(appId: appId, isProd: isProd, customIdentifier: customIdentifier, params: params)
         notifyCallbacks()
     }
     
