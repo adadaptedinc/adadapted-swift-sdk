@@ -10,15 +10,15 @@ class DeviceInfoClient {
     private var params: Dictionary<String, String> = [:]
     private var customIdentifier: String = ""
     private var deviceInfoExtractor: DeviceInfoExtractor? = nil
-    //private var transporter: TransporterCoroutineScope = Transporter() **NEED?
     private var deviceInfo: DeviceInfo? = nil
     private var deviceCallbacks: Array<DeviceCallback> = []
     
     static let instance = DeviceInfoClient()
     
     init(){
-        //transporter
-        collectDeviceInfo()
+        DispatchQueue.global(qos: .background).async {
+            self.collectDeviceInfo()
+        }
     }
     
     private func performGetInfo(deviceCallback: DeviceCallback) {
@@ -45,10 +45,9 @@ class DeviceInfoClient {
     }
     
     func getDeviceInfo(deviceCallback: DeviceCallback) {
-        //            transporter.dispatchToThread {
-        //                performGetInfo(deviceCallback)
-        //            }
-        performGetInfo(deviceCallback: deviceCallback)
+        DispatchQueue.global(qos: .background).async {
+            self.performGetInfo(deviceCallback: deviceCallback)
+        }
     }
     
     func getCachedDeviceInfo() -> DeviceInfo? {

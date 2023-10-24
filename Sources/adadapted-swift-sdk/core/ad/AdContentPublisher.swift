@@ -26,8 +26,11 @@ class AdContentPublisher {
         if (content.hasNoItems()) {
             return
         }
-        for (listener) in listeners {
-            listener.onContentAvailable(zoneId: zoneId, content: content)
+        
+        DispatchQueue.global(qos: .background).async {
+            for (listener) in self.listeners {
+                listener.onContentAvailable(zoneId: zoneId, content: content)
+            }
         }
     }
 }

@@ -55,7 +55,7 @@ class UniversalLinkContentParser {
                 }
                 //AASDK.cacheItems(payload) **NEED?
             }
-            DispatchQueue.main.async {
+            DispatchQueue.global(qos: .background).async {
                 //NotificationCenterWrapper.notifier.post(notification) **POST NOTIFICATION?
             }
         }
