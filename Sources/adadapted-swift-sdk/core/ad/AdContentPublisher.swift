@@ -27,7 +27,7 @@ class AdContentPublisher {
             return
         }
         
-        DispatchQueue.global(qos: .background).async {
+        DispatchQueue.main.async {
             for (listener) in self.listeners {
                 listener.onContentAvailable(zoneId: zoneId, content: content)
             }

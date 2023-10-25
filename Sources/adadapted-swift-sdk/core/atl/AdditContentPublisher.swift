@@ -62,7 +62,7 @@ class AdditContentPublisher {
     }
     
     private func notifyContentAvailable(content: AddToListContent) {
-        DispatchQueue.global(qos: .background).async {
+        DispatchQueue.main.async {
             self.listener?.onContentAvailable(content: content)
         }
     }
