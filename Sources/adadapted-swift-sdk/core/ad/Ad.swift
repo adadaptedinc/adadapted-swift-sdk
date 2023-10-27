@@ -5,15 +5,33 @@
 import Foundation
 
 struct Ad: Codable {
-    var id: String = ""
-    var impressionId: String = ""
-    var url: String = ""
-    var actionType: String = ""
-    var actionPath: String = ""
-    var payload: Payload = Payload()
-    var refreshTime: Int = Config.DEFAULT_AD_REFRESH
+    let id: String
+    let impressionId: String
+    let url: String
+    let actionType: String
+    let actionPath: String
+    let payload: Payload
+    let refreshTime: Int
     
     private var isImpressionTracked: Bool = false
+    
+    init(
+        id: String = "",
+        impressionId: String = "",
+        url: String = "",
+        actionType: String = "",
+        actionPath: String = "",
+        payload: Payload = Payload(),
+        refreshTime: Int = Config.DEFAULT_AD_REFRESH
+    ) {
+        self.id = id
+        self.impressionId = impressionId
+        self.url = url
+        self.actionType = actionType
+        self.actionPath = actionPath
+        self.payload = payload
+        self.refreshTime = refreshTime
+    }
     
     func isEmpty() -> Bool {
         return id.isEmpty

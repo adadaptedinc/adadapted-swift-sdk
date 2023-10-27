@@ -13,4 +13,24 @@ struct AddToListItem {
     let retailerSku: String
     let retailerID: String
     let productImage: String
+    
+    init(
+        trackingId: String,
+        title: String,
+        brand: String,
+        category: String,
+        productUpc: String,
+        retailerSku: String,
+        retailerID: String,
+        productImage: String
+    ) {
+        self.trackingId = trackingId
+        self.title = title
+        self.brand = brand
+        self.category = category
+        self.productUpc = productUpc
+        self.retailerSku = retailerSku
+        self.retailerID = retailerID
+        self.productImage = productImage
+    }
 }
