@@ -4,7 +4,7 @@
 
 import Foundation
 
-class InterceptClient: SessionListener , InterceptAdapterListener{
+class InterceptClient: SessionListener , InterceptAdapterListener {
     func onAdsAvailable(session: Session) {}
     func onSessionExpired() {}
     func onSessionInitFailed() {}
@@ -13,6 +13,17 @@ class InterceptClient: SessionListener , InterceptAdapterListener{
     private var events: Array<InterceptEvent> = []
     private var currentSession: Session
     private var interceptListener: InterceptListener?
+    
+    static let instance = InterceptClient(adapter: nil, interceptListener: nil)
+    
+    init(adapter: InterceptAdapter?, interceptListener: InterceptListener?) {
+        self.adapter = adapter
+        self.events = []
+        self.currentSession = Session()
+        self.interceptListener = interceptListener
+        
+        //SessionClient.addListener(self)
+    }
     
     private func performInitialize(session: Session?, interceptListener: InterceptListener?) {
         guard let session = session, let interceptListener = interceptListener else {
@@ -87,17 +98,6 @@ class InterceptClient: SessionListener , InterceptAdapterListener{
         DispatchQueue.global(qos: .background).async {
             self.fileEvent(event: event)
         }
-    }
-    
-    static let instance = InterceptClient(adapter: nil, interceptListener: nil)
-    
-    init(adapter: InterceptAdapter?, interceptListener: InterceptListener?) {
-        self.adapter = adapter
-        self.events = []
-        self.currentSession = Session()
-        self.interceptListener = interceptListener
-        
-        //SessionClient.addListener(self)
     }
     
     func initialize(session: Session?, interceptListener: InterceptListener?) {
