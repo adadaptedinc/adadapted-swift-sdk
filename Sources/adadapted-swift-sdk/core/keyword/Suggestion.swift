@@ -4,7 +4,7 @@
 
 import Foundation
 
-struct Suggestion {
+struct Suggestion: Codable {
     let searchId: String
     let termId: String
     let name: String

@@ -4,11 +4,18 @@
 
 import Foundation
 
-struct SdkError {
+struct SdkError: Codable {
     let code: String
     let message: String
     let params: Dictionary<String, String>
     let timeStamp: Int64
+    
+    enum CodingKeys: String, CodingKey {
+        case code = "error_code"
+        case message = "error_message"
+        case params = "error_params"
+        case timeStamp = "error_timestamp"
+    }
     
     init(code: String, message: String, params: Dictionary<String, String>, timeStamp: Int64 = Int64(NSDate().timeIntervalSince1970)) {
         self.code = code

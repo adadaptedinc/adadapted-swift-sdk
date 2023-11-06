@@ -21,7 +21,7 @@ class AdditContentPublisher {
             return
         }
         if (listener == nil) {
-            //EventClient.trackSdkError(EventStrings.NO_ADDIT_CONTENT_LISTENER, LISTENER_REGISTRATION_ERROR)
+            EventClient.instance.trackSdkError(code: EventStrings.NO_ADDIT_CONTENT_LISTENER, message: EventStrings.LISTENER_REGISTRATION_ERROR)
             contentListenerNotAdded()
             return
         }
@@ -42,7 +42,7 @@ class AdditContentPublisher {
             return
         }
         if (listener == nil) {
-            //EventClient.trackSdkError(EventStrings.NO_ADDIT_CONTENT_LISTENER, LISTENER_REGISTRATION_ERROR)
+            EventClient.instance.trackSdkError(code: EventStrings.NO_ADDIT_CONTENT_LISTENER, message: EventStrings.LISTENER_REGISTRATION_ERROR)
             contentListenerNotAdded()
             return
         }
@@ -54,7 +54,7 @@ class AdditContentPublisher {
             return
         }
         if (listener == nil) {
-            //EventClient.trackSdkError(EventStrings.NO_ADDIT_CONTENT_LISTENER, LISTENER_REGISTRATION_ERROR)
+            EventClient.instance.trackSdkError(code: EventStrings.NO_ADDIT_CONTENT_LISTENER, message: EventStrings.LISTENER_REGISTRATION_ERROR)
             contentListenerNotAdded()
             return
         }

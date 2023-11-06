@@ -4,6 +4,10 @@
 
 import Foundation
 
-class PayloadResponse {
+struct PayloadResponse: Codable {
+    let payloads: Array<Payload>
     
+    init(payloads: Array<Payload> = []) {
+        self.payloads = payloads
+    }
 }

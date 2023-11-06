@@ -4,7 +4,7 @@
 
 import Foundation
 
-struct EventRequest{
+struct EventRequest: Codable {
     let sessionId: String
     let appId: String
     let bundleId: String
@@ -24,6 +24,28 @@ struct EventRequest{
     let isAllowRetargetingEnabled: Int
     let events: Array<SdkEvent>
     let errors: Array<SdkError>
+    
+    enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case appId = "app_id"
+        case bundleId = "bundle_id"
+        case bundleVersion = "bundle_version"
+        case udid
+        case device
+        case deviceUdid = "device_udid"
+        case os
+        case osv
+        case locale
+        case timezone
+        case carrier
+        case dw
+        case dh
+        case density
+        case sdkVersion = "sdk_version"
+        case isAllowRetargetingEnabled = "allow_retargeting"
+        case events
+        case errors
+    }
     
     init(
         sessionId: String = "",

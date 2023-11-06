@@ -13,6 +13,16 @@ struct Ad: Codable {
     let payload: Payload
     let refreshTime: Int
     
+    enum CodingKeys: String, CodingKey {
+        case id = "ad_id"
+        case impressionId = "impression_id"
+        case url = "creative_url"
+        case actionType = "action_type"
+        case actionPath = "action_path"
+        case payload
+        case refreshTime = "refresh_time"
+    }
+    
     private var isImpressionTracked: Bool = false
     
     init(

@@ -4,13 +4,22 @@
 
 import Foundation
 
-struct Term {
+struct Term: Codable {
     let termId: String
     let searchTerm: String
     let replacement: String
     let icon: String
     let tagline: String
     private let priority: Int
+    
+    enum CodingKeys: String, CodingKey {
+        case termId = "term_id"
+        case searchTerm = "term"
+        case replacement
+        case icon
+        case tagline
+        case priority
+    }
     
     init(termId: String, searchTerm: String, replacement: String, icon: String, tagline: String, priority: Int) {
         self.termId = termId

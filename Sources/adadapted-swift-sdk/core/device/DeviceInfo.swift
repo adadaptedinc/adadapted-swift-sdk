@@ -4,7 +4,7 @@
 
 import Foundation
 
-struct DeviceInfo {
+struct DeviceInfo: Codable {
     let appId: String
     let isProd: Bool
     let customIdentifier: String
@@ -26,6 +26,30 @@ struct DeviceInfo {
     let sdkVersion: String
     let createdAt: Int64
     let params: Dictionary<String,String>
+    
+    enum CodingKeys: String, CodingKey {
+        case appId = "app_id"
+        case isProd
+        case customIdentifier
+        case scale
+        case bundleId = "bundle_id"
+        case bundleVersion = "bundle_version"
+        case udid
+        case deviceName = "device_name"
+        case deviceUdid = "device_udid"
+        case os = "device_os"
+        case osv = "device_osv"
+        case locale = "device_locale"
+        case timezone = "device_timezone"
+        case carrier = "device_carrier"
+        case dw = "device_width"
+        case dh = "device_height"
+        case density = "device_density"
+        case isAllowRetargetingEnabled = "allow_retargeting"
+        case sdkVersion = "sdk_version"
+        case createdAt = "created_at"
+        case params
+    }
     
     init(
         appId: String = "Unknown",

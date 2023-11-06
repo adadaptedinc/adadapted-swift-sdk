@@ -4,13 +4,22 @@
 
 import Foundation
 
-struct InterceptEvent {
+struct InterceptEvent: Codable {
     let searchId: String
     let event: String
     let userInput: String
     let termId: String
     let term: String
     let createdAt: Int64
+    
+    enum CodingKeys: String, CodingKey {
+        case searchId = "search_id"
+        case event = "event_type"
+        case userInput = "user_input"
+        case termId = "term_id"
+        case term
+        case createdAt = "created_at"
+    }
     
     init(
         searchId: String = "",

@@ -4,7 +4,7 @@
 
 import Foundation
 
-struct AddToListItem {
+struct AddToListItem: Codable {
     let trackingId: String
     let title: String
     let brand: String
@@ -13,6 +13,17 @@ struct AddToListItem {
     let retailerSku: String
     let retailerID: String
     let productImage: String
+    
+    enum CodingKeys: String, CodingKey {
+        case trackingId = "tracking_id"
+        case title = "product_title"
+        case brand = "product_brand"
+        case category = "product_category"
+        case productUpc = "product_barcode"
+        case retailerSku = "product_sku"
+        case retailerID = "product_discount"   //Temporarily hijacking this 'discount' parameter until a more elegant backend solutions exists in V2
+        case productImage = "product_image"
+    }
     
     init(
         trackingId: String,
