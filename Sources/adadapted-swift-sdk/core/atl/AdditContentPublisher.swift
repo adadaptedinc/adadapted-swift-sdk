@@ -68,6 +68,6 @@ class AdditContentPublisher {
     }
     
     private func contentListenerNotAdded() {
-        //AALogger.logError(LISTENER_REGISTRATION_ERROR)
+        AALogger.logError(message: EventStrings.LISTENER_REGISTRATION_ERROR)
     }
 }

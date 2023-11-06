@@ -13,7 +13,7 @@ struct Session {
     let hasAds: Bool
     let refreshTime: Int
     let expiration: Int
-    private var zones: Dictionary<String, Zone> = [:]
+    //private var zones: Dictionary<String, Zone> = [:]
     
     var deviceInfo: DeviceInfo = DeviceInfo()
     

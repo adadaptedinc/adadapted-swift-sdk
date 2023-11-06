@@ -5,7 +5,7 @@
 import Foundation
 
 class EventClient: SessionListener { //TODO finish this when other models complete
-    private var eventAdapter: EventAdapter
+    private var eventAdapter: EventAdapter? = nil
     private var listeners: Array<EventClientListener> = []
     private var adEvents: Array<AdEvent> = []
     private var sdkEvents: Array<SdkEvent> = []
@@ -31,7 +31,7 @@ class EventClient: SessionListener { //TODO finish this when other models comple
     }
     
     private func performTrackSdkError(code: String, message: String, params: Dictionary<String, String>) {
-        //AALogger.logError("App Error: $code - $message")
+        AALogger.logError(message: "App Error: $code - $message")
         sdkErrors.insert(SdkError(code: code, message: message, params: params), at: 0)
     }
     
@@ -42,9 +42,9 @@ class EventClient: SessionListener { //TODO finish this when other models comple
         let currentSdkErrors: Array<SdkError> = Array(sdkErrors)
         sdkErrors.removeAll()
         
-        if (session != nil) {
+        if (session != nil && eventAdapter != nil) {
             DispatchQueue.global(qos: .background).async {
-                eventAdapter.publishSdkErrors(session, currentSdkErrors)
+                self.eventAdapter!.publishSdkErrors(session: self.session!, errors: currentSdkErrors)
             }
         }
     }
@@ -55,9 +55,9 @@ class EventClient: SessionListener { //TODO finish this when other models comple
         }
         let currentSdkEvents: Array<SdkEvent> = Array(sdkEvents)
         sdkEvents.removeAll()
-        if (session != nil) {
+        if (session != nil && eventAdapter != nil) {
             DispatchQueue.global(qos: .background).async {
-                eventAdapter.publishSdkEvents(session, currentSdkEvents)
+                self.eventAdapter!.publishSdkEvents(session: self.session!, events: currentSdkEvents)
             }
         }
     }
@@ -68,9 +68,9 @@ class EventClient: SessionListener { //TODO finish this when other models comple
         }
         let currentAdEvents: Array<AdEvent> = Array(adEvents)
         adEvents.removeAll()
-        if (session != nil) {
+        if (session != nil && eventAdapter != nil) {
             DispatchQueue.global(qos: .background).async {
-                eventAdapter.publishSdkEvents(session, currentAdEvents)
+                self.eventAdapter!.publishAdEvents(session: self.session!, adEvents: currentAdEvents)
             }
         }
     }
@@ -160,7 +160,7 @@ class EventClient: SessionListener { //TODO finish this when other models comple
     }
     
     func trackImpression(ad: Ad) {
-        //AALogger.logDebug("Ad Impression Tracked.")
+        AALogger.logDebug(message: "Ad Impression Tracked.")
         DispatchQueue.global(qos: .background).async {
             self.fileEvent(ad: ad, eventType: AdEventTypes.IMPRESSION)
         }
@@ -173,7 +173,7 @@ class EventClient: SessionListener { //TODO finish this when other models comple
     }
     
     func trackInteraction(ad: Ad) {
-        //AALogger.logDebug("Ad Interaction Tracked.")
+        AALogger.logDebug(message: "Ad Interaction Tracked.")
         DispatchQueue.global(qos: .background).async {
             self.fileEvent(ad: ad, eventType: AdEventTypes.INTERACTION)
         }

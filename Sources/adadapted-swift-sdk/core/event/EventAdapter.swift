@@ -5,7 +5,7 @@
 import Foundation
 
 protocol EventAdapter {
-    func publishAdEvents(session: Session, adEvents: Set<AdEvent>)
-    func publishSdkEvents(session: Session, events: Set<SdkEvent>)
-    func publishSdkErrors(session: Session, errors: Set<SdkError>)
+    func publishAdEvents(session: Session, adEvents: Array<AdEvent>)
+    func publishSdkEvents(session: Session, events: Array<SdkEvent>)
+    func publishSdkErrors(session: Session, errors: Array<SdkError>)
 }
