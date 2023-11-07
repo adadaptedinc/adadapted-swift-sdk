@@ -13,7 +13,7 @@ struct PayloadEventRequest: Codable {
     let os: String
     let osv: String
     let sdkVersion: String
-    let tracking: Dictionary<String, String> //this was a JsonArray
+    let tracking: [[String: String]]
     
     enum CodingKeys: String, CodingKey {
         case appId = "app_id"
@@ -27,7 +27,7 @@ struct PayloadEventRequest: Codable {
         case tracking
     }
     
-    init(appId: String, udid: String, bundleId: String, bundleVersion: String, device: String, os: String, osv: String, sdkVersion: String, tracking: Dictionary<String, String>) {
+    init(appId: String, udid: String, bundleId: String, bundleVersion: String, device: String, os: String, osv: String, sdkVersion: String, tracking: [[String: String]]) {
         self.appId = appId
         self.udid = udid
         self.bundleId = bundleId
