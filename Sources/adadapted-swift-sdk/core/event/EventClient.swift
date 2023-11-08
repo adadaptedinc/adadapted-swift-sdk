@@ -184,4 +184,8 @@ class EventClient: SessionListener {
             self.fileEvent(ad: ad, eventType: AdEventTypes.POPUP_BEGIN)
         }
     }
+    
+    func hasBeenInitialized() -> Bool {
+        return hasInstance
+    }
 }
