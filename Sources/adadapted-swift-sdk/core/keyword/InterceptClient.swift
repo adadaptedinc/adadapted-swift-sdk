@@ -21,8 +21,7 @@ class InterceptClient: SessionListener , InterceptAdapterListener {
         self.events = []
         self.currentSession = Session()
         self.interceptListener = interceptListener
-        
-        //SessionClient.addListener(self)
+        SessionClient.instance.addListener(listener: self)
     }
     
     private func performInitialize(session: Session?, interceptListener: InterceptListener?) {
@@ -36,7 +35,7 @@ class InterceptClient: SessionListener , InterceptAdapterListener {
             self.adapter?.retrieve(session: session, adapterListener: self)
         }
         
-        //SessionClient.addListener(self)
+        SessionClient.instance.addListener(listener: self)
     }
     
     func onSuccess(intercept: Intercept) {

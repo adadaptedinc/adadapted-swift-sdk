@@ -5,30 +5,44 @@
 import Foundation
 
 class AdditContentParser {
-//    static func generateAddItContentFromPayloads(payloadResponse: PayloadResponse) -> Array<AdditContent> {
-//        val listOfAdditContentToReturn = payloadResponse.payloads.map {
-//            AdditContent(
-//                it.payloadId,
-//                it.payloadMessage,
-//                it.payloadImage,
-//                if (it.detailedListItems.count()>1) AddToListTypes.ADD_TO_LIST_ITEMS else AddToListTypes.ADD_TO_LIST_ITEM,
-//                OUT_OF_APP,
-//                PAYLOAD,
-//                it.detailedListItems
-//            )
-//        }
-//        return listOfAdditContentToReturn
-//    }
-//    
-//    static func generateAddItContentFromDeeplink(payload: Payload) -> AdditContent {
-//            return AdditContent(
-//                payload.payloadId,
-//                payload.payloadMessage,
-//                payload.payloadImage,
-//                if (payload.detailedListItems.count()>1) AddToListTypes.ADD_TO_LIST_ITEMS else AddToListTypes.ADD_TO_LIST_ITEM,
-//                OUT_OF_APP,
-//                DEEPLINK,
-//                payload.detailedListItems
-//            )
-//        }
+    static func generateAddItContentFromPayloads(payloadResponse: PayloadResponse) -> Array<AdditContent> {
+        var listOfAdditContentToReturn: Array<AdditContent> = []
+        for payload in payloadResponse.payloads {
+            var type = AddToListTypes.ADD_TO_LIST_ITEM
+            if (payload.detailedListItems.count > 1) {
+                type = AddToListTypes.ADD_TO_LIST_ITEMS
+            }
+            
+            var contentToAdd = AdditContent(
+                payloadId: payload.payloadId,
+                message: payload.payloadMessage,
+                image: payload.payloadImage,
+                type: type,
+                additSource: ContentSources.OUT_OF_APP,
+                source: ContentSources.PAYLOAD,
+                items: payload.detailedListItems
+            )
+            
+            listOfAdditContentToReturn.append(contentToAdd)
+        }
+        
+        return listOfAdditContentToReturn
+    }
+
+    static func generateAddItContentFromDeeplink(payload: Payload) -> AdditContent {
+        var type = AddToListTypes.ADD_TO_LIST_ITEM
+        if (payload.detailedListItems.count > 1) {
+            type = AddToListTypes.ADD_TO_LIST_ITEMS
+        }
+        
+        return AdditContent(
+            payloadId: payload.payloadId,
+            message: payload.payloadMessage,
+            image: payload.payloadImage,
+            type: type,
+            additSource: ContentSources.OUT_OF_APP,
+            source: ContentSources.DEEPLINK,
+            items: payload.detailedListItems
+        )
+    }
 }

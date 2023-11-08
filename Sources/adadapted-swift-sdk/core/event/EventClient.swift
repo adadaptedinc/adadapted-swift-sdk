@@ -4,7 +4,7 @@
 
 import Foundation
 
-class EventClient: SessionListener { //TODO finish this when other models complete
+class EventClient: SessionListener {
     private var eventAdapter: EventAdapter? = nil
     private var listeners: Array<EventClientListener> = []
     private var adEvents: Array<AdEvent> = []
@@ -15,8 +15,8 @@ class EventClient: SessionListener { //TODO finish this when other models comple
     
     static let instance = EventClient()
     
-    init(){
-        //SessionClient.addListener(self)
+    init() {
+        SessionClient.instance.addListener(listener: self)
     }
     
     func createInstance(eventAdapter: EventAdapter) {
@@ -136,7 +136,7 @@ class EventClient: SessionListener { //TODO finish this when other models comple
     }
     
     func onSessionInitFailed() {
-        // track?
+        //nothing
     }
     
     func trackSdkEvent(name: String,params: Dictionary<String, String> = [:]) {

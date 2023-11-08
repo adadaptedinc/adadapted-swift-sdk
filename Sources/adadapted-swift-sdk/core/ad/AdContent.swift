@@ -12,20 +12,19 @@ class AdContent: AddToListContent {
     
     private let ad: Ad
     private let items: Array<AddToListItem>
-    //private let eventClient: EventClient = EventClient
+    private let eventClient: EventClient = EventClient.instance
     private var isHandled: Bool = false
     
-    init(ad: Ad, items: Array<AddToListItem>) { //event client
+    init(ad: Ad, items: Array<AddToListItem>) {
         self.ad = ad
         self.items = items
-        //event client
         
-        //        if (ad.payload.detailedListItems.isEmpty()) {
-        //                    eventClient.trackSdkError(
-        //                        EventStrings.AD_PAYLOAD_IS_EMPTY,
-        //                        "Ad ${ad.id} has empty payload"
-        //                    )
-        //                }
+        if (ad.payload.detailedListItems.isEmpty) {
+            eventClient.trackSdkError(
+                code: EventStrings.AD_PAYLOAD_IS_EMPTY,
+                message: "Ad ${ad.id} has empty payload"
+            )
+        }
     }
     
     func zoneId() -> String {
@@ -37,22 +36,22 @@ class AdContent: AddToListContent {
             return
         }
         isHandled = true
-        //eventClient.trackInteraction(ad)
+        eventClient.trackInteraction(ad: ad)
     }
     
     private func trackItem(itemName: String) {
         var params = [String : String] ()
         params[AD_ID] = ad.id
         params[ITEM_NAME] = itemName
-        //eventClient.trackSdkEvent(EventStrings.ATL_ITEM_ADDED_TO_LIST, params)
+        eventClient.trackSdkEvent(name: EventStrings.ATL_ITEM_ADDED_TO_LIST, params: params)
     }
     
     func itemAcknowledge(item: AddToListItem) {
         if (!isHandled) {
             isHandled = true
-            //eventClient.trackInteraction(ad)
+            eventClient.trackInteraction(ad: ad)
         }
-        //trackItem(itemName: item.title)
+        trackItem(itemName: item.title)
     }
     
     func failed(message: String) {
@@ -62,23 +61,23 @@ class AdContent: AddToListContent {
         isHandled = true
         var params = [String : String] ()
         params[AD_ID] = ad.id
-        //               eventClient.trackSdkError(
-        //                   EventStrings.ATL_ADDED_TO_LIST_FAILED,
-        //                   message.ifEmpty { UNKNOWN_REASON },
-        //                   params
-        //               )
+        eventClient.trackSdkError(
+            code: EventStrings.ATL_ADDED_TO_LIST_FAILED,
+            message: message,
+            params: params
+        )
     }
     
     func itemFailed(item: AddToListItem, message: String) {
         isHandled = true
         var params = [String : String] ()
         params[AD_ID] = ad.id
-        //params[ITEM] = item.title
-        //               eventClient.trackSdkError(
-        //                   EventStrings.ATL_ADDED_TO_LIST_ITEM_FAILED,
-        //                   message.ifEmpty { UNKNOWN_REASON },
-        //                   params
-        //               )
+        params[ITEM] = item.title
+        eventClient.trackSdkError(
+            code: EventStrings.ATL_ADDED_TO_LIST_ITEM_FAILED,
+            message: message,
+            params: params
+        )
     }
     
     func getSource() -> String {
@@ -94,7 +93,6 @@ class AdContent: AddToListContent {
     }
     
     static func createAddToListContent(ad: Ad) -> AdContent {
-        return AdContent(ad: ad, items: [])
-        //return AdContent(ad, ad.payload.detailedListItems)
+        return AdContent(ad: ad, items: ad.payload.detailedListItems)
     }
 }

@@ -28,14 +28,14 @@ struct Suggestion: Codable {
     mutating func wasPresented() {
         if (!presented) {
             presented = true
-            //suggestionPresented(searchId, termId, name)
+            SuggestionTracker.suggestionPresented(searchId: searchId, termId: termId, replacement: name)
         }
     }
     
     mutating func wasSelected() {
         if (!selected) {
             selected = true
-            //suggestionSelected(searchId, termId, name)
+            SuggestionTracker.suggestionSelected(searchId: searchId, termId: termId, replacement: name)
         }
     }
 }
