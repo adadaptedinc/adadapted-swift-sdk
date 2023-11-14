@@ -12,7 +12,6 @@ class HttpSessionAdapter: SessionAdapter {
         self.initUrl = initUrl
         self.refreshUrl = refreshUrl
     }
-    //let initUrl = URL(string: "your_init_url_here")! REMOVE THIS but use it to remember the setup
     
     func sendInit(deviceInfo: DeviceInfo, listener: SessionInitListener) {
         var request = URLRequest(url: initUrl)

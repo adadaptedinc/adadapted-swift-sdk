@@ -131,7 +131,7 @@ class AdAdapted: SessionListener {
     private func setAdTracking(value: Bool) {
         let defaults = UserDefaults.standard
         defaults.set(value, forKey: Config.AASDK_PREFS_TRACKING_DISABLED_KEY)
-        defaults.synchronize() // Ensures the changes are immediately saved
+        defaults.synchronize()
     }
     
     private func setupClients() {
