@@ -4,7 +4,7 @@
 
 import Foundation
 
-class UniversalLinkContentParser {
+class UniversalLinkContentParser { //TODO fix this whole thing
     static func parseUniversalLinkContent(_ userActivity: NSUserActivity?) { //pass in connector
         //connector?.addCollectableEvent(forDispatch: AACollectableEvent.internalEvent(withName: AA_EC_ADDIT_APP_OPENED, andPayload: [:])) **EVENT CALLING
 
