@@ -12,7 +12,7 @@ class AdAdaptedListManager {
         if (item.isEmpty) {
             return
         }
-        EventClient.instance.trackSdkEvent(name: EventStrings.USER_ADDED_TO_LIST, params: generateListParams(list: list, item: item))
+        EventClient.trackSdkEvent(name: EventStrings.USER_ADDED_TO_LIST, params: generateListParams(list: list, item: item))
         AALogger.logInfo(message: "\(item) was added to \(list)")
     }
     
@@ -20,7 +20,7 @@ class AdAdaptedListManager {
         if (item.isEmpty) {
             return
         }
-        EventClient.instance.trackSdkEvent(name: EventStrings.USER_CROSSED_OFF_LIST, params: generateListParams(list: list, item: item))
+        EventClient.trackSdkEvent(name: EventStrings.USER_CROSSED_OFF_LIST, params: generateListParams(list: list, item: item))
         AALogger.logInfo(message: "\(item) was crossed off \(list)")
     }
     
@@ -28,7 +28,7 @@ class AdAdaptedListManager {
         if (item.isEmpty) {
             return
         }
-        EventClient.instance.trackSdkEvent(name: EventStrings.USER_DELETED_FROM_LIST, params: generateListParams(list: list, item: item))
+        EventClient.trackSdkEvent(name: EventStrings.USER_DELETED_FROM_LIST, params: generateListParams(list: list, item: item))
         AALogger.logInfo(message: "\(item) was deleted from \(list)")
     }
     

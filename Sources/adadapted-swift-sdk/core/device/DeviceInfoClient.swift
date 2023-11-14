@@ -1,56 +1,32 @@
 //
-//  Created by Brett Clifton on 10/23/23.
+//  Created by Brett Clifton on 11/14/23.
 //
 
 import Foundation
 
 class DeviceInfoClient {
-    private var appId: String
-    private var isProd: Bool
-    private var params: Dictionary<String, String>
-    private var customIdentifier: String
-    private var deviceInfoExtractor: DeviceInfoExtractor?
-    private var deviceInfo: DeviceInfo?
-    private var deviceCallbacks: Array<DeviceCallback>
-    
-    static let instance = DeviceInfoClient()
-    
-    init(
-        appId: String = "",
-        isProd: Bool = false,
-        params: Dictionary<String,String> = [:],
-        customIdentifier: String = "",
-        deviceInfoExtractor: DeviceInfoExtractor? = nil,
-        deviceInfo: DeviceInfo? = nil,
-        deviceCallbacks: Array<DeviceCallback> = []
-    ) {
-        self.appId = appId
-        self.isProd = isProd
-        self.params = params
-        self.customIdentifier = customIdentifier
-        self.deviceInfoExtractor = deviceInfoExtractor
-        self.deviceInfo = deviceInfo
-        self.deviceCallbacks = deviceCallbacks
-        
-        DispatchQueue.global(qos: .background).async {
-            self.collectDeviceInfo()
-        }
-    }
-    
-    private func performGetInfo(deviceCallback: DeviceCallback) {
-        if (deviceInfo != nil) {
-            deviceCallback.onDeviceInfoCollected(deviceInfo: deviceInfo ?? DeviceInfo())
+    private static var appId: String = ""
+    private static var isProd: Bool = false
+    private static var params: [String: String] = [:]
+    private static var customIdentifier: String = ""
+    private static var deviceInfoExtractor: DeviceInfoExtractor?
+    private static var deviceInfo: DeviceInfo?
+    private static var deviceCallbacks: Array<DeviceCallback> = []
+
+    private static func performGetInfo(deviceCallback: DeviceCallback) {
+        if let info = deviceInfo {
+            deviceCallback.onDeviceInfoCollected(deviceInfo: info)
         } else {
             deviceCallbacks.insert(deviceCallback, at: 0)
         }
     }
-    
-    private func collectDeviceInfo() {
+
+    private static func collectDeviceInfo() {
         deviceInfo = deviceInfoExtractor?.extractDeviceInfo(appId: appId, isProd: isProd, customIdentifier: customIdentifier, params: params)
         notifyCallbacks()
     }
-    
-    private func notifyCallbacks() {
+
+    private static func notifyCallbacks() {
         let currentDeviceCallbacks: Array<DeviceCallback> = Array(deviceCallbacks)
         for (caller) in currentDeviceCallbacks {
             caller.onDeviceInfoCollected(deviceInfo: deviceInfo ?? DeviceInfo())
@@ -59,18 +35,32 @@ class DeviceInfoClient {
             }
         }
     }
-    
-    func getDeviceInfo(deviceCallback: DeviceCallback) {
+
+    static func getDeviceInfo(deviceCallback: DeviceCallback) {
         DispatchQueue.global(qos: .background).async {
-            self.performGetInfo(deviceCallback: deviceCallback)
+            performGetInfo(deviceCallback: deviceCallback)
         }
     }
-    
-    func getCachedDeviceInfo() -> DeviceInfo? {
-        return if (deviceInfo != nil) {
-            deviceInfo
-        } else {
-            nil
+
+    static func getCachedDeviceInfo() -> DeviceInfo? {
+        return deviceInfo
+    }
+
+    static func createInstance(
+        appId: String,
+        isProd: Bool,
+        params: [String: String],
+        customIdentifier: String,
+        deviceInfoExtractor: DeviceInfoExtractor
+    ) {
+        self.appId = appId
+        self.isProd = isProd
+        self.params = params
+        self.customIdentifier = customIdentifier
+        self.deviceInfoExtractor = deviceInfoExtractor
+
+        DispatchQueue.global(qos: .background).async {
+            collectDeviceInfo()
         }
     }
 }

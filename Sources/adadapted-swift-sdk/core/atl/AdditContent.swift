@@ -12,8 +12,6 @@ class AdditContent : AddToListContent {
     var additSource: String
     var source: String
     var items: Array<AddToListItem>
-    private var payloadClient: PayloadClient = PayloadClient.instance
-    private var eventClient: EventClient = EventClient.instance
     
     private var handled: Bool = false
     
@@ -27,7 +25,7 @@ class AdditContent : AddToListContent {
         self.items = items
         
         if (items.isEmpty) {
-            eventClient.trackSdkError(
+            EventClient.trackSdkError(
                 code: EventStrings.ADDIT_PAYLOAD_IS_EMPTY,
                 message: ("Payload %s has empty payload$payloadId")
             )
@@ -39,15 +37,15 @@ class AdditContent : AddToListContent {
             return
         }
         handled = true
-        payloadClient.markContentAcknowledged(content: self)
+        PayloadClient.markContentAcknowledged(content: self)
     }
     
     func itemAcknowledge(item: AddToListItem) {
         if (!handled) {
             handled = true
-            payloadClient.markContentAcknowledged(content: self)
+            PayloadClient.markContentAcknowledged(content: self)
         }
-        payloadClient.markContentItemAcknowledged(content: self, item: item)
+        PayloadClient.markContentItemAcknowledged(content: self, item: item)
     }
     
     func duplicate() {
@@ -55,7 +53,7 @@ class AdditContent : AddToListContent {
             return
         }
         handled = true
-        payloadClient.markContentDuplicate(content: self)
+        PayloadClient.markContentDuplicate(content: self)
     }
     
     func failed(message: String) {
@@ -63,15 +61,15 @@ class AdditContent : AddToListContent {
             return
         }
         handled = true
-        payloadClient.markContentFailed(content: self, message: message)
+        PayloadClient.markContentFailed(content: self, message: message)
     }
     
     func itemFailed(item: AddToListItem, message: String) {
         if (!handled) {
             handled = true
-            payloadClient.markContentFailed(content: self, message: message)
+            PayloadClient.markContentFailed(content: self, message: message)
         }
-        payloadClient.markContentItemFailed(content: self, item: item, message: message)
+        PayloadClient.markContentItemFailed(content: self, item: item, message: message)
     }
     
     func getSource() -> String {

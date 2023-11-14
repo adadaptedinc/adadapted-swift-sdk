@@ -7,8 +7,8 @@ import Foundation
 class HttpErrorTracker {
     static func trackHttpError(errorCause: String, errorMessage: String, errorEventCode: String, url: String) {
         var params: [String: String] = ["url": url, "data": errorCause]
-        if(EventClient.instance.hasBeenInitialized()) {
-            EventClient.instance.trackSdkError(code: errorEventCode, message: errorMessage, params: params)
+        if(EventClient.hasBeenInitialized()) {
+            EventClient.trackSdkError(code: errorEventCode, message: errorMessage, params: params)
         }
     }
 }

@@ -1,54 +1,36 @@
 //
-//  Created by Brett Clifton on 11/7/23.
+//  Created by Brett Clifton on 11/14/23.
 //
 
 import Foundation
 
-class SessionClient: SessionAdapterListener, DeviceCallback {
+class SessionClient: SessionAdapterListener {
     enum Status {
-        case OK  // Normal Status. No alterations to regular behavior
-        case SHOULD_REFRESH  // SDK should refresh Ads or Reinitialize Session at the next available chance
-        case IS_REFRESH_ADS  // SDK is currently refreshing Ads
-        case IS_REINITIALIZING_SESSION  // SDK is currently reinitializing the Session
+        case OK
+        case SHOULD_REFRESH
+        case IS_REFRESH_ADS
+        case IS_REINITIALIZING_SESSION
     }
     
     private var currentSession: Session?
     private var adapter: SessionAdapter?
     private var sessionListeners: Array<SessionListener>
     private var presenters: Set<String>
-    private(set) var status: Status
+    private var status: Status
     private var pollingTimerRunning: Bool
     private var eventTimerRunning: Bool
     private var hasActiveInstance: Bool
     private var zoneContext: ZoneContext
     
-    static let instance = SessionClient(hasActiveInstance: false, zoneContext: ZoneContext())
-    
-    init(
-        currentSession: Session? = nil,
-        adapter: SessionAdapter? = nil,
-        sessionListeners: Array<SessionListener> = [],
-        presenters: Set<String> = [],
-        status: Status = Status.OK,
-        pollingTimerRunning: Bool = false,
-        eventTimerRunning: Bool = false,
-        hasActiveInstance: Bool = false,
-        zoneContext: ZoneContext = ZoneContext()
-    ) {
-        self.currentSession = currentSession
-        self.adapter = adapter
-        self.sessionListeners = sessionListeners
-        self.presenters = presenters
-        self.status = status
-        self.pollingTimerRunning = pollingTimerRunning
-        self.eventTimerRunning = eventTimerRunning
-        self.hasActiveInstance = hasActiveInstance
-        self.zoneContext = zoneContext
-    }
-    
-    func createInstance(adapter: SessionAdapter) {
-        SessionClient.instance.adapter = adapter
-        hasActiveInstance = true
+    init() {
+        currentSession = Session()
+        sessionListeners = Array()
+        presenters = Set()
+        pollingTimerRunning = false
+        eventTimerRunning = false
+        status = .OK
+        hasActiveInstance = false
+        zoneContext = ZoneContext()
     }
     
     private func performAddListener(listener: SessionListener) {
@@ -68,7 +50,7 @@ class SessionClient: SessionAdapterListener, DeviceCallback {
         performAddListener(listener: listener)
         presenters.insert("\(listener)")
         
-        if (status == Status.SHOULD_REFRESH) {
+        if status == Status.SHOULD_REFRESH {
             performRefresh()
         }
     }
@@ -78,36 +60,38 @@ class SessionClient: SessionAdapterListener, DeviceCallback {
         presenters.remove("\(listener)")
     }
     
-    private func presenterSize() -> Int { return presenters.count }
-    
-    private func performInitialize(deviceInfo: DeviceInfo) {
-        DispatchQueue.global(qos: .background).async { self.adapter?.sendInit(deviceInfo: deviceInfo, listener: self) }
+    private func presenterSize() -> Int {
+        return presenters.count
     }
     
-    private func performRefresh(deviceInfo: DeviceInfo? = DeviceInfoClient.instance.getCachedDeviceInfo()) {
-        if(currentSession != nil) {
-            if (currentSession!.hasExpired()) { //check
-                AALogger.logInfo(message: "Session has expired. Expired at: \(currentSession!.expiration)")
-                notifySessionExpired()
-                if (deviceInfo != nil) {
-                    performReinitialize(deviceInfo: deviceInfo!)
-                }
-            } else {
-                performRefreshAds()
+    private func performInitialize(deviceInfo: DeviceInfo) {
+        DispatchQueue.global(qos: .background).async {
+            self.adapter?.sendInit(deviceInfo: deviceInfo, listener: self)
+        }
+    }
+    
+    private func performRefresh(deviceInfo: DeviceInfo? = DeviceInfoClient.getCachedDeviceInfo()) {
+        if ((currentSession?.hasExpired()) != nil) {
+            AALogger.logInfo(message: "Session has expired. Expired at: \(currentSession?.expiration ?? 0)")
+            notifySessionExpired()
+            if let deviceInfo = deviceInfo {
+                performReinitialize(deviceInfo: deviceInfo)
             }
+        } else {
+            performRefreshAds()
         }
     }
     
     private func performReinitialize(deviceInfo: DeviceInfo) {
-        if (status == Status.OK || status == Status.SHOULD_REFRESH) {
-            if (presenterSize() > 0) {
+        if status == .OK || status == .SHOULD_REFRESH {
+            if presenterSize() > 0 {
                 AALogger.logInfo(message: "Reinitializing Session.")
-                status = Status.IS_REINITIALIZING_SESSION
+                status = .IS_REINITIALIZING_SESSION
                 DispatchQueue.global(qos: .background).async {
                     self.adapter?.sendInit(deviceInfo: deviceInfo, listener: self)
                 }
             } else {
-                status = Status.SHOULD_REFRESH
+                status = .SHOULD_REFRESH
             }
         }
     }
@@ -117,10 +101,10 @@ class SessionClient: SessionAdapterListener, DeviceCallback {
             status = .SHOULD_REFRESH
             return
         }
-
+        
         AALogger.logInfo(message: "Checking for more Ads")
         status = .IS_REFRESH_ADS
-
+        
         DispatchQueue.global(qos: .background).async { [weak self] in
             guard let self = self, let session = self.currentSession else { return }
             self.adapter?.sendRefreshAds(session: session, listener: self, zoneContext: self.zoneContext)
@@ -206,37 +190,37 @@ class SessionClient: SessionAdapterListener, DeviceCallback {
     
     func onSessionInitialized(session: Session) {
         updateCurrentSession(session: session)
-        status = Status.OK
+        status = .OK
         notifySessionAvailable()
     }
     
     func onSessionInitializeFailed() {
         updateCurrentSession(session: Session())
-        status = Status.OK
+        status = .OK
         notifySessionInitFailed()
     }
     
     func onNewAdsLoaded(session: Session) {
         updateCurrentZones(session: session)
-        status = Status.OK
+        status = .OK
         notifyAdsAvailable()
     }
     
     func onNewAdsLoadFailed() {
         updateCurrentZones(session: Session())
-        status = Status.OK
+        status = .OK
         notifyAdsAvailable()
     }
     
     func start(listener: SessionListener) {
         addListener(listener: listener)
-        DeviceInfoClient.instance.getDeviceInfo(deviceCallback: self)
-    }
-    
-    func onDeviceInfoCollected(deviceInfo: DeviceInfo) {
-        DispatchQueue.global(qos: .background).async {
-            self.performInitialize(deviceInfo: deviceInfo)
+        let deviceCallbackHandler = DeviceCallbackHandler()
+        deviceCallbackHandler.callback = { deviceInfo in
+            DispatchQueue.global(qos: .background).async {
+                self.performInitialize(deviceInfo: deviceInfo)
+            }
         }
+        DeviceInfoClient.getDeviceInfo(deviceCallback: deviceCallbackHandler)
     }
     
     func addListener(listener: SessionListener) {
@@ -256,20 +240,32 @@ class SessionClient: SessionAdapterListener, DeviceCallback {
     }
     
     func hasStaleAds() -> Bool {
-        return status != Status.OK
+        return status != .OK
     }
     
     func hasInstance() -> Bool {
         return hasActiveInstance
     }
     
-    func setZoneContext(zoneContext: ZoneContext){
+    func setZoneContext(zoneContext: ZoneContext) {
         self.zoneContext = zoneContext
         performRefreshAds()
     }
     
-    func clearZoneContext(){
-        self.zoneContext = ZoneContext()
+    func clearZoneContext() {
+        zoneContext = ZoneContext()
         performRefreshAds()
+    }
+    
+    static private var instance: SessionClient!
+    
+    static func getInstance() -> SessionClient {
+        return instance
+    }
+    
+    static func createInstance(adapter: SessionAdapter) {
+        instance = SessionClient()
+        instance.adapter = adapter
+        instance.hasActiveInstance = true
     }
 }

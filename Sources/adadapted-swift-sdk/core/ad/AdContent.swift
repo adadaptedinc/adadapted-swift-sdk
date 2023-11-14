@@ -12,7 +12,6 @@ class AdContent: AddToListContent {
     
     private let ad: Ad
     private let items: Array<AddToListItem>
-    private let eventClient: EventClient = EventClient.instance
     private var isHandled: Bool = false
     
     init(ad: Ad, items: Array<AddToListItem>) {
@@ -20,7 +19,7 @@ class AdContent: AddToListContent {
         self.items = items
         
         if (ad.payload.detailedListItems.isEmpty) {
-            eventClient.trackSdkError(
+            EventClient.trackSdkError(
                 code: EventStrings.AD_PAYLOAD_IS_EMPTY,
                 message: "Ad ${ad.id} has empty payload"
             )
@@ -36,20 +35,20 @@ class AdContent: AddToListContent {
             return
         }
         isHandled = true
-        eventClient.trackInteraction(ad: ad)
+        EventClient.trackInteraction(ad: ad)
     }
     
     private func trackItem(itemName: String) {
         var params = [String : String] ()
         params[AD_ID] = ad.id
         params[ITEM_NAME] = itemName
-        eventClient.trackSdkEvent(name: EventStrings.ATL_ITEM_ADDED_TO_LIST, params: params)
+        EventClient.trackSdkEvent(name: EventStrings.ATL_ITEM_ADDED_TO_LIST, params: params)
     }
     
     func itemAcknowledge(item: AddToListItem) {
         if (!isHandled) {
             isHandled = true
-            eventClient.trackInteraction(ad: ad)
+            EventClient.trackInteraction(ad: ad)
         }
         trackItem(itemName: item.title)
     }
@@ -61,7 +60,7 @@ class AdContent: AddToListContent {
         isHandled = true
         var params = [String : String] ()
         params[AD_ID] = ad.id
-        eventClient.trackSdkError(
+        EventClient.trackSdkError(
             code: EventStrings.ATL_ADDED_TO_LIST_FAILED,
             message: message,
             params: params
@@ -73,7 +72,7 @@ class AdContent: AddToListContent {
         var params = [String : String] ()
         params[AD_ID] = ad.id
         params[ITEM] = item.title
-        eventClient.trackSdkError(
+        EventClient.trackSdkError(
             code: EventStrings.ATL_ADDED_TO_LIST_ITEM_FAILED,
             message: message,
             params: params

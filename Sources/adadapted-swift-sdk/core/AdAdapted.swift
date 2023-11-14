@@ -93,7 +93,7 @@ class AdAdapted: SessionListener {
         AdditContentPublisher.instance.addListener(listener: contentListener)
         
         if isPayloadEnabled {
-            PayloadClient.instance.pickupPayloads { payloads in
+            PayloadClient.pickupPayloads { payloads in
                 if !payloads.isEmpty {
                     for content in payloads {
                         AdditContentPublisher.instance.publishAdditContent(content: content)
@@ -102,7 +102,7 @@ class AdAdapted: SessionListener {
             }
         }
         
-        SessionClient.instance.start(listener: self)
+        SessionClient.getInstance().start(listener: self)
         
         if isKeywordInterceptEnabled {
             KeywordInterceptMatcher.instance.match(constraint: "INIT") //init the matcher
@@ -138,17 +138,10 @@ class AdAdapted: SessionListener {
         Config.initialize(useProd: isProd)
         
         let deviceInfoExtractor = DeviceInfoExtractor()
-        DeviceInfoClient(
-            appId: apiKey,
-            isProd: isProd,
-            params: params,
-            customIdentifier: customIdentifier,
-            deviceInfoExtractor: deviceInfoExtractor
-        )
-        SessionClient(adapter: HttpSessionAdapter(initUrl: Config.getInitSessionUrl(), refreshUrl: Config.getRefreshAdsUrl()))
-        EventClient.instance.createInstance(eventAdapter: HttpEventAdapter(adEventUrl: Config.getAdEventsUrl(), sdkEventUrl: Config.getSdkEventsUrl(), errorUrl: Config.getSdkErrorsUrl()))
-        InterceptClient(adapter: HttpInterceptAdapter(initUrl: Config.getRetrieveInterceptsUrl(), eventUrl: Config.getInterceptEventsUrl()))
-        PayloadClient.instance.createInstance(adapter: HttpPayloadAdapter(pickupUrl: Config.getPickupPayloadsUrl(), trackUrl: Config.getTrackingPayloadUrl()), eventClient: EventClient.instance)
+        DeviceInfoClient.createInstance(appId: apiKey, isProd: isProd, params: params, customIdentifier: customIdentifier, deviceInfoExtractor: deviceInfoExtractor)
+        SessionClient.createInstance(adapter: HttpSessionAdapter(initUrl: Config.getInitSessionUrl(), refreshUrl: Config.getRefreshAdsUrl()))
+        EventClient.createInstance(eventAdapter: HttpEventAdapter(adEventUrl: Config.getAdEventsUrl(), sdkEventUrl: Config.getSdkEventsUrl(), errorUrl: Config.getSdkErrorsUrl()))
+        InterceptClient.createInstance(adapter: HttpInterceptAdapter(initUrl: Config.getRetrieveInterceptsUrl(), eventUrl: Config.getInterceptEventsUrl()))
+        PayloadClient.createInstance(adapter: HttpPayloadAdapter(pickupUrl: Config.getPickupPayloadsUrl(), trackUrl: Config.getTrackingPayloadUrl()))
     }
-    
 }

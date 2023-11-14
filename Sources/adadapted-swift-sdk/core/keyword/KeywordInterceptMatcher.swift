@@ -13,7 +13,7 @@ class KeywordInterceptMatcher : SessionListener, InterceptListener {
     static let instance = KeywordInterceptMatcher()
     
     init() {
-        SessionClient.instance.addListener(listener: self)
+        SessionClient.getInstance().addListener(listener: self)
     }
     
     private func matchKeyword(constraint: String) -> Array<Suggestion> {
@@ -63,7 +63,7 @@ class KeywordInterceptMatcher : SessionListener, InterceptListener {
         if hasInstance {
             return matchKeyword(constraint: constraint)
         } else {
-            if SessionClient.instance.hasInstance() {
+            if SessionClient.getInstance().hasInstance() {
                 createInstance()
                 return matchKeyword(constraint: constraint)
             } else {
@@ -74,7 +74,7 @@ class KeywordInterceptMatcher : SessionListener, InterceptListener {
     
     func onSessionAvailable(session: Session) {
         if (!session.id.isEmpty) {
-            InterceptClient.instance.initialize(session: session, interceptListener: self)
+            InterceptClient.getInstance().initialize(session: session, interceptListener: self)
         }
     }
     

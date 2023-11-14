@@ -9,7 +9,7 @@ class EventBroadcaster: EventClientListener {
     static let instance = EventBroadcaster()
     
     init(){
-        EventClient.instance.addListener(listener: self)
+        EventClient.addListener(listener: self)
     }
     
     func setListener(listener: AaSdkEventListener) {

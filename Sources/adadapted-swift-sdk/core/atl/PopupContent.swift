@@ -60,7 +60,7 @@ class PopupContent: AddToListContent {
     static func markPopupContentAcknowledged(content: PopupContent) {
         var params = Dictionary<String, String>()
         params[ContentSources.PAYLOAD_ID] = content.payloadId
-        EventClient.instance.trackSdkEvent(name: EventStrings.POPUP_ADDED_TO_LIST, params: params)
+        EventClient.trackSdkEvent(name: EventStrings.POPUP_ADDED_TO_LIST, params: params)
     }
     
     static func markPopupContentItemAcknowledged(content: PopupContent, item: AddToListItem) {
@@ -68,19 +68,19 @@ class PopupContent: AddToListContent {
         params[ContentSources.PAYLOAD_ID] = content.payloadId
         params[ContentSources.TRACKING_ID] = item.trackingId
         params[ContentSources.ITEM_NAME] = item.title
-        EventClient.instance.trackSdkEvent(name: EventStrings.POPUP_ITEM_ADDED_TO_LIST, params: params)
+        EventClient.trackSdkEvent(name: EventStrings.POPUP_ITEM_ADDED_TO_LIST, params: params)
     }
     
     static func markPopupContentFailed(content: PopupContent, message: String) {
         var eventParams = Dictionary<String, String>()
         eventParams[ContentSources.PAYLOAD_ID] = content.payloadId
-        EventClient.instance.trackSdkError(code: EventStrings.POPUP_CONTENT_FAILED, message: message, params: eventParams)
+        EventClient.trackSdkError(code: EventStrings.POPUP_CONTENT_FAILED, message: message, params: eventParams)
     }
     
     static func markPopupContentItemFailed(content: PopupContent, item: AddToListItem,message: String) {
         var eventParams = Dictionary<String, String>()
         eventParams[ContentSources.PAYLOAD_ID] = content.payloadId
         eventParams[ContentSources.TRACKING_ID] = item.trackingId
-        EventClient.instance.trackSdkError(code: EventStrings.POPUP_CONTENT_ITEM_FAILED, message: message, params: eventParams)
+        EventClient.trackSdkError(code: EventStrings.POPUP_CONTENT_ITEM_FAILED, message: message, params: eventParams)
     }
 }
