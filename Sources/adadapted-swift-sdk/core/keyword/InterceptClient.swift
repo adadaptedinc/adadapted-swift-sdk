@@ -16,7 +16,7 @@ class InterceptClient: SessionListener , InterceptAdapterListener {
     
     static let instance = InterceptClient(adapter: nil, interceptListener: nil)
     
-    init(adapter: InterceptAdapter?, interceptListener: InterceptListener?) {
+    init(adapter: InterceptAdapter?, interceptListener: InterceptListener? = nil) {
         self.adapter = adapter
         self.events = []
         self.currentSession = Session()

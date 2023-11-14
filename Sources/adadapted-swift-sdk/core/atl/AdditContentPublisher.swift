@@ -16,7 +16,7 @@ class AdditContentPublisher {
         self.listener = listener
     }
     
-    func publishAddItContent(content: AdditContent) {
+    func publishAdditContent(content: AdditContent) {
         if (content.hasNoItems()) {
             return
         }

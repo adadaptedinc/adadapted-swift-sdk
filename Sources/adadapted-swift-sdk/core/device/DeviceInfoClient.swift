@@ -5,17 +5,33 @@
 import Foundation
 
 class DeviceInfoClient {
-    private var appId: String = ""
-    private var isProd: Bool = false
-    private var params: Dictionary<String, String> = [:]
-    private var customIdentifier: String = ""
-    private var deviceInfoExtractor: DeviceInfoExtractor? = nil
-    private var deviceInfo: DeviceInfo? = nil
-    private var deviceCallbacks: Array<DeviceCallback> = []
+    private var appId: String
+    private var isProd: Bool
+    private var params: Dictionary<String, String>
+    private var customIdentifier: String
+    private var deviceInfoExtractor: DeviceInfoExtractor?
+    private var deviceInfo: DeviceInfo?
+    private var deviceCallbacks: Array<DeviceCallback>
     
     static let instance = DeviceInfoClient()
     
-    init(){
+    init(
+        appId: String = "",
+        isProd: Bool = false,
+        params: Dictionary<String,String> = [:],
+        customIdentifier: String = "",
+        deviceInfoExtractor: DeviceInfoExtractor? = nil,
+        deviceInfo: DeviceInfo? = nil,
+        deviceCallbacks: Array<DeviceCallback> = []
+    ) {
+        self.appId = appId
+        self.isProd = isProd
+        self.params = params
+        self.customIdentifier = customIdentifier
+        self.deviceInfoExtractor = deviceInfoExtractor
+        self.deviceInfo = deviceInfo
+        self.deviceCallbacks = deviceCallbacks
+        
         DispatchQueue.global(qos: .background).async {
             self.collectDeviceInfo()
         }

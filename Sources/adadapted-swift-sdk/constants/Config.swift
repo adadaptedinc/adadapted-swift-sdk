@@ -5,7 +5,7 @@
 import Foundation
 
 class Config {
-    private var isProd = false
+    private static var isProd = false
 
     static let LIBRARY_VERSION: String = "1.0.0"
     static let LOG_TAG = "ADADAPTED_SWIFT_SDK"
@@ -33,21 +33,21 @@ class Config {
     static let AD_ID_PARAM = "aid"
     static let UDID_PARAM = "uid"
     
-    func getInitSessionUrl() { getAdServerFormattedUrl(path: Config.SESSION_INIT_PATH) }
-    func getRefreshAdsUrl() { getAdServerFormattedUrl(path: Config.REFRESH_ADS_PATH) }
-    func getAdEventsUrl() { getAdServerFormattedUrl(path: Config.AD_EVENTS_PATH) }
-    func getRetrieveInterceptsUrl() { getAdServerFormattedUrl(path: Config.RETRIEVE_INTERCEPTS_PATH) }
-    func getInterceptEventsUrl() { getAdServerFormattedUrl(path: Config.INTERCEPT_EVENTS_PATH) }
-    func getSdkEventsUrl() { getTrackingServerFormattedUrl(path: Config.EVENT_TRACK_PATH) }
-    func getSdkErrorsUrl() { getTrackingServerFormattedUrl(path: Config.ERROR_TRACK_PATH) }
-    func getPickupPayloadsUrl() { getPayloadServerFormattedUrl(path: Config.PAYLOAD_PICKUP_PATH) }
-    func getTrackingPayloadUrl() { getPayloadServerFormattedUrl(path: Config.PAYLOAD_TRACK_PATH) }
+    static func getInitSessionUrl() -> URL { getAdServerFormattedUrl(path: Config.SESSION_INIT_PATH) }
+    static func getRefreshAdsUrl() -> URL { getAdServerFormattedUrl(path: Config.REFRESH_ADS_PATH) }
+    static func getAdEventsUrl() -> URL { getAdServerFormattedUrl(path: Config.AD_EVENTS_PATH) }
+    static func getRetrieveInterceptsUrl() -> URL { getAdServerFormattedUrl(path: Config.RETRIEVE_INTERCEPTS_PATH) }
+    static func getInterceptEventsUrl() -> URL { getAdServerFormattedUrl(path: Config.INTERCEPT_EVENTS_PATH) }
+    static func getSdkEventsUrl() -> URL { getTrackingServerFormattedUrl(path: Config.EVENT_TRACK_PATH) }
+    static func getSdkErrorsUrl() -> URL { getTrackingServerFormattedUrl(path: Config.ERROR_TRACK_PATH) }
+    static func getPickupPayloadsUrl() -> URL { getPayloadServerFormattedUrl(path: Config.PAYLOAD_PICKUP_PATH) }
+    static func getTrackingPayloadUrl() -> URL { getPayloadServerFormattedUrl(path: Config.PAYLOAD_TRACK_PATH) }
     
-    func initialize(useProd: Bool) {
-        isProd = useProd
-    }
+    static func initialize(useProd: Bool) {
+            isProd = useProd
+        }
     
-    func getAdReportingHost() -> String {
+    static func getAdReportingHost() -> String {
         if(isProd) {
             return Prod.AD_REPORTING_URL
         } else {
@@ -55,7 +55,7 @@ class Config {
         }
     }
     
-    private func getAdServerHost() -> String {
+    static private func getAdServerHost() -> String {
         if(isProd) {
             return Prod.AD_SERVER_HOST
         } else {
@@ -63,7 +63,7 @@ class Config {
         }
     }
     
-    private func getEventCollectorHost() -> String {
+    static private func getEventCollectorHost() -> String {
         if(isProd) {
             return Prod.EVENT_COLLECTOR_HOST
         } else {
@@ -71,7 +71,7 @@ class Config {
         }
     }
     
-    private func getPayloadHost() -> String {
+    static private func getPayloadHost() -> String {
         if(isProd) {
             return Prod.PAYLOAD_HOST
         } else {
@@ -79,26 +79,30 @@ class Config {
         }
     }
     
-    private func getAdServerFormattedUrl(path: String) -> String {
-        return getAdServerHost() + Config.AD_SERVER_VERSION + path
+    static private func getAdServerFormattedUrl(path: String) -> URL {
+        let urlString = getAdServerHost() + Config.AD_SERVER_VERSION + path
+        return URL(string: urlString)!
+    }
+
+    
+    static private func getTrackingServerFormattedUrl(path: String) -> URL {
+        let urlString = getEventCollectorHost() + Config.TRACKING_SERVER_VERSION + path
+        return URL(string: urlString)!
     }
     
-    private func getTrackingServerFormattedUrl(path: String) -> String {
-        return getEventCollectorHost() + Config.TRACKING_SERVER_VERSION + path
+    static private func getPayloadServerFormattedUrl(path: String) -> URL {
+        let urlString = getPayloadHost() + Config.PAYLOAD_SERVER_VERSION + path
+        return URL(string: urlString)!
     }
     
-    private func getPayloadServerFormattedUrl(path: String) -> String {
-        return getPayloadHost() + Config.PAYLOAD_SERVER_VERSION + path
-    }
-    
-    internal class Prod {
+    private struct Prod {
         static let AD_SERVER_HOST = "https://ads.adadapted.com"
         static let EVENT_COLLECTOR_HOST = "https://ec.adadapted.com"
         static let PAYLOAD_HOST = "https://payload.adadapted.com"
         static let AD_REPORTING_URL = "https://feedback.add-it.io/?"
     }
     
-    internal class Sand {
+    private struct Sand {
         static let AD_SERVER_HOST = "https://sandbox.adadapted.com"
         static let EVENT_COLLECTOR_HOST = "https://sandec.adadapted.com"
         static let PAYLOAD_HOST = "https://sandpayload.adadapted.com"

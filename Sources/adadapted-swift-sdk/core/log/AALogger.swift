@@ -8,19 +8,35 @@ import Logging
 class AALogger {
     static let logger = Logger(label: "adadapted-swift-sdk")
     static let instance = AALogger()
+    private static var isDebugLoggingEnabled = false
+    private static var disableLogging = false
+    
+    static func enableDebugLogging() {
+        isDebugLoggingEnabled = true
+    }
+    
+    static func disableAllLogging() {
+        disableLogging = true
+    }
     
     static func logError(message: String) {
-        var msg = Logger.Message(stringLiteral: message)
-        AALogger.logger.error(msg)
+        if !disableLogging {
+            var msg = Logger.Message(stringLiteral: message)
+            AALogger.logger.error(msg)
+        }
     }
     
     static func logInfo(message: String) {
-        var msg = Logger.Message(stringLiteral: message)
-        AALogger.logger.info(msg)
+        if !disableLogging {
+            var msg = Logger.Message(stringLiteral: message)
+            AALogger.logger.info(msg)
+        }
     }
     
     static func logDebug(message: String) {
-        var msg = Logger.Message(stringLiteral: message)
-        AALogger.logger.debug(msg)
+        if isDebugLoggingEnabled && !disableLogging {
+            var msg = Logger.Message(stringLiteral: message)
+            AALogger.logger.debug(msg)
+        }
     }
 }
