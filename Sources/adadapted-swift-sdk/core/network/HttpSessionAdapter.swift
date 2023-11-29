@@ -48,14 +48,48 @@ class HttpSessionAdapter: SessionAdapter {
             }
             
             do {
+                let checkme = String(data: data, encoding: .utf8) //remove me
+                
+                let jsonData = checkme?.data(using: .utf8)!
+                
                 let session = try JSONDecoder().decode(Session.self, from: data)
                 var sessionWithDeviceInfo = session
                 sessionWithDeviceInfo.deviceInfo = deviceInfo
                 listener.onSessionInitialized(session: sessionWithDeviceInfo)
+            } catch let DecodingError.keyNotFound(key, context) {
+                AALogger.logError(message: "Key '\(key)' not found:" + context.debugDescription)
+                listener.onSessionInitializeFailed()
+            } catch let DecodingError.valueNotFound(value, context) {
+                AALogger.logError(message: "Value '\(value)' not found:" + context.debugDescription)
+                listener.onSessionInitializeFailed()
+            } catch let DecodingError.typeMismatch(type, context)  {
+                AALogger.logError(message: "Type '\(type)' mismatch:" + context.debugDescription)
+                listener.onSessionInitializeFailed()
             } catch {
                 AALogger.logError(message: "Failed to decode response: \(error)")
                 listener.onSessionInitializeFailed()
             }
+            
+//for debugging temp
+//            if let data = data {
+//                do {
+//                    // process data
+//                } catch let DecodingError.dataCorrupted(context) {
+//                    print(context)
+//                } catch let DecodingError.keyNotFound(key, context) {
+//                    print("Key '\(key)' not found:", context.debugDescription)
+//                    print("codingPath:", context.codingPath)
+//                } catch let DecodingError.valueNotFound(value, context) {
+//                    print("Value '\(value)' not found:", context.debugDescription)
+//                    print("codingPath:", context.codingPath)
+//                } catch let DecodingError.typeMismatch(type, context)  {
+//                    print("Type '\(type)' mismatch:", context.debugDescription)
+//                    print("codingPath:", context.codingPath)
+//                } catch {
+//                    print("error: ", error)
+//                }
+//            }
+            
         }
         task.resume()
     }

@@ -4,7 +4,7 @@
 
 import Foundation
 
-protocol AddToListContent {
+public protocol AddToListContent {
     func acknowledge()
     func itemAcknowledge(item: AddToListItem)
     func failed(message: String)

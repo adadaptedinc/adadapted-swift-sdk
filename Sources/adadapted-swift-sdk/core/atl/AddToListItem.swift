@@ -4,7 +4,7 @@
 
 import Foundation
 
-struct AddToListItem: Codable {
+public struct AddToListItem: Codable {
     let trackingId: String
     let title: String
     let brand: String

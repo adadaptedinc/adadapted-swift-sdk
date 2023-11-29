@@ -4,79 +4,79 @@
 
 import Foundation
 
-class AdAdapted: SessionListener {
-    enum Env {
+public class AdAdapted {
+    public enum Env {
         case PROD
         case DEV
     }
     
-    private var hasStarted = false
-    private var apiKey: String = ""
-    private var isProd = false
-    private var customIdentifier: String = ""
-    private var isKeywordInterceptEnabled = false
-    private var isPayloadEnabled = false
-    private var eventListener: AaSdkEventListener!
-    private var contentListener: AaSdkAdditContentListener!
-    var sessionListener: AaSdkSessionListener!
-    let params: Dictionary<String, String> = [:]
+    private static var hasStarted = false
+    private static var apiKey: String = ""
+    private static var isProd = false
+    private static var customIdentifier: String = ""
+    private static var isKeywordInterceptEnabled = false
+    private static var isPayloadEnabled = false
+    private static var eventListener: AaSdkEventListener!
+    private static var contentListener: AaSdkAdditContentListener!
+    static var sessionListener: AaSdkSessionListener!
+    static let params: Dictionary<String, String> = [:]
     
-    func withAppId(key: String) -> AdAdapted {
+    public static func withAppId(key: String) -> AdAdapted.Type {
         self.apiKey = key
         return self
     }
     
-    func inEnv(env: Env) -> AdAdapted {
+    public static func inEnv(env: Env) -> AdAdapted.Type {
         isProd = env == Env.PROD
         return self
     }
     
-    func setSdkSessionListener(listener: AaSdkSessionListener) -> AdAdapted {
+    public static func setSdkSessionListener(listener: AaSdkSessionListener) -> AdAdapted.Type {
         sessionListener = listener
         return self
     }
     
-    func enableKeywordIntercept(value: Bool) -> AdAdapted {
+    public static func enableKeywordIntercept(value: Bool) -> AdAdapted.Type {
         isKeywordInterceptEnabled = value
         return self
     }
     
-    func enablePayloads(value: Bool) -> AdAdapted {
+    public static func enablePayloads(value: Bool) -> AdAdapted.Type {
         isPayloadEnabled = value
         return self
     }
     
-    func setSdkEventListener(listener: AaSdkEventListener) -> AdAdapted {
+    public static func setSdkEventListener(listener: AaSdkEventListener) -> AdAdapted.Type {
         eventListener = listener
         return self
     }
     
-    func setSdkAdditContentListener(listener: AaSdkAdditContentListener) -> AdAdapted {
+    public static func setSdkAdditContentListener(listener: AaSdkAdditContentListener) -> AdAdapted.Type {
         contentListener = listener
         return self
     }
     
-    func enableDebugLogging() -> AdAdapted {
+    public static func enableDebugLogging() -> AdAdapted.Type {
         AALogger.enableDebugLogging()
         return self
     }
     
-    func setCustomIdentifier(identifier: String) -> AdAdapted {
+    public static func setCustomIdentifier(identifier: String) -> AdAdapted.Type {
         customIdentifier = identifier
         return self
     }
     
-    func disableAdTracking() -> AdAdapted {
+    public static func disableAdTracking() -> AdAdapted.Type {
         setAdTracking(value: true)
         return self
     }
     
-    func enableAdTracking() -> AdAdapted {
+    public static func enableAdTracking() -> AdAdapted.Type {
         setAdTracking(value: false)
         return self
     }
     
-    func start() {
+    public static func start() {
         if apiKey.isEmpty {
             AALogger.logError(message: "The AdAdapted Api Key is missing or NULL")
         }
@@ -102,7 +102,8 @@ class AdAdapted: SessionListener {
             }
         }
         
-        SessionClient.getInstance().start(listener: self)
+        let startupListener = StartupListener(sessionListener: sessionListener)
+        SessionClient.getInstance().start(listener: startupListener)
         
         if isKeywordInterceptEnabled {
             KeywordInterceptMatcher.instance.match(constraint: "INIT") //init the matcher
@@ -110,31 +111,13 @@ class AdAdapted: SessionListener {
         AALogger.logInfo(message: "AdAdapted Android SDK \(Config.LIBRARY_VERSION) initialized.")
     }
     
-    func onSessionAvailable(session: Session) {
-        sessionListener?.onHasAdsToServe(hasAds: session.hasActiveCampaigns(), availableZoneIds: session.getZonesWithAds())
-        if session.hasActiveCampaigns() && session.getZonesWithAds().isEmpty {
-            AALogger.logError(message: "The session has ads to show but none were loaded properly. Is an obfuscation tool obstructing the AdAdapted Library?")
-        }
-    }
-    
-    func onAdsAvailable(session: Session) {
-        sessionListener?.onHasAdsToServe(hasAds: session.hasActiveCampaigns(), availableZoneIds: session.getZonesWithAds())
-    }
-    
-    func onSessionInitFailed() {
-        sessionListener?.onHasAdsToServe(hasAds: false, availableZoneIds: [])
-    }
-    
-    func onPublishEvents() {}
-    func onSessionExpired() {}
-    
-    private func setAdTracking(value: Bool) {
+    private static func setAdTracking(value: Bool) {
         let defaults = UserDefaults.standard
         defaults.set(value, forKey: Config.AASDK_PREFS_TRACKING_DISABLED_KEY)
         defaults.synchronize()
     }
     
-    private func setupClients() {
+    private static func setupClients() {
         Config.initialize(useProd: isProd)
         
         let deviceInfoExtractor = DeviceInfoExtractor()

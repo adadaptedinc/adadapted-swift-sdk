@@ -36,7 +36,9 @@ class SessionClient: SessionAdapterListener {
     private func performAddListener(listener: SessionListener) {
         sessionListeners.insert(listener, at: 0)
         if let currentSession = self.currentSession {
-            listener.onSessionAvailable(session: currentSession)
+            if(!currentSession.id.isEmpty) {
+                listener.onSessionAvailable(session: currentSession)
+            }
         }
     }
     

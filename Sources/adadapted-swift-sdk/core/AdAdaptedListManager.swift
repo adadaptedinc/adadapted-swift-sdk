@@ -4,11 +4,11 @@
 
 import Foundation
 
-class AdAdaptedListManager {
-    let LIST_NAME = "list_name"
-    let ITEM_NAME = "item_name"
+public class AdAdaptedListManager {
+    static let LIST_NAME = "list_name"
+    static let ITEM_NAME = "item_name"
     
-    func itemAddedToList(item: String, list: String = "") {
+    public static func itemAddedToList(item: String, list: String = "") {
         if (item.isEmpty) {
             return
         }
@@ -16,7 +16,7 @@ class AdAdaptedListManager {
         AALogger.logInfo(message: "\(item) was added to \(list)")
     }
     
-    func itemCrossedOffList(item: String, list: String = "") {
+    public static func itemCrossedOffList(item: String, list: String = "") {
         if (item.isEmpty) {
             return
         }
@@ -24,7 +24,7 @@ class AdAdaptedListManager {
         AALogger.logInfo(message: "\(item) was crossed off \(list)")
     }
     
-    func itemDeletedFromList(item: String, list: String = "") {
+    public static func itemDeletedFromList(item: String, list: String = "") {
         if (item.isEmpty) {
             return
         }
@@ -32,7 +32,7 @@ class AdAdaptedListManager {
         AALogger.logInfo(message: "\(item) was deleted from \(list)")
     }
     
-    private func generateListParams(list: String, item: String) -> Dictionary<String, String> {
+    private static func generateListParams(list: String, item: String) -> Dictionary<String, String> {
         var params = Dictionary<String, String>()
         params[LIST_NAME] = list
         params[ITEM_NAME] = item

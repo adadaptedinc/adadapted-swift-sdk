@@ -4,6 +4,6 @@
 
 import Foundation
 
-protocol AaSdkAdditContentListener {
+public protocol AaSdkAdditContentListener {
     func onContentAvailable(content: AddToListContent)
 }

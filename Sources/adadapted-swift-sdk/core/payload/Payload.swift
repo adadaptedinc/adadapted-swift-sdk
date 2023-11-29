@@ -5,13 +5,13 @@
 import Foundation
 
 struct Payload: Codable {
-    let payloadId: String
+    var payloadId: String
     let payloadMessage: String
     let payloadImage: String
     let campaignId: String
     let appId: String
     let expireSeconds: Int
-    let detailedListItems: Array<AddToListItem>
+    let detailedListItems: [AddToListItem]
     
     enum CodingKeys: String, CodingKey {
         case payloadId = "payload_id"
@@ -21,6 +21,17 @@ struct Payload: Codable {
         case appId = "app_id"
         case expireSeconds = "expire_seconds"
         case detailedListItems = "detailed_list_items"
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.payloadId = try container.decodeIfPresent(String.self, forKey: .payloadId) ?? ""
+        self.payloadMessage = try container.decodeIfPresent(String.self, forKey: .payloadMessage) ?? ""
+        self.payloadImage = try container.decodeIfPresent(String.self, forKey: .payloadImage) ?? ""
+        self.campaignId = try container.decodeIfPresent(String.self, forKey: .campaignId) ?? ""
+        self.appId = try container.decodeIfPresent(String.self, forKey: .appId) ?? ""
+        self.expireSeconds = try container.decodeIfPresent(Int.self, forKey: .expireSeconds) ?? 0
+        self.detailedListItems = try container.decodeIfPresent([AddToListItem].self, forKey: .detailedListItems) ?? []
     }
     
     init(payloadId: String = "", payloadMessage: String = "", payloadImage: String = "", campaignId: String = "", appId: String = "", expireSeconds: Int = 0, detailedListItems: Array<AddToListItem> = []) {

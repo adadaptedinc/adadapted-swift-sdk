@@ -4,6 +4,6 @@
 
 import Foundation
 
-protocol AaSdkEventListener {
+public protocol AaSdkEventListener {
     func onNextAdEvent(zoneId: String, eventType: String)
 }

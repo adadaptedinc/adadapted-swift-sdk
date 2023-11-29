@@ -4,7 +4,7 @@
 
 import Foundation
 
-struct Session: Codable {
+public struct Session: Codable {
     let id: String
     private let willServeAds: Bool = false
     let hasAds: Bool

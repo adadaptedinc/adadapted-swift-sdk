@@ -4,6 +4,6 @@
 
 import Foundation
 
-protocol AaSdkSessionListener {
+public protocol AaSdkSessionListener {
     func onHasAdsToServe(hasAds: Bool, availableZoneIds: Array<String>)
 }

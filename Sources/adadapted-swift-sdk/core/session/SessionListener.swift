@@ -4,7 +4,7 @@
 
 import Foundation
 
-protocol SessionListener: AnyObject {
+public protocol SessionListener: AnyObject {
     func onPublishEvents()
     func onSessionAvailable(session: Session)
     func onAdsAvailable(session: Session)

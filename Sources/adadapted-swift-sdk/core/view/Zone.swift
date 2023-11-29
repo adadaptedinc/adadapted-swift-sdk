@@ -9,32 +9,24 @@ struct Zone: Codable {
     let ads: Array<Ad>
     let portHeight: Int64
     let portWidth: Int64
-    let landHeight: Int64
-    let landWidth: Int64
     
     enum CodingKeys: String, CodingKey {
         case id
         case ads
         case portHeight = "port_height"
         case portWidth = "port_width"
-        case landHeight = "land_height"
-        case landWidth = "land_width"
     }
     
     init(
         id: String = "",
         ads: Array<Ad> = [],
         portHeight: Int64 = 0,
-        portWidth: Int64 = 0,
-        landHeight: Int64 = 0,
-        landWidth: Int64 = 0
+        portWidth: Int64 = 0
     ) {
         self.id = id
         self.ads = ads
         self.portHeight = portHeight
         self.portWidth = portWidth
-        self.landHeight = landHeight
-        self.landWidth = landWidth
     }
     
     //    val dimensions by lazy {
