@@ -5,14 +5,14 @@
 import Foundation
 
 public struct AddToListItem: Codable {
-    let trackingId: String
-    let title: String
-    let brand: String
-    let category: String
-    let productUpc: String
-    let retailerSku: String
-    let retailerID: String
-    let productImage: String
+    public let trackingId: String
+    public let title: String
+    public let brand: String
+    public let category: String
+    public let productUpc: String
+    public let retailerSku: String
+    public let retailerID: String
+    public let productImage: String
     
     enum CodingKeys: String, CodingKey {
         case trackingId = "tracking_id"

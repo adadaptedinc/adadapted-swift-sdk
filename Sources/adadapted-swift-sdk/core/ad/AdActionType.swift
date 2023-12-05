@@ -4,7 +4,7 @@
 
 import Foundation
 
-class AdActionType {
+enum AdActionType {
     static let CONTENT = "c"
     static let CONTENT_POPUP = "cp"
     static let POPUP = "p"

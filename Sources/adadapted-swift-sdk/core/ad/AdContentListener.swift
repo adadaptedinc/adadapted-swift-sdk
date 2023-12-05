@@ -4,6 +4,6 @@
 
 import Foundation
 
-protocol AdContentListener : AnyObject {
+public protocol AdContentListener : AnyObject {
     func onContentAvailable(zoneId: String, content: AddToListContent)
 }
