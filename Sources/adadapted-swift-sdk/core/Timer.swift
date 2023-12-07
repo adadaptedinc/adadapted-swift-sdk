@@ -3,66 +3,37 @@
 //
 
 import Foundation
-
-//class Timer {
-//    private var timer: DispatchSourceTimer?
-//    private var timedFunc: () -> Void
-//    
-//    init(timedBackgroundFunc: @escaping () -> Void) {
-//        self.timedFunc = timedBackgroundFunc
-//    }
-//
-//    func startTimer() {
-//        let queue = DispatchQueue(label: Bundle.main.bundleIdentifier! + ".timer")
-//        timer = DispatchSource.makeTimerSource(queue: queue)
-//        timer!.schedule(deadline: .now(), repeating: .seconds(5))
-//        timer!.setEventHandler { [weak self] in
-//            DispatchQueue.main.async {
-//                self?.timedFunc()
-//            }
-//        }
-//        timer!.resume()
-//    }
-//
-//    func stopTimer() {
-//        timer?.cancel()
-//        timer = nil
-//    }
-//}
+import Dispatch
 
 class Timer {
-    private var timer: Foundation.Timer?
-    private let timedBackgroundFunc: () -> Void
-    private let repeatMillis: TimeInterval
-    private let delayMillis: TimeInterval
+    private var dispatchTimer: DispatchSourceTimer?
+    private var repeatInterval: DispatchTimeInterval
+    private var delay: DispatchTimeInterval
+    private var timerAction: (() -> Void)?
 
-    init(timedBackgroundFunc: @escaping () -> Void, repeatMillis: TimeInterval, delayMillis: TimeInterval = 0) {
-        self.timedBackgroundFunc = timedBackgroundFunc
-        self.repeatMillis = repeatMillis
-        self.delayMillis = delayMillis
+    init(repeatMillis: Int, delayMillis: Int = 0, timerAction: @escaping () -> Void) {
+        self.repeatInterval = .milliseconds(repeatMillis)
+        self.delay = .milliseconds(delayMillis)
+        self.timerAction = timerAction
+    }
+
+    private func startDispatchTimer() {
+        let queue = DispatchQueue.global(qos: .background)
+        dispatchTimer = DispatchSource.makeTimerSource(queue: queue)
+        dispatchTimer?.schedule(deadline: .now() + delay, repeating: repeatInterval)
+        dispatchTimer?.setEventHandler { [weak self] in
+            self?.timerAction?()
+        }
+        dispatchTimer?.resume()
     }
 
     func startTimer() {
-        if timer == nil {
-            let initialDelay = delayMillis /// 1000.0
-            let repeatInterval = repeatMillis /// 1000.0
-
-            timer = Foundation.Timer.scheduledTimer(
-                timeInterval: initialDelay,
-                target: self,
-                selector: #selector(timerFired),
-                userInfo: nil,
-                repeats: true
-            )
-        }
+        stopTimer()
+        startDispatchTimer()
     }
 
-    func cancelTimer() {
-        timer?.invalidate()
-        timer = nil
-    }
-
-    @objc private func timerFired() {
-        timedBackgroundFunc()
+    func stopTimer() {
+        dispatchTimer?.cancel()
+        dispatchTimer = nil
     }
 }

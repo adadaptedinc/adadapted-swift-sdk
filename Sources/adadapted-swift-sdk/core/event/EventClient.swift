@@ -111,14 +111,6 @@ class EventClient: SessionListener {
         return hasInstance
     }
     
-    static func onPublishEvents() {
-        DispatchQueue.global(qos: .background).async {
-            performPublishAdEvents()
-            performPublishSdkEvents()
-            performPublishSdkErrors()
-        }
-    }
-    
     func onSessionAvailable(session: Session) {
         EventClient.session = session
         EventClient.trackGAIDAvailability(session: session)

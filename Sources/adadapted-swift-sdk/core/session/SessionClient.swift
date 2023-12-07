@@ -21,6 +21,8 @@ class SessionClient: SessionAdapterListener {
     private var eventTimerRunning: Bool
     private var hasActiveInstance: Bool
     private var zoneContext: ZoneContext
+    private var eventTimer: Timer?
+    private var refreshTimer: Timer?
     
     init() {
         currentSession = Session()
@@ -132,10 +134,14 @@ class SessionClient: SessionAdapterListener {
         pollingTimerRunning = true
         AALogger.logInfo(message: "Starting Ad polling timer.")
         
-        let refreshTimer =  Timer(timedBackgroundFunc: {self.performRefresh()},
-                                  repeatMillis: TimeInterval(currentSession!.refreshTime),
-                                  delayMillis: TimeInterval(currentSession!.refreshTime))
-        refreshTimer.startTimer()
+        refreshTimer =  Timer(
+            repeatMillis: currentSession!.refreshTime,
+            delayMillis: currentSession!.refreshTime,
+            timerAction: {
+                self.performRefresh()
+            }
+        )
+        refreshTimer?.startTimer()
     }
     
     private func startPublishTimer() {
@@ -144,12 +150,14 @@ class SessionClient: SessionAdapterListener {
         }
         eventTimerRunning = true
         
-        let eventTimer = Timer(
-            timedBackgroundFunc: { self.notifyPublishEvents() },
-            repeatMillis: TimeInterval(Config.DEFAULT_EVENT_POLLING),
-            delayMillis: TimeInterval(Config.DEFAULT_EVENT_POLLING)
+        eventTimer = Timer(
+            repeatMillis: Config.DEFAULT_EVENT_POLLING,
+            delayMillis: Config.DEFAULT_EVENT_POLLING,
+            timerAction: {
+                self.notifyPublishEvents()
+            }
         )
-        eventTimer.startTimer()
+        eventTimer?.startTimer()
     }
     
     private func notifyPublishEvents() {

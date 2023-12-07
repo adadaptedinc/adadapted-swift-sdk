@@ -173,11 +173,12 @@ class AdZonePresenter: SessionListener {
         if !zoneLoaded || timerRunning {
             return
         }
-        let timerDelay = Double(currentAd.refreshTime) * 1000.0
+        let timerDelay = currentAd.refreshTime * 1000
         timerRunning = true
-        timer = Timer(timedBackgroundFunc: {
+        timer = Timer(repeatMillis: timerDelay, delayMillis: timerDelay, timerAction: {
             self.setNextAd()
-        },repeatMillis: timerDelay)
+        })
+        timer?.startTimer()
     }
     
     private func cycleToNextAdIfPossible() {
@@ -188,9 +189,11 @@ class AdZonePresenter: SessionListener {
     }
     
     private func restartTimer() {
-        timer?.cancelTimer()
-        timerRunning = false
-        startZoneTimer()
+        if (timer != nil) {
+            timer?.stopTimer()
+            timerRunning = false
+            startZoneTimer()
+        }
     }
     
     private func handleContentAction(ad: Ad) {
