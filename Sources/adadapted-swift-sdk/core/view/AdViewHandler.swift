@@ -12,7 +12,7 @@ class AdViewHandler {
     }
     
     func handlePopup(ad: Ad) {
-        //TODO
+        AaPopupManager.shared.displayWebViewPopup(ad: ad)
     }
     
     func handleReportAd(adId: String, udid: String) {
