@@ -4,33 +4,36 @@
 
 import Foundation
 
-class KeywordInterceptMatcher : SessionListener, InterceptListener {
+public class KeywordInterceptMatcher : SessionListener, InterceptListener {
     
     private var intercept: Intercept = Intercept()
     private var loaded = false
     private var hasInstance = false
+    private var currentSuggestions: Array<Suggestion> = []
     
-    static let instance = KeywordInterceptMatcher()
+    public static let instance = KeywordInterceptMatcher()
     
     init() {
         SessionClient.getInstance().addListener(listener: self)
     }
     
     private func matchKeyword(constraint: String) -> Array<Suggestion> {
-        var suggestions: Array<Suggestion> = []
+        currentSuggestions = []
         let input = constraint
         if !isReadyToMatch(input: input) {
-            return suggestions
+            return currentSuggestions
         }
+        var test = intercept.getTerms()
+        
         for interceptTerm in intercept.getTerms() {
             if interceptTerm.searchTerm.starts(with: input) {
-                fileTerm(term: interceptTerm, input: input, suggestions: &suggestions)
+                fileTerm(term: interceptTerm, input: input, suggestions: &currentSuggestions)
             }
         }
-        if suggestions.isEmpty {
+        if currentSuggestions.isEmpty {
             SuggestionTracker.suggestionNotMatched(searchId: intercept.searchId, userInput: constraint)
         }
-        return suggestions
+        return currentSuggestions
     }
     
     private func fileTerm(term: Term?, input: String, suggestions: inout Array<Suggestion>) {
@@ -59,7 +62,7 @@ class KeywordInterceptMatcher : SessionListener, InterceptListener {
         loaded = true
     }
     
-    func match(constraint: String) -> Array<Suggestion> {
+    public func match(constraint: String) -> Array<Suggestion> {
         if hasInstance {
             return matchKeyword(constraint: constraint)
         } else {
@@ -72,14 +75,20 @@ class KeywordInterceptMatcher : SessionListener, InterceptListener {
         }
     }
     
-    func onSessionAvailable(session: Session) {
+    public func suggestionWasSelected(suggestionName: String) {
+        if var selectedSuggestion = currentSuggestions.first(where: { $0.name == suggestionName }) {
+            selectedSuggestion.wasSelected()
+        }
+    }
+    
+    public func onSessionAvailable(session: Session) {
         if (!session.id.isEmpty) {
             InterceptClient.getInstance().initialize(session: session, interceptListener: self)
         }
     }
     
-    func onPublishEvents() {}
-    func onAdsAvailable(session: Session) {}
-    func onSessionExpired() {}
-    func onSessionInitFailed() {}
+    public func onPublishEvents() {}
+    public func onAdsAvailable(session: Session) {}
+    public func onSessionExpired() {}
+    public func onSessionInitFailed() {}
 }

@@ -49,6 +49,8 @@ class HttpInterceptAdapter: InterceptAdapter {
             
             if let data = data {
                 do {
+                    let checkme = String(data: data, encoding: .utf8) //TODO remove me after other call
+                    
                     let intercept = try JSONDecoder().decode(Intercept.self, from: data)
                     adapterListener.onSuccess(intercept: intercept)
                 } catch {

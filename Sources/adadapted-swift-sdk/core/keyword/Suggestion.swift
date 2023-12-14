@@ -4,14 +4,14 @@
 
 import Foundation
 
-struct Suggestion: Codable {
-    let searchId: String
-    let termId: String
-    let name: String
-    let icon: String
-    let tagline: String
-    var presented: Bool
-    var selected: Bool
+public struct Suggestion: Codable {
+    public let searchId: String
+    public let termId: String
+    public let name: String
+    public let icon: String
+    public let tagline: String
+    public var presented: Bool
+    public var selected: Bool
     private let term: Term
     
     init(searchId: String, term: Term) {
@@ -25,14 +25,14 @@ struct Suggestion: Codable {
         self.term = term
     }
     
-    mutating func wasPresented() {
+    public mutating func wasPresented() {
         if (!presented) {
             presented = true
             SuggestionTracker.suggestionPresented(searchId: searchId, termId: termId, replacement: name)
         }
     }
     
-    mutating func wasSelected() {
+    public mutating func wasSelected() {
         if (!selected) {
             selected = true
             SuggestionTracker.suggestionSelected(searchId: searchId, termId: termId, replacement: name)
