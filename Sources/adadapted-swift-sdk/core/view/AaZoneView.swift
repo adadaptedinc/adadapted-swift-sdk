@@ -102,8 +102,10 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
     // MARK: - AdZonePresenterListener
     
     func onZoneAvailable(zone: Zone) {
-        webView.frame = bounds
-        addSubview(reportButton)
+        DispatchQueue.main.async {
+            self.webView.frame = self.bounds
+            self.addSubview(self.reportButton)
+        }
         notifyClientZoneHasAds(hasAds: zone.hasAds())
     }
     

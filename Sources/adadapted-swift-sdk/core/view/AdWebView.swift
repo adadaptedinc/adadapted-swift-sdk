@@ -42,7 +42,9 @@ class AdWebView: WKWebView, WKNavigationDelegate, UIGestureRecognizerDelegate {
         loaded = false
         if let url = URL(string: ad.url) {
             let request = URLRequest(url: url)
-            load(request)
+            DispatchQueue.main.async {
+                self.load(request)
+            }
         }
     }
 
