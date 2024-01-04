@@ -14,21 +14,16 @@ class PayloadClient {
     private static var isDeeplinkInProgress = false
     
     private static func performPickupPayload(callback: @escaping ([AdditContent]) -> Void) {
-        var content: [AdditContent] = []
-        
         let deviceCallbackHandler = DeviceCallbackHandler()
         deviceCallbackHandler.callback = { deviceInfo in
             EventClient.trackSdkEvent(name: EventStrings.PAYLOAD_PICKUP_ATTEMPT)
             DispatchQueue.global(qos: .background).async {
                 adapter?.pickup(deviceInfo: deviceInfo) { retrievedContent in
-                    content = retrievedContent
+                    callback(retrievedContent)
                 }
             }
         }
         DeviceInfoClient.getDeviceInfo(deviceCallback: deviceCallbackHandler)
-        DispatchQueue.global(qos: .background).async {
-            callback(content)
-        }
     }
     
     private static func trackPayload(content: AdditContent, result: String) {

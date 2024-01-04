@@ -49,7 +49,6 @@ class HttpSessionAdapter: SessionAdapter {
             
             do {
                 let checkme = String(data: data, encoding: .utf8) //TODO remove me after other call checks confirmed
-                
                 let jsonData = checkme?.data(using: .utf8)!
                 
                 let session = try JSONDecoder().decode(Session.self, from: data)
