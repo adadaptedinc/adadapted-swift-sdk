@@ -7,7 +7,7 @@ import Foundation
 class PayloadEvent {
     let payloadId: String
     let status: String
-    let timestamp: Int64 = Int64(NSDate().timeIntervalSince1970)
+    let timestamp: Int = Int(NSDate().timeIntervalSince1970)
     
     init(payloadId: String, status: String) {
         self.payloadId = payloadId

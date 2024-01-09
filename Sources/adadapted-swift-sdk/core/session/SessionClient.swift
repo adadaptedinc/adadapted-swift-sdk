@@ -70,13 +70,14 @@ class SessionClient: SessionAdapterListener {
     
     private func performInitialize(deviceInfo: DeviceInfo) {
         DispatchQueue.global(qos: .background).async {
+            print("ADAPTER USED")
             self.adapter?.sendInit(deviceInfo: deviceInfo, listener: self)
         }
     }
     
     private func performRefresh(deviceInfo: DeviceInfo? = DeviceInfoClient.getCachedDeviceInfo()) {
-        if ((currentSession?.hasExpired()) != nil) {
-            AALogger.logInfo(message: "Session has expired. Expired at: \(currentSession?.expiration ?? 0)")
+        if let currentSession = currentSession, currentSession.hasExpired() {
+            AALogger.logInfo(message: "Session has expired. Expired at: \(currentSession.expiration)")
             notifySessionExpired()
             if let deviceInfo = deviceInfo {
                 performReinitialize(deviceInfo: deviceInfo)
@@ -128,7 +129,7 @@ class SessionClient: SessionAdapterListener {
     
     private func startPollingTimer() {
         if (pollingTimerRunning || currentSession == nil || currentSession!.willNotServeAds()) {
-            AALogger.logInfo(message: "Session will not serve Ads. Ignoring Ad polling timer.")
+            AALogger.logInfo(message: "Ignoring Ad polling timer.")
             return
         }
         pollingTimerRunning = true
@@ -276,6 +277,7 @@ class SessionClient: SessionAdapterListener {
     static func createInstance(adapter: SessionAdapter) {
         instance = SessionClient()
         instance.adapter = adapter
+        print("ADAPTER SET")
         instance.hasActiveInstance = true
     }
 }

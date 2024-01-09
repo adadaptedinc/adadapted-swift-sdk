@@ -8,7 +8,7 @@ struct SdkEvent: Codable {
     let type: String
     let name: String
     let params: Dictionary<String, String>
-    let timeStamp: Int64
+    let timeStamp: Int
     
     enum CodingKeys: String, CodingKey {
         case type = "event_source"
@@ -17,7 +17,7 @@ struct SdkEvent: Codable {
         case timeStamp = "event_timestamp"
     }
     
-    init(type: String, name: String, params: Dictionary<String, String>, timeStamp: Int64 = Int64(NSDate().timeIntervalSince1970)) {
+    init(type: String, name: String, params: Dictionary<String, String>, timeStamp: Int = Int(NSDate().timeIntervalSince1970)) {
         self.type = type
         self.name = name
         self.params = params

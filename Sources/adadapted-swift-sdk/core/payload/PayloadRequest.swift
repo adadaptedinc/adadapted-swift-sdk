@@ -13,7 +13,7 @@ struct PayloadRequest: Codable {
     let os: String
     let osv: String
     let sdkVersion: String
-    let timestamp: Int64
+    let timestamp: Int
     
     enum CodingKeys: String, CodingKey {
         case appId = "app_id"
@@ -27,7 +27,7 @@ struct PayloadRequest: Codable {
         case timestamp
     }
     
-    init(appId: String, udid: String, bundleId: String, bundleVersion: String, device: String, os: String, osv: String, sdkVersion: String, timestamp: Int64) {
+    init(appId: String, udid: String, bundleId: String, bundleVersion: String, device: String, os: String, osv: String, sdkVersion: String, timestamp: Int) {
         self.appId = appId
         self.udid = udid
         self.bundleId = bundleId

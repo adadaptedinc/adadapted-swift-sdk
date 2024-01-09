@@ -15,7 +15,7 @@ class PayloadRequestBuilder {
             os: deviceInfo.os,
             osv: deviceInfo.osv,
             sdkVersion: deviceInfo.sdkVersion,
-            timestamp: Int64(NSDate().timeIntervalSince1970)
+            timestamp: Int(NSDate().timeIntervalSince1970)
         )
     }
     
@@ -37,7 +37,7 @@ class PayloadRequestBuilder {
             os: deviceInfo.os,
             osv: deviceInfo.osv,
             sdkVersion: deviceInfo.sdkVersion,
-            tracking: tracking //check that timestamp is coming over correctly, was an INT64 now a STRING
+            tracking: tracking //was an Long now a STRING
         )
     }
 }

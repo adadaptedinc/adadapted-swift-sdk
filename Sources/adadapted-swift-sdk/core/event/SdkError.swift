@@ -8,7 +8,7 @@ struct SdkError: Codable {
     let code: String
     let message: String
     let params: Dictionary<String, String>
-    let timeStamp: Int64
+    let timeStamp: Int
     
     enum CodingKeys: String, CodingKey {
         case code = "error_code"
@@ -17,7 +17,7 @@ struct SdkError: Codable {
         case timeStamp = "error_timestamp"
     }
     
-    init(code: String, message: String, params: Dictionary<String, String>, timeStamp: Int64 = Int64(NSDate().timeIntervalSince1970)) {
+    init(code: String, message: String, params: Dictionary<String, String>, timeStamp: Int = Int(NSDate().timeIntervalSince1970)) {
         self.code = code
         self.message = message
         self.params = params

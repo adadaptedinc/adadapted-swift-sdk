@@ -9,7 +9,7 @@ struct AdEvent: Codable {
     let zoneId: String
     let impressionId: String
     let eventType: String
-    let createdAt: Int64
+    let createdAt: Int
     
     enum CodingKeys: String, CodingKey {
         case adId = "ad_id"
@@ -24,7 +24,7 @@ struct AdEvent: Codable {
         zoneId: String,
         impressionId: String,
         eventType: String,
-        createdAt: Int64 = Int64(NSDate().timeIntervalSince1970)
+        createdAt: Int = Int(NSDate().timeIntervalSince1970)
     ) {
         self.adId = adId
         self.zoneId = zoneId

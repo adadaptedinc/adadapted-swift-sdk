@@ -36,7 +36,7 @@ public struct Session: Codable {
     }
     
     func hasExpired() -> Bool {
-        return Int64(NSDate().timeIntervalSince1970) > expiration //TODO check this...
+        return Int(Date().timeIntervalSince1970) > expiration
     }
     
     func getZone(zoneId: String) -> Zone {

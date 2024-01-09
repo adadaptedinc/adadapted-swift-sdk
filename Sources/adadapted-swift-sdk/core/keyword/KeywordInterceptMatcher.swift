@@ -19,14 +19,13 @@ public class KeywordInterceptMatcher : SessionListener, InterceptListener {
     
     private func matchKeyword(constraint: String) -> Array<Suggestion> {
         currentSuggestions = []
-        let input = constraint
+        let input = constraint 
         if !isReadyToMatch(input: input) {
             return currentSuggestions
         }
-        var test = intercept.getTerms()
         
         for interceptTerm in intercept.getTerms() {
-            if interceptTerm.searchTerm.starts(with: input) {
+            if interceptTerm.searchTerm.lowercased().starts(with: input.lowercased()) {
                 fileTerm(term: interceptTerm, input: input, suggestions: &currentSuggestions)
             }
         }

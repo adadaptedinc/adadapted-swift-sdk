@@ -72,20 +72,20 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
         onStart()
     }
     
-    func setAdZoneVisibility(isViewable: Bool) {
+    public func setAdZoneVisibility(isViewable: Bool) {
         isAdVisible = isViewable
         presenter.onAdVisibilityChanged(isAdVisible: isAdVisible)
     }
     
-    func setAdZoneContextId(contextId: String) {
+    public func setAdZoneContextId(contextId: String) {
         presenter.setZoneContext(contextId: contextId)
     }
     
-    func clearAdZoneContext() {
+    public func clearAdZoneContext() {
         presenter.clearZoneContext()
     }
     
-    func onStop() {
+    func onStop() { //TODO do we need these? Are they auto killed?
         zoneViewListener = nil
         presenter.onDetach()
     }
@@ -150,6 +150,8 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
     private func loadWebViewAd(ad: Ad) {
         if isVisible && isAdVisible {
             webViewLoaded = true
+            webView.loadAd(ad: ad)
+        } else if isVisible && webViewLoaded {
             webView.loadAd(ad: ad)
         }
     }

@@ -51,7 +51,7 @@ class AdZonePresenter: SessionListener {
         }
     }
     
-    func onDetach() {
+    func onDetach() { //TODO test this and see if the listeners are removed
         if attached {
             attached = false
             adZonePresenterListener = nil
@@ -109,6 +109,7 @@ class AdZonePresenter: SessionListener {
         startZoneTimer()
         adStarted = true
         trackAdImpression(ad: &ad, isAdVisible: isAdVisible)
+        currentAd = ad
     }
     
     func onAdVisibilityChanged(isAdVisible: Bool) {
@@ -163,9 +164,6 @@ class AdZonePresenter: SessionListener {
         }
 
         ad.setImpressionTracked()
-        if(currentAd.id == ad.id) {
-            currentAd.setImpressionTracked() //new, iOS specific
-        }
         EventClient.trackImpression(ad: ad)
     }
     

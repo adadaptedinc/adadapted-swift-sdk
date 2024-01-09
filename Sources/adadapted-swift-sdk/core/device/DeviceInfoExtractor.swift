@@ -52,7 +52,7 @@ class DeviceInfoExtractor {
                 customIdentifier: customIdentifier,
                 scale: Float(UIScreen.main.scale),
                 bundleId: Bundle.main.bundleIdentifier ?? "",
-                bundleVersion: Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as! String, //dangerous
+                bundleVersion: Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "",
                 udid: getUdid(),
                 deviceName: UIDevice.current.name,
                 deviceUdid: getUdid(),
@@ -66,7 +66,7 @@ class DeviceInfoExtractor {
                 density: "\(UIScreen.main.scale)",
                 isAllowRetargetingEnabled: DeviceInfoExtractor.isAllowRetargetingEnabled(),
                 sdkVersion: Config.LIBRARY_VERSION,
-                createdAt: Int64(NSDate().timeIntervalSince1970),
+                createdAt: Int(NSDate().timeIntervalSince1970),
                 params: params)
         } else {
             // Fallback on earlier versions
@@ -76,7 +76,7 @@ class DeviceInfoExtractor {
                 customIdentifier: customIdentifier,
                 scale: Float(UIScreen.main.scale),
                 bundleId: Bundle.main.bundleIdentifier ?? "",
-                bundleVersion: Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as! String, //dangerous
+                bundleVersion: Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "",
                 udid: getUdid(),
                 deviceName: UIDevice.current.name,
                 deviceUdid: getUdid(),
@@ -90,9 +90,8 @@ class DeviceInfoExtractor {
                 density: "\(UIScreen.main.scale)",
                 isAllowRetargetingEnabled: DeviceInfoExtractor.isAllowRetargetingEnabled(),
                 sdkVersion: Config.LIBRARY_VERSION,
-                createdAt: Int64(NSDate().timeIntervalSince1970),
+                createdAt: Int(NSDate().timeIntervalSince1970),
                 params: params)
         }
     }
-    
 }

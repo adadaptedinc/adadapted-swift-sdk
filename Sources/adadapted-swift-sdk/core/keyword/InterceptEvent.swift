@@ -10,7 +10,7 @@ struct InterceptEvent: Codable {
     let userInput: String
     let termId: String
     let term: String
-    let createdAt: Int64
+    let createdAt: Int
     
     enum CodingKeys: String, CodingKey {
         case searchId = "search_id"
@@ -27,7 +27,7 @@ struct InterceptEvent: Codable {
         userInput: String = "",
         termId: String = "",
         term: String = "",
-        createdAt: Int64 = Int64(NSDate().timeIntervalSince1970)
+        createdAt: Int = Int(NSDate().timeIntervalSince1970)
     ) {
         self.searchId = searchId
         self.event = event

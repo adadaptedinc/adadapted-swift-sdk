@@ -24,7 +24,7 @@ struct DeviceInfo: Codable {
     let density: String
     let isAllowRetargetingEnabled: Bool
     let sdkVersion: String
-    let createdAt: Int64
+    let createdAt: Int
     let params: Dictionary<String,String>
     
     enum CodingKeys: String, CodingKey {
@@ -71,7 +71,7 @@ struct DeviceInfo: Codable {
         density: String = "",
         isAllowRetargetingEnabled: Bool = false,
         sdkVersion: String = "",
-        createdAt: Int64 = 0,
+        createdAt: Int = 0,
         params: Dictionary<String,String> = [:]
     ) {
         self.appId = appId

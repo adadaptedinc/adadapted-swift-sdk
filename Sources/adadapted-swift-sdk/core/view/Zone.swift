@@ -7,8 +7,8 @@ import Foundation
 struct Zone: Codable {
     let id: String
     let ads: Array<Ad>
-    let portHeight: Int64
-    let portWidth: Int64
+    let portHeight: Int
+    let portWidth: Int
     
     enum CodingKeys: String, CodingKey {
         case id
@@ -20,8 +20,8 @@ struct Zone: Codable {
     init(
         id: String = "",
         ads: Array<Ad> = [],
-        portHeight: Int64 = 0,
-        portWidth: Int64 = 0
+        portHeight: Int = 0,
+        portWidth: Int = 0
     ) {
         self.id = id
         self.ads = ads

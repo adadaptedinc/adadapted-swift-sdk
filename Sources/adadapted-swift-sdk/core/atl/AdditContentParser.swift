@@ -18,8 +18,8 @@ class AdditContentParser {
                 message: payload.payloadMessage,
                 image: payload.payloadImage,
                 type: type,
-                additSource: ContentSources.OUT_OF_APP,
-                source: ContentSources.PAYLOAD,
+                additSource: ContentSources.PAYLOAD,
+                source: ContentSources.OUT_OF_APP,
                 items: payload.detailedListItems
             )
             
@@ -40,8 +40,8 @@ class AdditContentParser {
             message: payload.payloadMessage,
             image: payload.payloadImage,
             type: type,
-            additSource: ContentSources.OUT_OF_APP,
-            source: ContentSources.DEEPLINK,
+            additSource: ContentSources.PAYLOAD,
+            source: ContentSources.OUT_OF_APP,
             items: payload.detailedListItems
         )
     }
