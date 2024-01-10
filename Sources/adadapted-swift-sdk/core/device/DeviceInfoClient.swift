@@ -37,9 +37,7 @@ class DeviceInfoClient {
     }
 
     static func getDeviceInfo(deviceCallback: DeviceCallback) {
-        DispatchQueue.global(qos: .background).async { //TODO remove this?
-            performGetInfo(deviceCallback: deviceCallback)
-        }
+        performGetInfo(deviceCallback: deviceCallback)
     }
 
     static func getCachedDeviceInfo() -> DeviceInfo? {

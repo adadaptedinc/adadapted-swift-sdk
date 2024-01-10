@@ -171,11 +171,16 @@ class EventClient: SessionListener {
         }
     }
     
+    static private var instance: EventClient!
+    
+    static func getInstance() -> EventClient {
+        return instance
+    }
+    
     static func createInstance(eventAdapter: EventAdapter) {
-        if !hasInstance {
-            EventClient.eventAdapter = eventAdapter
-            hasInstance = true
-        }
+        instance = EventClient()
+        EventClient.eventAdapter = eventAdapter
+        hasInstance = true
     }
     
     init() {

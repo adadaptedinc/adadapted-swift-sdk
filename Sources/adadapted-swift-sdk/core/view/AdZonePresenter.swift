@@ -5,8 +5,8 @@
 import Foundation
 
 class AdZonePresenter: SessionListener {
-    func onPublishEvents() {}//fix
-    func onSessionExpired() {}//fix
+    func onPublishEvents() {}//TODO fix
+    func onSessionExpired() {}//TODO fix
     
     private let adViewHandler: AdViewHandler
     private let sessionClient: SessionClient?
@@ -23,7 +23,7 @@ class AdZonePresenter: SessionListener {
     private var adCompleted = false
     private var timerRunning = false
     private var timer: Timer?
-    private let eventClient: EventClient = EventClient()
+    private let eventClient: EventClient = EventClient.getInstance()
     
     init(adViewHandler: AdViewHandler, sessionClient: SessionClient?) {
         self.adViewHandler = adViewHandler
@@ -51,7 +51,7 @@ class AdZonePresenter: SessionListener {
         }
     }
     
-    func onDetach() { //TODO test this and see if the listeners are removed
+    func onDetach() {
         if attached {
             attached = false
             adZonePresenterListener = nil

@@ -27,7 +27,7 @@ class InterceptClient: SessionListener, InterceptAdapterListener {
             self.adapter.retrieve(session: session, adapterListener: self)
         }
         
-        SessionClient.getInstance().addListener(listener: self)
+        //SessionClient.getInstance().addListener(listener: self) //TODO test this?
     }
 
     private func fileEvent(event: InterceptEvent) {
