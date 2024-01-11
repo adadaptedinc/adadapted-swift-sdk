@@ -56,9 +56,7 @@ class DeviceInfoClient {
         self.params = params
         self.customIdentifier = customIdentifier
         self.deviceInfoExtractor = deviceInfoExtractor
-
-        DispatchQueue.global(qos: .background).async {
-            collectDeviceInfo()
-        }
+        
+        collectDeviceInfo()
     }
 }

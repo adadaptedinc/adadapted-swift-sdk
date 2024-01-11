@@ -48,9 +48,6 @@ class HttpSessionAdapter: SessionAdapter {
             }
             
             do {
-                let checkme = String(data: data, encoding: .utf8) //TODO remove me after other call checks confirmed
-                let jsonData = checkme?.data(using: .utf8)!
-                
                 let session = try JSONDecoder().decode(Session.self, from: data)
                 var sessionWithDeviceInfo = session
                 sessionWithDeviceInfo.deviceInfo = deviceInfo
@@ -68,27 +65,6 @@ class HttpSessionAdapter: SessionAdapter {
                 AALogger.logError(message: "Failed to decode response: \(error)")
                 listener.onSessionInitializeFailed()
             }
-            
-//for debugging temp
-//            if let data = data {
-//                do {
-//                    // process data
-//                } catch let DecodingError.dataCorrupted(context) {
-//                    print(context)
-//                } catch let DecodingError.keyNotFound(key, context) {
-//                    print("Key '\(key)' not found:", context.debugDescription)
-//                    print("codingPath:", context.codingPath)
-//                } catch let DecodingError.valueNotFound(value, context) {
-//                    print("Value '\(value)' not found:", context.debugDescription)
-//                    print("codingPath:", context.codingPath)
-//                } catch let DecodingError.typeMismatch(type, context)  {
-//                    print("Type '\(type)' mismatch:", context.debugDescription)
-//                    print("codingPath:", context.codingPath)
-//                } catch {
-//                    print("error: ", error)
-//                }
-//            }
-            
         }
         task.resume()
     }
