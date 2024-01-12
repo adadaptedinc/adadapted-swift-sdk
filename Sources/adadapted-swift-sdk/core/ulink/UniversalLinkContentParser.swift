@@ -4,10 +4,10 @@
 
 import Foundation
 
-class UniversalLinkContentParser {
+public class UniversalLinkContentParser {
     static let AA_KEY_PAYLOAD_ID = "payload_id"
     
-    func universalLinkContentParser(_ userActivity: NSUserActivity?) {
+    public class func linkContentParser(_ userActivity: NSUserActivity?) {
         guard let url = userActivity?.webpageURL?.absoluteString else {
             handleNoUniversalLinkURL()
             return
@@ -22,12 +22,12 @@ class UniversalLinkContentParser {
         }
     }
     
-    private func handleNoUniversalLinkURL() {
+    private class func handleNoUniversalLinkURL() {
         let params = ["url": ""]
         EventClient.trackSdkError(code: EventStrings.ADDIT_NO_DEEPLINK_RECEIVED, message: EventStrings.NO_DEEPLINK_URL)
     }
     
-    private func parseQueryItems(_ queryItems: [URLQueryItem]?, url: String) {
+    private class func parseQueryItems(_ queryItems: [URLQueryItem]?, url: String) {
         var payload = Payload()
         
         for item in queryItems ?? [] {
@@ -45,7 +45,7 @@ class UniversalLinkContentParser {
         postNotification(payload: payload)
     }
     
-    private func postNotification(payload: Payload) { //TODO set this up just like the original
+    private class func postNotification(payload: Payload) { //TODO set this up just like the original
         //        let userInfo = [
         //            AASDK.KEY_MESSAGE: "Returning universal link payload item",
         //            AASDK.KEY_CONTENT_PAYLOADS: retArray
@@ -65,7 +65,7 @@ class UniversalLinkContentParser {
         //        }
     }
     
-    private func parsePayload(fromDictionary dictionary: [AnyHashable: Any]?) -> Payload? {
+    private class func parsePayload(fromDictionary dictionary: [AnyHashable: Any]?) -> Payload? {
         guard let dictionary = dictionary else {
             return Payload()
         }
@@ -97,7 +97,7 @@ class UniversalLinkContentParser {
         return Payload()
     }
     
-    private func parsePayloadDetail(fromItemDictionary dictionary: [AnyHashable : Any]?, forPayload payloadId: String) -> AddToListItem? {
+    private class func parsePayloadDetail(fromItemDictionary dictionary: [AnyHashable : Any]?, forPayload payloadId: String) -> AddToListItem? {
         guard
             let trackingId = dictionary?["tracking_id"] as? String,
             let productTitle = dictionary?["product_title"] as? String,
