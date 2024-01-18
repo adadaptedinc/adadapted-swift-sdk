@@ -4,6 +4,18 @@
 
 import Foundation
 
-public protocol AdContentListener : AnyObject {
+public protocol AdContentListener {
     func onContentAvailable(zoneId: String, content: AddToListContent)
+}
+
+private struct AdContentListenerIDProvider {
+    static var sharedListenerId: String = {
+        return "\(UUID())"
+    }()
+}
+
+public extension AdContentListener {
+    var listenerId: String {
+        return AdContentListenerIDProvider.sharedListenerId
+    }
 }

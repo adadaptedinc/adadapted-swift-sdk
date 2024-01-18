@@ -13,11 +13,12 @@ class AdContentPublisher {
     private var listeners: Array<AdContentListener> = []
     
     func addListener(listener: AdContentListener) {
+        var check = listener.listenerId
         listeners.insert(listener, at: 0)
     }
     
     func removeListener(listener: AdContentListener) {
-        if let index = listeners.firstIndex(where: { $0 === listener }) {
+        if let index = listeners.firstIndex(where: { $0.listenerId == listener.listenerId }) {
             listeners.remove(at: index)
         }
     }
