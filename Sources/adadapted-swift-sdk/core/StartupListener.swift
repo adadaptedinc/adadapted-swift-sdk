@@ -26,7 +26,4 @@ class StartupListener: SessionListener {
     func onSessionInitFailed() {
         sessionListener.onHasAdsToServe(hasAds: false, availableZoneIds: [])
     }
-    
-    func onPublishEvents() {}
-    func onSessionExpired() {}
 }

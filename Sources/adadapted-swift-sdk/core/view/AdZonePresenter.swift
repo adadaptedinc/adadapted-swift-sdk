@@ -5,8 +5,6 @@
 import Foundation
 
 class AdZonePresenter: SessionListener {
-    func onPublishEvents() {}//TODO fix
-    func onSessionExpired() {}//TODO fix
     
     private let adViewHandler: AdViewHandler
     private let sessionClient: SessionClient?

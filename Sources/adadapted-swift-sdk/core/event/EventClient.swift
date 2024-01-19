@@ -5,6 +5,7 @@
 import Foundation
 
 class EventClient: SessionListener {
+    
     private static var eventAdapter: EventAdapter? = nil
     private static var listeners: Array<EventClientListener> = []
     private static var adEvents: Array<AdEvent> = []
@@ -101,10 +102,6 @@ class EventClient: SessionListener {
             EventClient.performPublishSdkEvents()
             EventClient.performPublishSdkErrors()
         }
-    }
-    
-    func onSessionInitFailed() {
-        //nothing
     }
     
     static func hasBeenInitialized() -> Bool {

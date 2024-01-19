@@ -61,7 +61,6 @@ class HttpInterceptAdapter: InterceptAdapter {
     }
     
     func sendEvents(session: Session, events: Array<InterceptEvent>) {
-        // Create an InterceptEventWrapper
         let compiledInterceptEventRequest = InterceptEventWrapper(
             sessionId: session.id,
             appId: session.deviceInfo.appId,

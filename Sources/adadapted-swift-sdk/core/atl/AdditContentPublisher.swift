@@ -34,7 +34,6 @@ class AdditContentPublisher {
             publishedContent[content.payloadId] = content
             notifyContentAvailable(content: content)
         }
-        
     }
     
     func publishPopupContent(content: PopupContent) {

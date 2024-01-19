@@ -14,7 +14,6 @@ class HttpPayloadAdapter: PayloadAdapter {
     }
     
     func pickup(deviceInfo: DeviceInfo, callback: @escaping ([AdditContent]) -> Void) {
-        // Create a PayloadRequest
         let payloadRequest = PayloadRequestBuilder.buildRequest(deviceInfo: deviceInfo)
         
         var request = URLRequest(url: pickupUrl)
@@ -56,7 +55,6 @@ class HttpPayloadAdapter: PayloadAdapter {
     }
     
     func publishEvent(deviceInfo: DeviceInfo, event: PayloadEvent) {
-        // Create an EventRequest
         let eventRequest = PayloadRequestBuilder.buildEventRequest(deviceInfo: deviceInfo, event: event)
         
         var request = URLRequest(url: trackUrl)

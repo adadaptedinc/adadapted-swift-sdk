@@ -37,7 +37,7 @@ class PayloadRequestBuilder {
             os: deviceInfo.os,
             osv: deviceInfo.osv,
             sdkVersion: deviceInfo.sdkVersion,
-            tracking: tracking //was an Long now a STRING
+            tracking: tracking //was a Long now a STRING
         )
     }
 }

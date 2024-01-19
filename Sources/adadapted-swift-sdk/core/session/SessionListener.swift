@@ -11,3 +11,9 @@ public protocol SessionListener: AnyObject {
     func onSessionExpired()
     func onSessionInitFailed()
 }
+
+extension SessionListener {
+    func onPublishEvents() {}
+    func onSessionExpired() {}
+    func onSessionInitFailed() {}
+}

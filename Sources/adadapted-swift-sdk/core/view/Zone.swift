@@ -29,25 +29,7 @@ struct Zone: Codable {
         self.portWidth = portWidth
     }
     
-    //    val dimensions by lazy {
-    //           val dimensionsToReturn: MutableMap<String, Dimension> = HashMap()
-    //           dimensionsToReturn[Dimension.Orientation.PORT] = Dimension(
-    //               calculateDimensionValue(portHeight.toInt()),
-    //               calculateDimensionValue(portWidth.toInt())
-    //           )
-    //           dimensionsToReturn[Dimension.Orientation.LAND] = Dimension(
-    //               calculateDimensionValue(landHeight.toInt()),
-    //               calculateDimensionValue(landWidth.toInt())
-    //           )
-    //           return@lazy dimensionsToReturn
-    //       }
-    
     func hasAds() -> Bool {
         return !ads.isEmpty
     }
-    
-    //    private func calculateDimensionValue(value: Int) -> Int {
-    //           return DimensionConverter.convertDpToPx(value)
-    //       }
-    
 }
