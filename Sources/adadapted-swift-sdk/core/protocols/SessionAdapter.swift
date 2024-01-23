@@ -6,5 +6,5 @@ import Foundation
 
 protocol SessionAdapter {
     func sendInit(deviceInfo: DeviceInfo, listener: SessionInitListener)
-    func sendRefreshAds(session: Session, listener: AdGetListener, zoneContext: ZoneContext)
+    func sendRefreshAds(session: Session, listener: AdGetListener, zoneContexts: [ZoneContext])
 }

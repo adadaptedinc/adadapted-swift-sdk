@@ -69,15 +69,17 @@ class HttpSessionAdapter: SessionAdapter {
         task.resume()
     }
     
-    func sendRefreshAds(session: Session, listener: AdGetListener, zoneContext: ZoneContext) {
+    func sendRefreshAds(session: Session, listener: AdGetListener, zoneContexts: [ZoneContext]) {
+        let zoneIdsInContext = zoneContexts.map { $0.zoneId }.joined(separator: ",")
+        let zoneContextId = zoneContexts.first?.contextId ?? ""
         var urlComponents = URLComponents(url: refreshUrl, resolvingAgainstBaseURL: false)
         urlComponents?.queryItems = [
             URLQueryItem(name: "aid", value: session.deviceInfo.appId),
             URLQueryItem(name: "uid", value: session.deviceInfo.udid),
             URLQueryItem(name: "sid", value: session.id),
             URLQueryItem(name: "sdk", value: session.deviceInfo.sdkVersion),
-            URLQueryItem(name: "zoneID", value: zoneContext.zoneId),
-            URLQueryItem(name: "contextID", value: zoneContext.contextId)
+            URLQueryItem(name: "zoneID", value: zoneIdsInContext),
+            URLQueryItem(name: "contextID", value: zoneContextId)
         ]
         
         guard let url = urlComponents?.url else {

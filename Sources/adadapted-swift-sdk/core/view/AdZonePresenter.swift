@@ -62,6 +62,10 @@ class AdZonePresenter: SessionListener {
         sessionClient?.setZoneContext(zoneContext: ZoneContext(zoneId: self.zoneId, contextId: contextId))
     }
     
+    func removeZoneContext() {
+        sessionClient?.removeZoneContext(zoneId: self.zoneId)
+    }
+    
     func clearZoneContext() {
         sessionClient?.clearZoneContext()
     }

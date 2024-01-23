@@ -20,7 +20,7 @@ class SessionClient: SessionAdapterListener {
     private var pollingTimerRunning: Bool
     private var eventTimerRunning: Bool
     private var hasActiveInstance: Bool
-    private var zoneContext: ZoneContext
+    private var zoneContexts: [ZoneContext]
     private var eventTimer: Timer?
     private var refreshTimer: Timer?
     
@@ -32,7 +32,7 @@ class SessionClient: SessionAdapterListener {
         eventTimerRunning = false
         status = .OK
         hasActiveInstance = false
-        zoneContext = ZoneContext()
+        zoneContexts = [ZoneContext]()
     }
     
     private func performAddListener(listener: SessionListener) {
@@ -108,11 +108,11 @@ class SessionClient: SessionAdapterListener {
         }
         
         AALogger.logInfo(message: "Checking for more Ads")
-        status = .IS_REFRESH_ADS
+        status = zoneContexts.isEmpty ? .IS_REFRESH_ADS : .OK
         
         DispatchQueue.global(qos: .background).async { [weak self] in
             guard let self = self, let session = self.currentSession else { return }
-            self.adapter?.sendRefreshAds(session: session, listener: self, zoneContext: self.zoneContext)
+            self.adapter?.sendRefreshAds(session: session, listener: self, zoneContexts: self.zoneContexts)
         }
     }
     
@@ -259,12 +259,19 @@ class SessionClient: SessionAdapterListener {
     }
     
     func setZoneContext(zoneContext: ZoneContext) {
-        self.zoneContext = zoneContext
+        if zoneContexts.allSatisfy({ $0.zoneId != zoneContext.zoneId }) {
+            zoneContexts.append(zoneContext)
+            performRefreshAds()
+        }
+    }
+    
+    func removeZoneContext(zoneId: String) {
+        zoneContexts.removeAll { $0.zoneId == zoneId }
         performRefreshAds()
     }
     
     func clearZoneContext() {
-        zoneContext = ZoneContext()
+        zoneContexts = [ZoneContext]()
         performRefreshAds()
     }
     

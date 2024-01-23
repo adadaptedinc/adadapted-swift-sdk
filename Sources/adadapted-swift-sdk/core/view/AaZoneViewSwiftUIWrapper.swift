@@ -5,7 +5,7 @@
 import SwiftUI
 
 public struct AaZoneViewSwiftUIWrapper: UIViewRepresentable {
-    let zoneView: AaZoneView
+    public let zoneView: AaZoneView
     let zoneId: String
     let adContentListener: AdContentListener
     let zoneViewListener: ZoneViewListener

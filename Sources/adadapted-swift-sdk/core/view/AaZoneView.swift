@@ -81,6 +81,10 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
         presenter.setZoneContext(contextId: contextId)
     }
     
+    public func removeAdZoneContext() {
+        presenter.removeZoneContext()
+    }
+    
     public func clearAdZoneContext() {
         presenter.clearZoneContext()
     }
