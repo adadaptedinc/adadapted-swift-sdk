@@ -13,7 +13,6 @@ class AdContentPublisher {
     private var listeners: Array<AdContentListener> = []
     
     func addListener(listener: AdContentListener) {
-        var check = listener.listenerId
         listeners.insert(listener, at: 0)
     }
     
