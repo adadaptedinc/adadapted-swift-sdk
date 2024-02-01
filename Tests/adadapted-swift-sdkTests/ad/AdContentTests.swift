@@ -8,6 +8,8 @@ import XCTest
 
 class AdContentTests: XCTestCase {
     
+    private var testAddTolistItems: [AddToListItem] = [AddToListItem(trackingId: "testTrackingId", title: "title", brand: "brand", category: "cat", productUpc: "upc", retailerSku: "sku", retailerID: "discount", productImage: "image")]
+    
     override class func setUp() {
         super.setUp()
         let deviceInfoExtractor = DeviceInfoExtractor()
@@ -46,7 +48,7 @@ class AdContentTests: XCTestCase {
         }
         
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
             XCTAssertEqual(AdEventTypes.INTERACTION, TestEventAdapter.shared.testAdEvents.first?.eventType)
             XCTAssertEqual("testZoneId", TestEventAdapter.shared.testAdEvents.first?.zoneId)
             XCTAssertEqual("adContentId", TestEventAdapter.shared.testAdEvents.first?.adId)
@@ -54,10 +56,76 @@ class AdContentTests: XCTestCase {
             expectation.fulfill()
         }
         
-        wait(for: [expectation], timeout: 3.0)
+        wait(for: [expectation], timeout: 3.5)
     }
     
-    //TODO rest of test methods
+    func testItemAcknowledge() {
+        let expectation = XCTestExpectation(description: "Content available expectation")
+        
+        let testAdContent = AdContent.createAddToListContent(ad: Ad(id: "adContentId", impressionId: "testZoneId", payload: Payload(detailedListItems: testAddTolistItems)))
+        TestEventAdapter.shared.testAdEvents = []
+        testAdContent.itemAcknowledge(item: testAdContent.getItems().first!)
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            EventClient.getInstance().onPublishEvents()
+        }
+        
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+            XCTAssert(TestEventAdapter.shared.testAdEvents.contains { $0.eventType == AdEventTypes.INTERACTION })
+            XCTAssert(TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.ATL_ITEM_ADDED_TO_LIST })
+            XCTAssertEqual("testZoneId", TestEventAdapter.shared.testAdEvents.first?.zoneId)
+            XCTAssertEqual("adContentId", TestEventAdapter.shared.testAdEvents.first?.adId)
+            
+            expectation.fulfill()
+        }
+        
+        wait(for: [expectation], timeout: 3.5)
+    }
+    
+    func testContentFailed() {
+        let expectation = XCTestExpectation(description: "Content available expectation")
+        
+        let testAdContent = AdContent.createAddToListContent(ad: Ad(id: "adContentId", impressionId: "testZoneId", payload: Payload(detailedListItems: testAddTolistItems)))
+        TestEventAdapter.shared.testSdkErrors = []
+        testAdContent.failed(message: "adContentFail")
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            EventClient.getInstance().onPublishEvents()
+        }
+        
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+            XCTAssertEqual(EventStrings.ATL_ADDED_TO_LIST_FAILED, TestEventAdapter.shared.testSdkErrors.first?.code)
+            XCTAssertEqual("adContentFail", TestEventAdapter.shared.testSdkErrors.first!.message)
+            
+            expectation.fulfill()
+        }
+        
+        wait(for: [expectation], timeout: 3.5)
+    }
+    
+    func testContentItemFailed() {
+        let expectation = XCTestExpectation(description: "Content available expectation")
+        
+        let testAdContent = AdContent.createAddToListContent(ad: Ad(id: "adContentId", impressionId: "testZoneId", payload: Payload(detailedListItems: testAddTolistItems)))
+        TestEventAdapter.shared.testSdkErrors = []
+        testAdContent.itemFailed(item: testAddTolistItems.first!, message: "adContentFail")
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            EventClient.getInstance().onPublishEvents()
+        }
+        
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+            XCTAssertEqual(EventStrings.ATL_ADDED_TO_LIST_ITEM_FAILED, TestEventAdapter.shared.testSdkErrors.first?.code)
+            XCTAssertEqual("adContentFail", TestEventAdapter.shared.testSdkErrors.first!.message)
+            
+            expectation.fulfill()
+        }
+        
+        wait(for: [expectation], timeout: 3.0)
+    }
 }
 
 class TestEventAdapter: EventAdapter {
