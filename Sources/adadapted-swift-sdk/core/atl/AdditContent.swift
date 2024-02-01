@@ -13,7 +13,7 @@ class AdditContent : AddToListContent {
     var source: String
     var items: Array<AddToListItem>
     
-    private var handled: Bool = false
+    internal var handled: Bool = false
     
     init(payloadId: String, message: String, image: String, type: Int, additSource: String, source: String, items: Array<AddToListItem>) {
         self.payloadId = payloadId
