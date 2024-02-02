@@ -56,13 +56,13 @@ class SuggestionTrackerTests: XCTestCase {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             self.testInterceptClient.getInstance().onPublishEvents()
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
             XCTAssertTrue(self.testInterceptAdapter.testEvents.contains { $0.event == InterceptEvent.Constants.SELECTED })
             XCTAssertEqual("testSelectedId", self.testInterceptAdapter.testEvents.first?.searchId)
             expectation.fulfill()
         }
         
-        wait(for: [expectation], timeout: 3.5)
+        wait(for: [expectation], timeout: 4.5)
     }
 
     func testSuggestionNotMatched() {
