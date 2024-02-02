@@ -5,13 +5,13 @@
 import Foundation
 
 class PayloadClient {
-    private static var adapter: PayloadAdapter?
-    private static var eventClient: EventClient?
+    internal static var adapter: PayloadAdapter?
+    internal static var eventClient: EventClient?
     private static let PAYLOAD_ID = "payload_id"
     private static let TRACKING_ID = "tracking_id"
     private static let SOURCE = "source"
     private static let ITEM_NAME = "item_name"
-    private static var isDeeplinkInProgress = false
+    internal static var isDeeplinkInProgress = false
     
     private static func performPickupPayload(callback: @escaping ([AdditContent]) -> Void) {
         let deviceCallbackHandler = DeviceCallbackHandler()

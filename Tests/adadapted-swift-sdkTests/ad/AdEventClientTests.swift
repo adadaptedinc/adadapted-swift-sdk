@@ -6,11 +6,10 @@ import XCTest
 @testable import adadapted_swift_sdk
 
 class AdEventClientTests: XCTestCase {
-    var testAd: Ad!
+    var testAd = Ad(id: "adId", impressionId: "zoneId", url: "impId")
     
-    override func setUp() {
+    override class func setUp() {
         super.setUp()
-        testAd = Ad(id: "adId", impressionId: "zoneId", url: "impId")
         
         let deviceInfoExtractor = DeviceInfoExtractor()
         DeviceInfoClient.createInstance(appId: "apiKey", isProd: false, params: [:], customIdentifier: "", deviceInfoExtractor: deviceInfoExtractor)
@@ -21,7 +20,6 @@ class AdEventClientTests: XCTestCase {
     }
     
     override func tearDown() {
-        testAd = nil
         super.tearDown()
     }
     
@@ -59,9 +57,10 @@ class AdEventClientTests: XCTestCase {
             XCTAssertNotNil(mockListener.trackedEvent)
             expectation.fulfill()
         }
-        
+        wait(for: [expectation], timeout: 3.5)
         
         EventClient.removeListener(listener: mockListener)
+        mockListener.trackedEvent = nil
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             EventClient.trackImpression(ad: self.testAd)
@@ -71,6 +70,7 @@ class AdEventClientTests: XCTestCase {
             XCTAssertNil(mockListener.trackedEvent)
             expectationTwo.fulfill()
         }
+        wait(for: [expectationTwo], timeout: 3.5)
     }
     
     func testTrackInteraction() {
@@ -86,6 +86,8 @@ class AdEventClientTests: XCTestCase {
             XCTAssertEqual(mockListener.trackedEvent?.eventType, AdEventTypes.INTERACTION)
             expectation.fulfill()
         }
+        
+        wait(for: [expectation], timeout: 3.5)
     }
     
     func testTrackPopupBegin() {
@@ -101,6 +103,8 @@ class AdEventClientTests: XCTestCase {
             XCTAssertEqual(mockListener.trackedEvent?.eventType, AdEventTypes.POPUP_BEGIN)
             expectation.fulfill()
         }
+        
+        wait(for: [expectation], timeout: 3.5)
     }
     
     func testOnSessionInitFailed() {
@@ -118,6 +122,8 @@ class AdEventClientTests: XCTestCase {
             XCTAssertNotNil(mockListener.trackedEvent)
             expectation.fulfill()
         }
+        
+        wait(for: [expectation], timeout: 3.5)
     }
 }
 
