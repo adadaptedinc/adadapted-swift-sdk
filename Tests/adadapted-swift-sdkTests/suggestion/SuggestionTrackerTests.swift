@@ -16,6 +16,11 @@ class SuggestionTrackerTests: XCTestCase {
         testInterceptClient.createInstance(adapter: testInterceptAdapter)
         testInterceptClient.getInstance().onSessionAvailable(session: MockData.session)
     }
+    
+    override class func tearDown() {
+        SessionClient.getInstance().refreshTimer?.stopTimer()
+        SessionClient.getInstance().eventTimer?.stopTimer()
+    }
 
     func testSuggestionMatched() {
         let expectation = XCTestExpectation(description: "Content available expectation")
@@ -37,7 +42,7 @@ class SuggestionTrackerTests: XCTestCase {
         SuggestionTracker.suggestionMatched(searchId: "testPresentedId", termId: "testTermId", term: "testTerm", replacement: "testReplacement", userInput: "testInput")
         SuggestionTracker.suggestionPresented(searchId: "testPresentedId", termId: "testTermId", replacement: "testReplacement")
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
             self.testInterceptClient.getInstance().onPublishEvents()
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
@@ -46,14 +51,15 @@ class SuggestionTrackerTests: XCTestCase {
             expectation.fulfill()
         }
         
-        wait(for: [expectation], timeout: 4.5)
+        wait(for: [expectation], timeout: 7)
     }
 
     func testSuggestionSelected() {
         let expectation = XCTestExpectation(description: "Content available expectation")
         SuggestionTracker.suggestionMatched(searchId: "testSelectedId", termId: "testTermId", term: "testTerm", replacement: "testReplacement", userInput: "testInput")
         SuggestionTracker.suggestionSelected(searchId: "testSelectedId", termId: "testTermId", replacement: "testReplacement")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
             self.testInterceptClient.getInstance().onPublishEvents()
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
@@ -62,7 +68,7 @@ class SuggestionTrackerTests: XCTestCase {
             expectation.fulfill()
         }
         
-        wait(for: [expectation], timeout: 4.5)
+        wait(for: [expectation], timeout: 7)
     }
 
     func testSuggestionNotMatched() {

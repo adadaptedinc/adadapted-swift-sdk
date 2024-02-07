@@ -65,10 +65,6 @@ class InterceptClient: SessionListener, InterceptAdapterListener {
     func onSuccess(intercept: Intercept) {
         self.interceptListener?.onKeywordInterceptInitialized(intercept: intercept)
     }
-    
-    func onAdsAvailable(session: Session) {}
-    func onSessionExpired() {}
-    func onSessionInitFailed() {}
 
     func onSessionAvailable(session: Session) {
         currentSession = session

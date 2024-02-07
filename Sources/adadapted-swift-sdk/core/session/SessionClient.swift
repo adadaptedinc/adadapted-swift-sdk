@@ -21,8 +21,8 @@ class SessionClient: SessionAdapterListener {
     private var eventTimerRunning: Bool
     private var hasActiveInstance: Bool
     private var zoneContexts: [ZoneContext]
-    private var eventTimer: Timer?
-    private var refreshTimer: Timer?
+    internal var eventTimer: Timer?
+    internal var refreshTimer: Timer?
     
     init() {
         currentSession = Session()

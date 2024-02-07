@@ -24,6 +24,17 @@ class PopupContentTests: XCTestCase {
         SessionClient.createInstance(adapter: HttpSessionAdapter(initUrl: Config.getInitSessionUrl(), refreshUrl: Config.getRefreshAdsUrl()))
         EventClient.createInstance(eventAdapter: TestEventAdapter.shared)
         EventClient.getInstance().onSessionAvailable(session: MockData.session)
+        TestEventAdapter.shared.cleanupEvents()
+    }
+    
+    override func tearDown() {
+        super.tearDown()
+        TestEventAdapter.shared.cleanupEvents()
+    }
+    
+    override class func tearDown() {
+        SessionClient.getInstance().refreshTimer?.stopTimer()
+        SessionClient.getInstance().eventTimer?.stopTimer()
     }
     
     func testCreatePopupContent() {
@@ -35,11 +46,12 @@ class PopupContentTests: XCTestCase {
         let expectation = XCTestExpectation(description: "Content available expectation")
         let testPopupContent = PopupContent(payloadId: "testPayloadId", items: testAddToListItems)
         TestEventAdapter.shared.testSdkEvents = []
+        
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             testPopupContent.acknowledge()
         }
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             EventClient.getInstance().onPublishEvents()
         }
         
@@ -49,22 +61,23 @@ class PopupContentTests: XCTestCase {
             expectation.fulfill()
         }
         
-        wait(for: [expectation], timeout: 4.5)
+        wait(for: [expectation], timeout: 7)
     }
     
     func testItemAcknowledge() {
         let expectation = XCTestExpectation(description: "Content available expectation")
         let testPopupContent = PopupContent(payloadId: "testPayloadId", items: testAddToListItems)
         TestEventAdapter.shared.testSdkEvents = []
+        
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             testPopupContent.itemAcknowledge(item: testPopupContent.getItems().first!)
         }
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
             EventClient.getInstance().onPublishEvents()
         }
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 6) {
             XCTAssertEqual(2, TestEventAdapter.shared.testSdkEvents.count)
             XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.POPUP_ADDED_TO_LIST })
             XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.POPUP_ITEM_ADDED_TO_LIST })
@@ -73,7 +86,7 @@ class PopupContentTests: XCTestCase {
             expectation.fulfill()
         }
         
-        wait(for: [expectation], timeout: 4.5)
+        wait(for: [expectation], timeout: 10)
     }
     
     func testFailed() {

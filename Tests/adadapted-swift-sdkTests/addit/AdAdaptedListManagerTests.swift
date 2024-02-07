@@ -7,19 +7,25 @@ import XCTest
 
 class AdAdaptedListManagerTest: XCTestCase {
 
-    override func setUpWithError() throws {
-        try super.setUpWithError()
+    override class func setUp() {
+        super.setUp()
         let deviceInfoExtractor = DeviceInfoExtractor()
         DeviceInfoClient.createInstance(appId: "apiKey", isProd: false, params: [:], customIdentifier: "", deviceInfoExtractor: deviceInfoExtractor)
         SessionClient.createInstance(adapter: HttpSessionAdapter(initUrl: Config.getInitSessionUrl(), refreshUrl: Config.getRefreshAdsUrl()))
         EventClient.createInstance(eventAdapter: TestEventAdapter.shared)
         EventClient.getInstance().onSessionAvailable(session: MockData.session)
         EventClient.getInstance().onAdsAvailable(session: MockData.session)
+        TestEventAdapter.shared.cleanupEvents()
     }
 
-    override func tearDownWithError() throws {
-        try super.tearDownWithError()
+    override func tearDown() {
+        super.tearDown()
         TestEventAdapter.shared.cleanupEvents()
+    }
+    
+    override class func tearDown() {
+        SessionClient.getInstance().refreshTimer?.stopTimer()
+        SessionClient.getInstance().eventTimer?.stopTimer()
     }
 
     func testItemAddedToList() {

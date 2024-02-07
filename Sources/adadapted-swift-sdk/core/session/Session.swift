@@ -10,7 +10,7 @@ public struct Session: Codable {
     let hasAds: Bool
     let refreshTime: Int
     let expiration: Int
-    private var zones: Dictionary<String, Zone> = [:]
+    internal var zones: Dictionary<String, Zone>
     
     var deviceInfo: DeviceInfo = DeviceInfo()
     
@@ -23,12 +23,13 @@ public struct Session: Codable {
         case zones
     }
     
-    init(id: String = "", hasAds: Bool = false, refreshTime: Int = Config.DEFAULT_AD_POLLING, expiration: Int = 0, willServeAds: Bool = false) {
+    init(id: String = "", hasAds: Bool = false, refreshTime: Int = Config.DEFAULT_AD_POLLING, expiration: Int = 0, willServeAds: Bool = false, zones: Dictionary<String, Zone> = [:]) {
         self.id = id
         self.hasAds = hasAds
         self.refreshTime = refreshTime
         self.expiration = expiration
         self.willServeAds = willServeAds
+        self.zones = zones
     }
     
     func hasActiveCampaigns() -> Bool {

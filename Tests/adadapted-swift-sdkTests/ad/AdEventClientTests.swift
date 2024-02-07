@@ -23,6 +23,11 @@ class AdEventClientTests: XCTestCase {
         super.tearDown()
     }
     
+    override class func tearDown() {
+        SessionClient.getInstance().refreshTimer?.stopTimer()
+        SessionClient.getInstance().eventTimer?.stopTimer()
+    }
+    
     func testCreateInstance() {
         XCTAssertNotNil(TestEventAdapter.shared)
     }

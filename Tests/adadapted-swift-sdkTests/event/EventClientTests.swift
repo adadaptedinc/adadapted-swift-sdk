@@ -21,6 +21,11 @@ class EventClientTests: XCTestCase {
         TestEventAdapter.shared.cleanupEvents()
     }
     
+    override class func tearDown() {
+        SessionClient.getInstance().refreshTimer?.stopTimer()
+        SessionClient.getInstance().eventTimer?.stopTimer()
+    }
+    
     func testTrackAppEvent() {
         let expectation = XCTestExpectation(description: "Content available expectation")
         

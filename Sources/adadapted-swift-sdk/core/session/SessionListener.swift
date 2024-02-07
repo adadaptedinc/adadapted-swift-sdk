@@ -13,7 +13,8 @@ public protocol SessionListener: AnyObject {
 }
 
 extension SessionListener {
-    func onPublishEvents() {}
-    func onSessionExpired() {}
-    func onSessionInitFailed() {}
+    public func onAdsAvailable(session: Session) {}
+    public func onPublishEvents() {}
+    public func onSessionExpired() {}
+    public func onSessionInitFailed() {}
 }

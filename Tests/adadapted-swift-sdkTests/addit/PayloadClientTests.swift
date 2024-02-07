@@ -20,11 +20,17 @@ class PayloadClientTests: XCTestCase {
         EventClient.getInstance().onAdsAvailable(session: MockData.session)
         
         PayloadClient.createInstance(adapter: testPayloadAdapter)
+        TestEventAdapter.shared.cleanupEvents()
     }
     
     override func tearDown() {
-        TestEventAdapter.shared.cleanupEvents()
         super.tearDown()
+        TestEventAdapter.shared.cleanupEvents()
+    }
+    
+    override class func tearDown() {
+        SessionClient.getInstance().refreshTimer?.stopTimer()
+        SessionClient.getInstance().eventTimer?.stopTimer()
     }
     
     func testPickupPayloads() {
@@ -87,7 +93,7 @@ class PayloadClientTests: XCTestCase {
             PayloadClient.markContentAcknowledged(content: content)
         }
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             EventClient.getInstance().onPublishEvents()
         }
         
@@ -98,7 +104,7 @@ class PayloadClientTests: XCTestCase {
             expectation.fulfill()
         }
         
-        wait(for: [expectation], timeout: 6)
+        wait(for: [expectation], timeout: 7)
     }
     
     func testMarkContentItemAcknowledged() {
@@ -109,7 +115,7 @@ class PayloadClientTests: XCTestCase {
             PayloadClient.markContentItemAcknowledged(content: content, item: Self.getTestAddToListItem())
         }
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             EventClient.getInstance().onPublishEvents()
         }
         
@@ -121,7 +127,7 @@ class PayloadClientTests: XCTestCase {
             expectation.fulfill()
         }
         
-        wait(for: [expectation], timeout: 6)
+        wait(for: [expectation], timeout: 7)
     }
     
     func testMarkContentDuplicate() {

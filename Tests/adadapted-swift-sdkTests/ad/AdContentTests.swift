@@ -19,6 +19,11 @@ class AdContentTests: XCTestCase {
         EventClient.getInstance().onSessionAvailable(session: Session())
     }
     
+    override class func tearDown() {
+        SessionClient.getInstance().refreshTimer?.stopTimer()
+        SessionClient.getInstance().eventTimer?.stopTimer()
+    }
+    
     func testInitializationWithEmptyPayload() {
         let adContent = AdContent.createAddToListContent(ad: Ad())
         XCTAssertTrue(adContent.hasNoItems())
@@ -150,8 +155,8 @@ class TestEventAdapter: EventAdapter {
     }
     
     func cleanupEvents() {
-        testAdEvents.removeAll()
-        testSdkEvents.removeAll()
-        testSdkErrors.removeAll()
+        testAdEvents = []
+        testSdkEvents = []
+        testSdkErrors = []
     }
 }

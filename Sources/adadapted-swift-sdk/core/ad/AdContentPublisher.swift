@@ -6,7 +6,11 @@ import Foundation
 
 class AdContentPublisher {
     
-    static let instance = AdContentPublisher()
+    static private var instance: AdContentPublisher = AdContentPublisher()
+    
+    static func getInstance() -> AdContentPublisher {
+        return instance
+    }
     
     init(){}
     

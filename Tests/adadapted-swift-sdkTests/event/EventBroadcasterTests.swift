@@ -23,6 +23,11 @@ class EventBroadcasterTests: XCTestCase {
         TestEventAdapter.shared.cleanupEvents()
     }
     
+    override class func tearDown() {
+        SessionClient.getInstance().refreshTimer?.stopTimer()
+        SessionClient.getInstance().eventTimer?.stopTimer()
+    }
+    
     func testAddListenerAndPublishAdEventTracked() {
         let expectation = XCTestExpectation(description: "Content available expectation")
         

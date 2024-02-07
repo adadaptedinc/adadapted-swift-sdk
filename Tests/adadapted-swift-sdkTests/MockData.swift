@@ -7,7 +7,7 @@ import Foundation
 
 struct MockData {
     static let session: Session = {
-        var session = Session(id: "testId", hasAds: true, refreshTime: 30, expiration: 1907245044, willServeAds: true)
+        var session = Session(id: "testId", hasAds: true, refreshTime: 30, expiration: Int(Date().timeIntervalSince1970) + 10000000, willServeAds: true)
         session.deviceInfo = DeviceInfo(isAllowRetargetingEnabled: true)
         return session
     }()

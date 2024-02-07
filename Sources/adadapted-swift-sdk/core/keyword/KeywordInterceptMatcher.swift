@@ -5,13 +5,16 @@
 import Foundation
 
 public class KeywordInterceptMatcher : SessionListener, InterceptListener {
-    
     private var intercept: Intercept = Intercept()
     private var loaded = false
     private var hasInstance = false
     private var currentSuggestions: Array<Suggestion> = []
     
-    public static let instance = KeywordInterceptMatcher()
+    static private var instance: KeywordInterceptMatcher = KeywordInterceptMatcher()
+    
+    static func getInstance() -> KeywordInterceptMatcher {
+        return instance
+    }
     
     init() {
         SessionClient.getInstance().addListener(listener: self)
@@ -19,7 +22,7 @@ public class KeywordInterceptMatcher : SessionListener, InterceptListener {
     
     private func matchKeyword(constraint: String) -> Array<Suggestion> {
         currentSuggestions = []
-        let input = constraint 
+        let input = constraint
         if !isReadyToMatch(input: input) {
             return currentSuggestions
         }
@@ -85,9 +88,4 @@ public class KeywordInterceptMatcher : SessionListener, InterceptListener {
             InterceptClient.getInstance().initialize(session: session, interceptListener: self)
         }
     }
-    
-    public func onPublishEvents() {}
-    public func onAdsAvailable(session: Session) {}
-    public func onSessionExpired() {}
-    public func onSessionInitFailed() {}
 }

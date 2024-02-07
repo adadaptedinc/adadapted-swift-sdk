@@ -11,7 +11,7 @@ class AdContentPublisherTests: XCTestCase {
     func testPublishContentWithItems() {
         let expectation = XCTestExpectation(description: "Content available expectation")
         
-        let publisher = AdContentPublisher.instance
+        let publisher = AdContentPublisher.getInstance()
         let mockListener = MockAdContentListener()
         publisher.addListener(listener: mockListener)
         

@@ -106,7 +106,7 @@ public class AdAdapted {
         SessionClient.getInstance().start(listener: startupListener)
         
         if isKeywordInterceptEnabled {
-            KeywordInterceptMatcher.instance.match(constraint: "INIT") //init the matcher
+            KeywordInterceptMatcher.getInstance().match(constraint: "INIT") //init the matcher
         }
         AALogger.logInfo(message: "AdAdapted Android SDK \(Config.LIBRARY_VERSION) initialized.")
     }

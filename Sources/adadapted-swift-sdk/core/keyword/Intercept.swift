@@ -8,7 +8,7 @@ struct Intercept: Codable {
     let searchId: String
     let refreshTime: Int
     let minMatchLength: Int
-    private let terms: Array<Term>
+    internal let terms: Array<Term>
     
     enum CodingKeys: String, CodingKey {
         case searchId = "search_id"
@@ -17,11 +17,11 @@ struct Intercept: Codable {
         case terms
     }
     
-    init(searchId: String = "empty", refreshTime: Int = 300, minMatchLength: Int = 3) {
+    init(searchId: String = "empty", refreshTime: Int = 300, minMatchLength: Int = 3, terms: Array<Term> = []) {
         self.searchId = searchId
         self.refreshTime = refreshTime
         self.minMatchLength = minMatchLength
-        self.terms = []
+        self.terms = terms
     }
     
     func getTerms() -> [Term] {

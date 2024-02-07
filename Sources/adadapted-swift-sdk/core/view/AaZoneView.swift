@@ -13,8 +13,8 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
     private var webView: AdWebView!
     private var reportButton: UIButton!
     private var presenter: AdZonePresenter = AdZonePresenter(adViewHandler: AdViewHandler(), sessionClient: SessionClient.getInstance())
-    private var zoneViewListener: ZoneViewListener?
-    private var isVisible = true
+    internal var zoneViewListener: ZoneViewListener?
+    internal var isVisible = true
     private var isAdVisible = true
     private var webViewLoaded = false
     
@@ -63,12 +63,12 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
     }
     
     public func onStart(listener: ZoneViewListener, contentListener: AdContentListener) {
-        AdContentPublisher.instance.addListener(listener: contentListener)
+        AdContentPublisher.getInstance().addListener(listener: contentListener)
         onStart(listener: listener)
     }
     
     func onStart(contentListener: AdContentListener) {
-        AdContentPublisher.instance.addListener(listener: contentListener)
+        AdContentPublisher.getInstance().addListener(listener: contentListener)
         onStart()
     }
     
@@ -95,7 +95,7 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
     }
     
     public func onStop(listener: AdContentListener) {
-        AdContentPublisher.instance.removeListener(listener: listener)
+        AdContentPublisher.getInstance().removeListener(listener: listener)
         onStop()
     }
     
