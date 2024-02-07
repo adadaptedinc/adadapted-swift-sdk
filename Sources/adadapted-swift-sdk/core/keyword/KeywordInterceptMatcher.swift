@@ -12,7 +12,7 @@ public class KeywordInterceptMatcher : SessionListener, InterceptListener {
     
     static private var instance: KeywordInterceptMatcher = KeywordInterceptMatcher()
     
-    static func getInstance() -> KeywordInterceptMatcher {
+    public static func getInstance() -> KeywordInterceptMatcher {
         return instance
     }
     
