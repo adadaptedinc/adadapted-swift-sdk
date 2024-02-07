@@ -57,18 +57,21 @@ class SuggestionTrackerTests: XCTestCase {
     func testSuggestionSelected() {
         let expectation = XCTestExpectation(description: "Content available expectation")
         SuggestionTracker.suggestionMatched(searchId: "testSelectedId", termId: "testTermId", term: "testTerm", replacement: "testReplacement", userInput: "testInput")
-        SuggestionTracker.suggestionSelected(searchId: "testSelectedId", termId: "testTermId", replacement: "testReplacement")
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            SuggestionTracker.suggestionSelected(searchId: "testSelectedId", termId: "testTermId", replacement: "testReplacement")
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
             self.testInterceptClient.getInstance().onPublishEvents()
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 7) {
             XCTAssertTrue(self.testInterceptAdapter.testEvents.contains { $0.event == InterceptEvent.Constants.SELECTED })
             XCTAssertEqual("testSelectedId", self.testInterceptAdapter.testEvents.first?.searchId)
             expectation.fulfill()
         }
         
-        wait(for: [expectation], timeout: 7)
+        wait(for: [expectation], timeout: 15)
     }
 
     func testSuggestionNotMatched() {

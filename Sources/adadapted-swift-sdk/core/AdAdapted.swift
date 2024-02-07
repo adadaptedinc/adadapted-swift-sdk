@@ -89,14 +89,14 @@ public class AdAdapted {
         
         hasStarted = true
         setupClients()
-        EventBroadcaster.instance.setListener(listener: eventListener)
-        AdditContentPublisher.instance.addListener(listener: contentListener)
+        EventBroadcaster.getInstance().setListener(listener: eventListener)
+        AdditContentPublisher.getInstance().addListener(listener: contentListener)
         
         if isPayloadEnabled {
             PayloadClient.pickupPayloads { payloads in
                 if !payloads.isEmpty {
                     for content in payloads {
-                        AdditContentPublisher.instance.publishAdditContent(content: content)
+                        AdditContentPublisher.getInstance().publishAdditContent(content: content)
                     }
                 }
             }

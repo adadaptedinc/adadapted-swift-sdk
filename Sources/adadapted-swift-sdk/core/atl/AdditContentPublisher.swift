@@ -8,7 +8,11 @@ class AdditContentPublisher {
     private var publishedContent: Dictionary<String, AdditContent> = [:]
     private var listener: AaSdkAdditContentListener? = nil
     
-    static let instance = AdditContentPublisher()
+    static private var instance: AdditContentPublisher = AdditContentPublisher()
+    
+    static func getInstance() -> AdditContentPublisher {
+        return instance
+    }
     
     init(){}
     

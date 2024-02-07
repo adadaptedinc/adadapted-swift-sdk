@@ -15,7 +15,7 @@ class EventBroadcasterTests: XCTestCase {
         SessionClient.createInstance(adapter: HttpSessionAdapter(initUrl: Config.getInitSessionUrl(), refreshUrl: Config.getRefreshAdsUrl()))
         EventClient.createInstance(eventAdapter: TestEventAdapter.shared)
         EventClient.getInstance().onSessionAvailable(session: MockData.session)
-        EventBroadcaster.instance.setListener(listener: testListener)
+        EventBroadcaster.getInstance().setListener(listener: testListener)
     }
     
     override func tearDown() {
@@ -32,7 +32,7 @@ class EventBroadcasterTests: XCTestCase {
         let expectation = XCTestExpectation(description: "Content available expectation")
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventBroadcaster.instance.onAdEventTracked(event: AdEvent(adId: "adId", zoneId: "adZoneId", impressionId: "impressionId", eventType: AdEventTypes.IMPRESSION))
+            EventBroadcaster.getInstance().onAdEventTracked(event: AdEvent(adId: "adId", zoneId: "adZoneId", impressionId: "impressionId", eventType: AdEventTypes.IMPRESSION))
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
@@ -48,7 +48,7 @@ class EventBroadcasterTests: XCTestCase {
         let expectation = XCTestExpectation(description: "Content available expectation")
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventBroadcaster.instance.onAdEventTracked(event: AdEvent(adId: "adId", zoneId: "adZoneId", impressionId: "impressionId", eventType: AdEventTypes.INTERACTION))
+            EventBroadcaster.getInstance().onAdEventTracked(event: AdEvent(adId: "adId", zoneId: "adZoneId", impressionId: "impressionId", eventType: AdEventTypes.INTERACTION))
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
@@ -66,7 +66,7 @@ class EventBroadcasterTests: XCTestCase {
         EventBroadcasterTests.testListener.resultZoneId = ""
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventBroadcaster.instance.onAdEventTracked(event: nil)
+            EventBroadcaster.getInstance().onAdEventTracked(event: nil)
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {

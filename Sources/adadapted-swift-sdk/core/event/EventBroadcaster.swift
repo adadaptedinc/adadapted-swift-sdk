@@ -6,7 +6,12 @@ import Foundation
 
 class EventBroadcaster: EventClientListener {
     private var listener: AaSdkEventListener? = nil
-    static let instance = EventBroadcaster()
+    
+    static private var instance: EventBroadcaster = EventBroadcaster()
+    
+    static func getInstance() -> EventBroadcaster {
+        return instance
+    }
     
     init(){
         EventClient.addListener(listener: self)
