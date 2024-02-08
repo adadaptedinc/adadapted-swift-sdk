@@ -25,9 +25,9 @@ let package = Package(
             resources: [.process("Assets.xcassets")]
         ),
         .testTarget(
-            name: "Tests",
+            name: "adadapted-swift-sdkTests",
             dependencies: ["adadapted-swift-sdk"],
-            exclude: ["adadapted-swift-sdkTests"] //enable for publishing
+            exclude: ["ad", "addit"] //enable for publishing
         ),
     ]
 )
