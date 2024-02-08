@@ -19,7 +19,7 @@ let package = Package(
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
         // Targets can depend on other targets in this package and products from dependencies.
-        .target(name: "adadapted-swift-sdk", dependencies: [.product(name: "Logging", package: "swift-log")]),
+        .target(name: "adadapted-swift-sdk", dependencies: [.product(name: "Logging", package: "swift-log")], resources: [.process("Assets.xcassets")]),
         .testTarget(name: "adadapted-swift-sdkTests",dependencies: ["adadapted-swift-sdk"]),
     ]
 )
