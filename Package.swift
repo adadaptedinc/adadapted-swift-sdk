@@ -7,7 +7,6 @@ let package = Package(
     name: "adadapted-swift-sdk",
     platforms: [.iOS(.v12)],
     products: [
-        // Products define the executables and libraries a package produces, making them visible to other packages.
         .library(
             name: "adadapted-swift-sdk",
             targets: ["adadapted-swift-sdk"]),
@@ -17,8 +16,6 @@ let package = Package(
         //.package(url: "https://github.com/developerinsider/SPMDeveloperInsider", from: "1.0.4"),
     ],
     targets: [
-        // Targets are the basic building blocks of a package, defining a module or a test suite.
-        // Targets can depend on other targets in this package and products from dependencies.
         .target(
             name: "adadapted-swift-sdk",
             dependencies: [.product(name: "Logging", package: "swift-log")],
@@ -26,8 +23,7 @@ let package = Package(
         ),
         .testTarget(
             name: "adadapted-swift-sdkTests",
-            dependencies: ["adadapted-swift-sdk"],
-            exclude: ["ad", "addit"] //enable for publishing
+            dependencies: ["adadapted-swift-sdk"]
         ),
     ]
 )
