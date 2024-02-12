@@ -9,7 +9,7 @@ struct InterceptEventWrapper: Codable {
     let appId: String
     let udid: String
     let sdkVersion: String
-    let events: Array<InterceptEvent>
+    let events: Set<InterceptEvent>
     
     enum CodingKeys: String, CodingKey {
         case sessionId = "session_id"
@@ -19,7 +19,7 @@ struct InterceptEventWrapper: Codable {
         case events
     }
     
-    init(sessionId: String, appId: String, udid: String, sdkVersion: String, events: Array<InterceptEvent>) {
+    init(sessionId: String, appId: String, udid: String, sdkVersion: String, events: Set<InterceptEvent>) {
         self.sessionId = sessionId
         self.appId = appId
         self.udid = udid

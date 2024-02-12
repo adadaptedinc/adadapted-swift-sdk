@@ -12,8 +12,7 @@ let package = Package(
             targets: ["adadapted-swift-sdk"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-log.git", from: "1.5.3"),
-        //.package(url: "https://github.com/developerinsider/SPMDeveloperInsider", from: "1.0.4"),
+        .package(url: "https://github.com/apple/swift-log.git", from: "1.5.3")
     ],
     targets: [
         .target(

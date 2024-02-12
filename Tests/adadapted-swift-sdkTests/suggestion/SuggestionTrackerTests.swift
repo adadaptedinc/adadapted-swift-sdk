@@ -91,13 +91,13 @@ class SuggestionTrackerTests: XCTestCase {
 }
 
 class TestInterceptAdapter: InterceptAdapter {
-    var testEvents = [InterceptEvent]()
+    var testEvents = Set<InterceptEvent>()
     var testIntercept = Intercept()
     
     func retrieve(session: Session, adapterListener: InterceptAdapterListener) {
         adapterListener.onSuccess(intercept: testIntercept)
     }
-    func sendEvents(session: Session, events: Array<InterceptEvent>) {
+    func sendEvents(session: Session, events: Set<InterceptEvent>) {
         testEvents = events
     }
 }

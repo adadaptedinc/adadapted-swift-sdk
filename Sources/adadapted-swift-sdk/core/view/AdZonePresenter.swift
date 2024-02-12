@@ -110,8 +110,10 @@ class AdZonePresenter: SessionListener {
     func onAdDisplayed(ad: inout Ad, isAdVisible: Bool) {
         startZoneTimer()
         adStarted = true
-        trackAdImpression(ad: &ad, isAdVisible: isAdVisible)
-        currentAd = ad
+        if (ad.id != currentAd.id) {
+            currentAd = ad
+        }
+        trackAdImpression(ad: &currentAd, isAdVisible: isAdVisible)
     }
     
     func onAdVisibilityChanged(isAdVisible: Bool) {

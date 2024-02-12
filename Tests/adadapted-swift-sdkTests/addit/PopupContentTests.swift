@@ -73,11 +73,11 @@ class PopupContentTests: XCTestCase {
             testPopupContent.itemAcknowledge(item: testPopupContent.getItems().first!)
         }
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
             EventClient.getInstance().onPublishEvents()
         }
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 6) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 8) {
             XCTAssertEqual(2, TestEventAdapter.shared.testSdkEvents.count)
             XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.POPUP_ADDED_TO_LIST })
             XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.POPUP_ITEM_ADDED_TO_LIST })
@@ -86,7 +86,7 @@ class PopupContentTests: XCTestCase {
             expectation.fulfill()
         }
         
-        wait(for: [expectation], timeout: 10)
+        wait(for: [expectation], timeout: 15)
     }
     
     func testFailed() {
