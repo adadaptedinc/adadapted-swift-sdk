@@ -12,7 +12,7 @@ class AALogger {
     private static var disableLogging = false
     
     static func enableDebugLogging() {
-        isDebugLoggingEnabled = true
+        AALogger.isDebugLoggingEnabled = true
     }
     
     static func disableAllLogging() {
@@ -34,9 +34,9 @@ class AALogger {
     }
     
     static func logDebug(message: String) {
-        if isDebugLoggingEnabled && !disableLogging {
+        if AALogger.isDebugLoggingEnabled && !disableLogging {
             var msg = Logger.Message(stringLiteral: message)
-            AALogger.logger.debug(msg)
+            AALogger.logger.notice(msg)
         }
     }
 }

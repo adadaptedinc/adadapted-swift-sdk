@@ -106,10 +106,6 @@ class InterceptClient: SessionListener, InterceptAdapterListener {
     private func trackEvent(searchId: String, termId: String, term: String, userInput: String, eventType: String) {
         let event = InterceptEvent(searchId: searchId, event: eventType, userInput: userInput, termId: termId, term: term)
         self.fileEvent(event)
-        
-//        DispatchQueue.global(qos: .background).async {
-//            self.fileEvent(event)
-//        }
     }
     
     static private var instance: InterceptClient!

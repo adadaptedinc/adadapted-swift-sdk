@@ -143,7 +143,6 @@ class EventClient: SessionListener {
     
     static func trackImpression(ad: Ad) {
         AALogger.logDebug(message: "Ad Impression Tracked.")
-        AALogger.logDebug(message: "Ad Impression Tracked.")
         DispatchQueue.global(qos: .background).async {
             fileEvent(ad: ad, eventType: AdEventTypes.IMPRESSION)
         }

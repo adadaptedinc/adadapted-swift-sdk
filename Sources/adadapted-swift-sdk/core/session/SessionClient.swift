@@ -70,7 +70,6 @@ class SessionClient: SessionAdapterListener {
     
     private func performInitialize(deviceInfo: DeviceInfo) {
         DispatchQueue.global(qos: .background).async {
-            print("ADAPTER USED")
             self.adapter?.sendInit(deviceInfo: deviceInfo, listener: self)
         }
     }
@@ -284,7 +283,6 @@ class SessionClient: SessionAdapterListener {
     static func createInstance(adapter: SessionAdapter) {
         instance = SessionClient()
         instance.adapter = adapter
-        print("ADAPTER SET")
         instance.hasActiveInstance = true
     }
 }
