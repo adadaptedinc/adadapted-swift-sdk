@@ -1,4 +1,4 @@
-# Adadapted iOS SDK
+# AdAdapted iOS SDK
 
 The iOS SDK integrates AdAdapted services with partner iOS apps via Swift Package Manager.
 
