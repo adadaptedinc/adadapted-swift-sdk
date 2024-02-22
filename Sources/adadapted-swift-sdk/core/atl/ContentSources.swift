@@ -12,4 +12,6 @@ public class ContentSources {
     static let PAYLOAD_ID = "payload_id"
     static let TRACKING_ID = "tracking_id"
     static let ITEM_NAME = "item_name"
+    static let CONTEXT_ID = "context_id"
+    static let ZONE_ID = "zone_id"
 }

@@ -46,6 +46,8 @@ class EventStrings {
     static let ATL_ADDED_TO_LIST_FAILED = "ATL_ADDED_TO_LIST_FAILED"
     static let ATL_ADDED_TO_LIST_ITEM_FAILED = "ATL_ADDED_TO_LIST_ITEM_FAILED"
     static let ATL_AD_CLICKED = "atl_ad_clicked"
+    
+    static let RECIPE_CONTEXT = "recipe_context"
 
     static let POPUP_ADDED_TO_LIST = "popup_added_to_list"
     static let POPUP_ITEM_ADDED_TO_LIST = "popup_item_added_to_list"

@@ -167,6 +167,13 @@ class EventClient: SessionListener {
         }
     }
     
+    static func trackRecipeContextEvent(contextId: String, zoneId: String) {
+        var eventParams: [String: String] = [:]
+        eventParams[ContentSources.CONTEXT_ID] = contextId
+        eventParams[ContentSources.ZONE_ID] = zoneId
+        trackSdkEvent(name: EventStrings.RECIPE_CONTEXT, params: eventParams)
+    }
+    
     static private var instance: EventClient!
     
     static func getInstance() -> EventClient {

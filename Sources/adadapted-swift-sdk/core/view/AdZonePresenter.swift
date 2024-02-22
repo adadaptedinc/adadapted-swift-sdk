@@ -60,6 +60,7 @@ class AdZonePresenter: SessionListener {
     
     func setZoneContext(contextId: String) {
         sessionClient?.setZoneContext(zoneContext: ZoneContext(zoneId: self.zoneId, contextId: contextId))
+        EventClient.trackRecipeContextEvent(contextId: contextId, zoneId: self.zoneId)
     }
     
     func removeZoneContext() {
