@@ -8,19 +8,19 @@ class EventClient: SessionListener {
     
     private static var eventAdapter: EventAdapter? = nil
     private static var listeners: Array<EventClientListener> = []
-    private static var adEvents: Array<AdEvent> = []
-    private static var sdkEvents: Array<SdkEvent> = []
-    private static var sdkErrors: Array<SdkError> = []
+    private static var adEvents: Set<AdEvent> = []
+    private static var sdkEvents: Set<SdkEvent> = []
+    private static var sdkErrors: Set<SdkError> = []
     private static var session: Session? = nil
     private static var hasInstance: Bool = false
     
     private static func performTrackSdkEvent(name: String, params: [String: String]) {
-        sdkEvents.insert(SdkEvent(type: EventStrings.SDK_EVENT_TYPE, name: name, params: params), at: 0)
+        sdkEvents.insert(SdkEvent(type: EventStrings.SDK_EVENT_TYPE, name: name, params: params))
     }
     
     private static func performTrackSdkError(code: String, message: String, params: [String: String]) {
         AALogger.logError(message: "App Error: \(code) - \(message)")
-        sdkErrors.insert(SdkError(code: code, message: message, params: params), at: 0)
+        sdkErrors.insert(SdkError(code: code, message: message, params: params))
     }
     
     private static func performPublishSdkErrors() {
@@ -66,7 +66,7 @@ class EventClient: SessionListener {
             impressionId: ad.impressionId,
             eventType: eventType
         )
-        adEvents.insert(event, at: 0)
+        adEvents.insert(event)
         notifyAdEventTracked(event: event)
     }
     

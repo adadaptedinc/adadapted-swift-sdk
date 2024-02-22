@@ -4,7 +4,7 @@
 
 import Foundation
 
-struct SdkError: Codable {
+struct SdkError: Codable, Hashable {
     let code: String
     let message: String
     let params: Dictionary<String, String>

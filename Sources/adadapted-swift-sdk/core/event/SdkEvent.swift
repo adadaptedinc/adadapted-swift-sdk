@@ -4,7 +4,7 @@
 
 import Foundation
 
-struct SdkEvent: Codable {
+struct SdkEvent: Codable, Hashable {
     let type: String
     let name: String
     let params: Dictionary<String, String>

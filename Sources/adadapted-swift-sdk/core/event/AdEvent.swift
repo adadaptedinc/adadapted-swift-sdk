@@ -4,7 +4,7 @@
 
 import Foundation
 
-struct AdEvent: Codable {
+struct AdEvent: Codable, Hashable {
     let adId: String
     let zoneId: String
     let impressionId: String
