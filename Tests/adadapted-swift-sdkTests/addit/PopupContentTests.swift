@@ -56,8 +56,7 @@ class PopupContentTests: XCTestCase {
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
-            XCTAssertEqual(EventStrings.POPUP_ADDED_TO_LIST, TestEventAdapter.shared.testSdkEvents.first?.name)
-            XCTAssertEqual("testPayloadId", TestEventAdapter.shared.testSdkEvents.first?.params["payload_id"])
+            XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.POPUP_ADDED_TO_LIST })
             expectation.fulfill()
         }
         

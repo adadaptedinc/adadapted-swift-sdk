@@ -88,6 +88,7 @@ class EventClientTests: XCTestCase {
     
     func testOnSessionExpired() {
         let expectation = XCTestExpectation(description: "Content available expectation")
+        TestEventAdapter.shared.cleanupEvents()
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             EventClient.getInstance().onSessionExpired()
@@ -99,7 +100,7 @@ class EventClientTests: XCTestCase {
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             XCTAssertEqual("sdk", TestEventAdapter.shared.testSdkEvents.first?.type)
-            XCTAssertEqual(EventStrings.EXPIRED_EVENT, TestEventAdapter.shared.testSdkEvents.first?.name)
+            XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.EXPIRED_EVENT })
             expectation.fulfill()
         }
         

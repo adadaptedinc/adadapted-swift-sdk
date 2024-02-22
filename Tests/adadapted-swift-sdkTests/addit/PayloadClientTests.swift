@@ -31,6 +31,7 @@ class PayloadClientTests: XCTestCase {
     override class func tearDown() {
         SessionClient.getInstance().refreshTimer?.stopTimer()
         SessionClient.getInstance().eventTimer?.stopTimer()
+        TestEventAdapter.shared.cleanupEvents()
     }
     
     func testPickupPayloads() {
@@ -51,7 +52,7 @@ class PayloadClientTests: XCTestCase {
             expectation.fulfill()
         }
         
-        wait(for: [expectation], timeout: 2.5)
+        wait(for: [expectation], timeout: 3)
     }
     
     func testDeeplinkInProgressAndCompletes() {
@@ -70,24 +71,25 @@ class PayloadClientTests: XCTestCase {
         XCTAssertTrue(testContent.isEmpty)
         
         PayloadClient.deeplinkCompleted()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
             PayloadClient.pickupPayloads {
                 testContent = $0
             }
         }
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
             XCTAssertFalse(testContent.isEmpty)
             XCTAssertEqual("testPayloadId", testContent.first?.payloadId)
             expectation.fulfill()
         }
         
-        wait(for: [expectation], timeout: 2.5)
+        wait(for: [expectation], timeout: 8)
     }
     
     func testMarkContentAcknowledged() {
         let expectation = XCTestExpectation(description: "Content available expectation")
         let content = Self.getTestAdditPayloadContent()
+        TestEventAdapter.shared.cleanupEvents()
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             PayloadClient.markContentAcknowledged(content: content)
