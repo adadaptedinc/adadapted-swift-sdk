@@ -12,10 +12,17 @@ jobs:
     runs-on: macos-latest
 
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up Swift
-      uses: swift-actions/setup-swift@v1
-      with:
-        swift-version: '5.9.0'
-    - name: Build
-      run: xcodebuild -scheme adadapted-swift-sdk -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 15'
+      - uses: actions/checkout@v3
+      
+      - name: Install Swift 5.9.0
+        run: |
+          brew update
+          brew install swift@5.9.0
+
+      - name: Set up Swift
+        uses: swift-actions/setup-swift@v1
+        with:
+          swift-version: '5.9.0'
+          
+      - name: Build
+        run: xcodebuild -scheme adadapted-swift-sdk -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 15'
