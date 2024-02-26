@@ -16,10 +16,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Use Swift ${{ matrix.swift-version }}
-      uses: actions/setup-swift@v2
-      with:
-        swift-version: 5.9.0
+    - name: Download and install Swift
+      run: |
+        wget https://swift.org/builds/swift-5.9.0-release/xcode/swift-5.9.0-RELEASE/swift-5.9.0-RELEASE-osx.pkg
+        sudo installer -pkg swift-5.9.0-RELEASE-osx.pkg -target /
     - name: Build
       run: swift build -v
     - name: Run tests
