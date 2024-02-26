@@ -1,7 +1,4 @@
-# This workflow will build a Swift project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-swift
-
-name: Swift
+name: iOS Swift Package
 
 on:
   push:
@@ -19,8 +16,8 @@ jobs:
     - name: Set up Swift
       uses: swift-actions/setup-swift@v1
       with:
-        swift-version: '5.9'
+        swift-version: '5.9.0'
     - name: Build
-      run: swift build -v
-    - name: Run tests
-      run: swift test -v
+      run: swift build --destination="platform=iOS Simulator,OS=15.0,name=iPhone 13" --enable-test-discovery
+    - name: Test
+      run: swift test --destination="platform=iOS Simulator,OS=15.0,name=iPhone 13" --enable-test-discovery
