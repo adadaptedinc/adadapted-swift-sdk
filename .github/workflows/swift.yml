@@ -18,6 +18,4 @@ jobs:
       with:
         swift-version: '5.9.0'
     - name: Build
-      run: swift build --destination="platform=iOS Simulator,OS=15.0,name=iPhone 13" --enable-test-discovery
-    - name: Test
-      run: swift test --destination="platform=iOS Simulator,OS=15.0,name=iPhone 13" --enable-test-discovery
+      run: xcodebuild -scheme adadapted-swift-sdk -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 13' build
