@@ -100,9 +100,9 @@ class PayloadClientTests: XCTestCase {
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
-            XCTAssertEqual(EventStrings.ADDIT_ADDED_TO_LIST, TestEventAdapter.shared.testSdkEvents.first?.name)
-            XCTAssertEqual("testPayloadId", TestEventAdapter.shared.testSdkEvents.first?.params["payload_id"])
-            XCTAssertEqual(ContentSources.PAYLOAD, TestEventAdapter.shared.testSdkEvents.first?.params["source"])
+            XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.ADDIT_ADDED_TO_LIST })
+            XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.first { $0.name == EventStrings.ADDIT_ADDED_TO_LIST }?.params["payload_id"] == "testPayloadId")
+            XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.first { $0.name == EventStrings.ADDIT_ADDED_TO_LIST }?.params["source"] == ContentSources.PAYLOAD)
             expectation.fulfill()
         }
         

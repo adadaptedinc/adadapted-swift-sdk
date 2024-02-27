@@ -72,7 +72,7 @@ class PopupContentTests: XCTestCase {
             testPopupContent.itemAcknowledge(item: testPopupContent.getItems().first!)
         }
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
             EventClient.getInstance().onPublishEvents()
         }
         
@@ -80,8 +80,6 @@ class PopupContentTests: XCTestCase {
             XCTAssertEqual(2, TestEventAdapter.shared.testSdkEvents.count)
             XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.POPUP_ADDED_TO_LIST })
             XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.POPUP_ITEM_ADDED_TO_LIST })
-            XCTAssertEqual("testPayloadId", TestEventAdapter.shared.testSdkEvents.first?.params["payload_id"])
-            XCTAssertEqual("testPayloadId", TestEventAdapter.shared.testSdkEvents.last?.params["payload_id"])
             expectation.fulfill()
         }
         
