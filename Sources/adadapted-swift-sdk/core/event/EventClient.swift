@@ -13,6 +13,7 @@ class EventClient: SessionListener {
     private static var sdkErrors: Set<SdkError> = []
     private static var session: Session? = nil
     private static var hasInstance: Bool = false
+    private static let sdkEventsQueue = DispatchQueue(label: "com.adadapted.sdkEventsQueue")
     
     private static func performTrackSdkEvent(name: String, params: [String: String]) {
         sdkEvents.insert(SdkEvent(type: EventStrings.SDK_EVENT_TYPE, name: name, params: params))
@@ -123,7 +124,9 @@ class EventClient: SessionListener {
     
     static func trackSdkEvent(name: String, params: [String: String] = [:]) {
         DispatchQueue.global(qos: .background).async {
-            performTrackSdkEvent(name: name, params: params)
+            sdkEventsQueue.sync {
+                performTrackSdkEvent(name: name, params: params)
+            }
         }
     }
     
