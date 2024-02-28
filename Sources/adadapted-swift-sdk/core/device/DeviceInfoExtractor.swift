@@ -33,11 +33,20 @@ class DeviceInfoExtractor {
         return id
     }
     
+    static private func isTrackingDisabled() -> Bool {
+        let defaults = UserDefaults.standard
+        return defaults.bool(forKey: Config.AASDK_PREFS_TRACKING_DISABLED_KEY) == true
+    }
+    
     static func isAllowRetargetingEnabled() -> Bool {
-        if #available(iOS 14, *) {
-            return ATTrackingManager.trackingAuthorizationStatus == .authorized
-        } else {
+        if(isTrackingDisabled()) {
             return false
+        } else {
+            if #available(iOS 14, *) {
+                return ATTrackingManager.trackingAuthorizationStatus == .authorized
+            } else {
+                return false
+            }
         }
     }
     

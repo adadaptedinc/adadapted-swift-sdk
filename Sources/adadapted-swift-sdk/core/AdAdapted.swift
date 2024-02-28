@@ -114,7 +114,6 @@ public class AdAdapted {
     private static func setAdTracking(value: Bool) {
         let defaults = UserDefaults.standard
         defaults.set(value, forKey: Config.AASDK_PREFS_TRACKING_DISABLED_KEY)
-        defaults.synchronize()
     }
     
     private static func setupClients() {
