@@ -15,15 +15,17 @@ class DeviceInfoExtractor {
         return NSUUID().uuidString.replacingOccurrences(of: "_", with: "")
     }
     
-    private func getUdid() -> String {
+    private func getUdid(customId: String = "") -> String {
         let AA_UUID_KEY = "adadapted_swift_sdk_uuid"
         let preferences = UserDefaults.standard
         var id = ""
         
-        if (DeviceInfoExtractor.isAllowRetargetingEnabled)() {
+        if (!customId.isEmpty) {
+            id = customId
+            preferences.setValue(id, forKey: AA_UUID_KEY)
+        } else if (DeviceInfoExtractor.isAllowRetargetingEnabled)() {
             id = ASIdentifierManager.shared().advertisingIdentifier.uuidString
             preferences.setValue(id, forKey: AA_UUID_KEY)
-            
         } else if (preferences.object(forKey: AA_UUID_KEY) == nil) {
             id = generateUdid()
             preferences.setValue(id, forKey: AA_UUID_KEY)
@@ -62,9 +64,9 @@ class DeviceInfoExtractor {
                 scale: Float(UIScreen.main.scale),
                 bundleId: Bundle.main.bundleIdentifier ?? "",
                 bundleVersion: Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "",
-                udid: !customIdentifier.isEmpty ? customIdentifier : getUdid(),
+                udid: getUdid(customId: customIdentifier),
                 deviceName: UIDevice.current.name,
-                deviceUdid: getUdid(),
+                deviceUdid: getUdid(customId: customIdentifier),
                 os: "iOS",
                 osv: UIDevice.current.systemVersion,
                 locale: NSLocale.current.region?.identifier ?? "",
@@ -86,9 +88,9 @@ class DeviceInfoExtractor {
                 scale: Float(UIScreen.main.scale),
                 bundleId: Bundle.main.bundleIdentifier ?? "",
                 bundleVersion: Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "",
-                udid: !customIdentifier.isEmpty ? customIdentifier : getUdid(),
+                udid: getUdid(customId: customIdentifier),
                 deviceName: UIDevice.current.name,
-                deviceUdid: getUdid(),
+                deviceUdid: getUdid(customId: customIdentifier),
                 os: "iOS",
                 osv: UIDevice.current.systemVersion,
                 locale: NSLocale.current.regionCode ?? "",
