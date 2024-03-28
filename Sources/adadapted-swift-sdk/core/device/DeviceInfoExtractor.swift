@@ -10,13 +10,9 @@ import UIKit
 
 class DeviceInfoExtractor {
     private let screenSize = UIScreen.main.bounds
-
-    private func generateUdid() -> String {
-        return NSUUID().uuidString.replacingOccurrences(of: "_", with: "")
-    }
     
     private func getUdid(customId: String = "") -> String {
-        let AA_UUID_KEY = "adadapted_swift_sdk_uuid"
+        let AA_UUID_KEY = "adadapted_swift_sdk_vendor_id"
         let preferences = UserDefaults.standard
         var id = ""
         
@@ -27,7 +23,7 @@ class DeviceInfoExtractor {
             id = ASIdentifierManager.shared().advertisingIdentifier.uuidString
             preferences.setValue(id, forKey: AA_UUID_KEY)
         } else if (preferences.object(forKey: AA_UUID_KEY) == nil) {
-            id = generateUdid()
+            id = EventStrings.DEFAULT_VENDOR_ID
             preferences.setValue(id, forKey: AA_UUID_KEY)
         } else {
             id = preferences.value(forKey: AA_UUID_KEY) as! String
@@ -65,7 +61,7 @@ class DeviceInfoExtractor {
                 bundleId: Bundle.main.bundleIdentifier ?? "",
                 bundleVersion: Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "",
                 udid: getUdid(customId: customIdentifier),
-                deviceName: UIDevice.current.name,
+                deviceName: UIDevice.current.localizedModel,
                 deviceUdid: getUdid(customId: customIdentifier),
                 os: "iOS",
                 osv: UIDevice.current.systemVersion,
@@ -89,7 +85,7 @@ class DeviceInfoExtractor {
                 bundleId: Bundle.main.bundleIdentifier ?? "",
                 bundleVersion: Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "",
                 udid: getUdid(customId: customIdentifier),
-                deviceName: UIDevice.current.name,
+                deviceName: UIDevice.current.localizedModel,
                 deviceUdid: getUdid(customId: customIdentifier),
                 os: "iOS",
                 osv: UIDevice.current.systemVersion,

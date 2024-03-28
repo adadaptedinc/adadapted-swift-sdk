@@ -10,6 +10,7 @@ class EventStrings {
     static let GAID_UNAVAILABLE = "GAID_UNAVAILABLE"
     static let SDK_EVENT_REQUEST_FAILED = "APP_EVENT_REQUEST_FAILED"
     static let SDK_EVENT_TYPE = "sdk"
+    static let DEFAULT_VENDOR_ID = "AdAdaptedDevice"
 
     static let ADDIT_APP_OPENED = "addit_app_opened"
     static let ADDIT_DEEPLINK_HANDLING_ERROR = "ADDIT_DEEPLINK_HANDLING_ERROR"
