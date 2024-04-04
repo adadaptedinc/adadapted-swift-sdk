@@ -14,7 +14,6 @@ class Config {
     static let DEFAULT_AD_REFRESH = 6000 // If an Ad does not have a refresh time it will default to 60 seconds
     
     static let AASDK_PREFS_KEY = "AASDK_PREFS"
-    static let AASDK_PREFS_TRACKING_DISABLED_KEY = "TRACKING_DISABLED"
     static let AASDK_PREFS_GENERATED_ID_KEY = "GENERATED_ID"
     
     internal static let AD_SERVER_VERSION = "/v/0.9.5/"

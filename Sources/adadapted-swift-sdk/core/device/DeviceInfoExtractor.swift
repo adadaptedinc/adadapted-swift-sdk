@@ -11,41 +11,25 @@ import UIKit
 class DeviceInfoExtractor {
     private let screenSize = UIScreen.main.bounds
     
+    private func generateUdid() -> String {
+            return NSUUID().uuidString.replacingOccurrences(of: "_", with: "")
+    }
+    
     private func getUdid(customId: String = "") -> String {
-        let AA_UUID_KEY = "adadapted_swift_sdk_vendor_id"
+        let AA_UUID_KEY = "adadapted_swift_sdk_uuid"
         let preferences = UserDefaults.standard
         var id = ""
         
         if (!customId.isEmpty) {
             id = customId
             preferences.setValue(id, forKey: AA_UUID_KEY)
-        } else if (DeviceInfoExtractor.isAllowRetargetingEnabled)() {
-            id = ASIdentifierManager.shared().advertisingIdentifier.uuidString
-            preferences.setValue(id, forKey: AA_UUID_KEY)
         } else if (preferences.object(forKey: AA_UUID_KEY) == nil) {
-            id = EventStrings.DEFAULT_VENDOR_ID
+            id = generateUdid()
             preferences.setValue(id, forKey: AA_UUID_KEY)
         } else {
             id = preferences.value(forKey: AA_UUID_KEY) as! String
         }
         return id
-    }
-    
-    static private func isTrackingDisabled() -> Bool {
-        let defaults = UserDefaults.standard
-        return defaults.bool(forKey: Config.AASDK_PREFS_TRACKING_DISABLED_KEY) == true
-    }
-    
-    static func isAllowRetargetingEnabled() -> Bool {
-        if(isTrackingDisabled()) {
-            return false
-        } else {
-            if #available(iOS 14, *) {
-                return ATTrackingManager.trackingAuthorizationStatus == .authorized
-            } else {
-                return false
-            }
-        }
     }
     
     func width() -> Int { Int(CGRectGetWidth(self.screenSize)) }
@@ -71,7 +55,7 @@ class DeviceInfoExtractor {
                 dw: width(),
                 dh: height(),
                 density: "\(UIScreen.main.scale)",
-                isAllowRetargetingEnabled: DeviceInfoExtractor.isAllowRetargetingEnabled(),
+                isAllowRetargetingEnabled: false,
                 sdkVersion: Config.LIBRARY_VERSION,
                 createdAt: Int(NSDate().timeIntervalSince1970),
                 params: params)
@@ -95,7 +79,7 @@ class DeviceInfoExtractor {
                 dw: width(),
                 dh: height(),
                 density: "\(UIScreen.main.scale)",
-                isAllowRetargetingEnabled: DeviceInfoExtractor.isAllowRetargetingEnabled(),
+                isAllowRetargetingEnabled: false,
                 sdkVersion: Config.LIBRARY_VERSION,
                 createdAt: Int(NSDate().timeIntervalSince1970),
                 params: params)
