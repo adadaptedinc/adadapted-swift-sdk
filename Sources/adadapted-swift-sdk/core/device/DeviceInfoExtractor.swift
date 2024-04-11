@@ -12,7 +12,7 @@ class DeviceInfoExtractor {
     private let screenSize = UIScreen.main.bounds
     
     private func generateUdid() -> String {
-            return NSUUID().uuidString.replacingOccurrences(of: "_", with: "")
+        return NSUUID().uuidString.replacingOccurrences(of: "_", with: "")
     }
     
     private func getUdid(customId: String = "") -> String {
