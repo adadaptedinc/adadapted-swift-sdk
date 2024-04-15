@@ -17,7 +17,7 @@ class EventBroadcaster: EventClientListener {
         EventClient.addListener(listener: self)
     }
     
-    func setListener(listener: AaSdkEventListener) {
+    func setListener(listener: AaSdkEventListener?) {
         EventBroadcaster.instance.listener = listener
     }
     

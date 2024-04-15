@@ -73,7 +73,7 @@ public class AdAdapted {
         
         if hasStarted {
             if !isProd {
-                AALogger.logError(message: "AdAdapted Android Advertising SDK has already been started.")
+                AALogger.logError(message: "AdAdapted Advertising SDK has already been started.")
             }
         }
         
@@ -98,7 +98,7 @@ public class AdAdapted {
         if isKeywordInterceptEnabled {
             KeywordInterceptMatcher.getInstance().match(constraint: "INIT") //init the matcher
         }
-        AALogger.logInfo(message: "AdAdapted Android SDK \(Config.LIBRARY_VERSION) initialized.")
+        AALogger.logInfo(message: "AdAdapted SDK \(Config.LIBRARY_VERSION) initialized.")
     }
     
     private static func setupClients() {
