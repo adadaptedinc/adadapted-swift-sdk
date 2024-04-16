@@ -16,7 +16,7 @@ class AdditContentPublisher {
     
     init(){}
     
-    func addListener(listener: AaSdkAdditContentListener) {
+    func addListener(listener: AaSdkAdditContentListener?) {
         self.listener = listener
     }
     

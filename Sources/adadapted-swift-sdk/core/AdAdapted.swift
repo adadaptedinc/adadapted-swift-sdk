@@ -66,16 +66,6 @@ public class AdAdapted {
         return self
     }
     
-    public static func disableAdTracking() -> AdAdapted.Type {
-        setAdTracking(value: true)
-        return self
-    }
-    
-    public static func enableAdTracking() -> AdAdapted.Type {
-        setAdTracking(value: false)
-        return self
-    }
-    
     public static func start() {
         if apiKey.isEmpty {
             AALogger.logError(message: "The AdAdapted Api Key is missing or NULL")
@@ -83,7 +73,7 @@ public class AdAdapted {
         
         if hasStarted {
             if !isProd {
-                AALogger.logError(message: "AdAdapted Android Advertising SDK has already been started.")
+                AALogger.logError(message: "AdAdapted Advertising SDK has already been started.")
             }
         }
         
@@ -108,12 +98,7 @@ public class AdAdapted {
         if isKeywordInterceptEnabled {
             KeywordInterceptMatcher.getInstance().match(constraint: "INIT") //init the matcher
         }
-        AALogger.logInfo(message: "AdAdapted Android SDK \(Config.LIBRARY_VERSION) initialized.")
-    }
-    
-    private static func setAdTracking(value: Bool) {
-        let defaults = UserDefaults.standard
-        defaults.set(value, forKey: Config.AASDK_PREFS_TRACKING_DISABLED_KEY)
+        AALogger.logInfo(message: "AdAdapted SDK \(Config.LIBRARY_VERSION) initialized.")
     }
     
     private static func setupClients() {
