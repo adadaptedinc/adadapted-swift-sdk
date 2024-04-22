@@ -21,21 +21,21 @@ class AALogger {
     
     static func logError(message: String) {
         if !disableLogging {
-            var msg = Logger.Message(stringLiteral: message)
+            let msg = Logger.Message(stringLiteral: message)
             AALogger.logger.error(msg)
         }
     }
     
     static func logInfo(message: String) {
         if !disableLogging {
-            var msg = Logger.Message(stringLiteral: message)
+            let msg = Logger.Message(stringLiteral: message)
             AALogger.logger.info(msg)
         }
     }
     
     static func logDebug(message: String) {
         if AALogger.isDebugLoggingEnabled && !disableLogging {
-            var msg = Logger.Message(stringLiteral: message)
+            let msg = Logger.Message(stringLiteral: message)
             AALogger.logger.notice(msg)
         }
     }

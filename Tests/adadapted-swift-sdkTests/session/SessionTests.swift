@@ -21,7 +21,7 @@ class SessionTests: XCTestCase {
     
     func testSessionHasZoneAds() {
         var session = SessionTests.buildTestSession()
-        var zones: [String: Zone] = ["testZone": Zone(id: "zoneId", ads: [Ad(id: "testAdId", impressionId: "impId", url: "url", actionType: "action", actionPath: "actionPath", payload: Payload(detailedListItems: []))])]
+        let zones: [String: Zone] = ["testZone": Zone(id: "zoneId", ads: [Ad(id: "testAdId", impressionId: "impId", url: "url", actionType: "action", actionPath: "actionPath", payload: Payload(detailedListItems: []))])]
         session.updateZones(newZones: zones)
         XCTAssertFalse(session.getZonesWithAds().isEmpty)
     }

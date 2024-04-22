@@ -13,7 +13,7 @@ class AdditContentParser {
                 type = AddToListTypes.ADD_TO_LIST_ITEMS
             }
             
-            var contentToAdd = AdditContent(
+            let contentToAdd = AdditContent(
                 payloadId: payload.payloadId,
                 message: payload.payloadMessage,
                 image: payload.payloadImage,

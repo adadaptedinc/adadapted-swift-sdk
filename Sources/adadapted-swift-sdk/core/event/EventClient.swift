@@ -58,7 +58,7 @@ class EventClient: SessionListener {
     }
     
     private static func fileEvent(ad: Ad, eventType: String) {
-        guard let currentSession = session else {
+        guard session != nil else {
             return
         }
         let event = AdEvent(
