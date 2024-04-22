@@ -23,7 +23,8 @@ class InterceptClient: SessionListener, InterceptAdapterListener {
         
         self.interceptListener = interceptListener
         
-        DispatchQueue.global(qos: .background).async {
+        DispatchQueue.global(qos: .background).async { [weak self] in
+            guard let self = self else { return }
             self.adapter.retrieve(session: session, adapterListener: self)
         }
     }
@@ -76,14 +77,14 @@ class InterceptClient: SessionListener, InterceptAdapterListener {
     }
     
     func onPublishEvents() {
-        DispatchQueue.global(qos: .background).async {
-            self.performPublishEvents()
+        DispatchQueue.global(qos: .background).async { [weak self] in
+            self?.performPublishEvents()
         }
     }
     
     func initialize(session: Session?, interceptListener: InterceptListener?) {
-        DispatchQueue.global(qos: .background).async {
-            self.performInitialize(session: session, interceptListener: interceptListener)
+        DispatchQueue.global(qos: .background).async { [weak self] in
+            self?.performInitialize(session: session, interceptListener: interceptListener)
         }
     }
     

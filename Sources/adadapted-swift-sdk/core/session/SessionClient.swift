@@ -69,7 +69,8 @@ class SessionClient: SessionAdapterListener {
     }
     
     private func performInitialize(deviceInfo: DeviceInfo) {
-        DispatchQueue.global(qos: .background).async {
+        DispatchQueue.global(qos: .background).async { [weak self] in
+            guard let self = self else { return }
             self.adapter?.sendInit(deviceInfo: deviceInfo, listener: self)
         }
     }
@@ -91,7 +92,8 @@ class SessionClient: SessionAdapterListener {
             if presenterSize() > 0 {
                 AALogger.logInfo(message: "Reinitializing Session.")
                 status = .IS_REINITIALIZING_SESSION
-                DispatchQueue.global(qos: .background).async {
+                DispatchQueue.global(qos: .background).async { [weak self] in
+                    guard let self = self else { return }
                     self.adapter?.sendInit(deviceInfo: deviceInfo, listener: self)
                 }
             } else {
@@ -226,8 +228,8 @@ class SessionClient: SessionAdapterListener {
         addListener(listener: listener)
         let deviceCallbackHandler = DeviceCallbackHandler()
         deviceCallbackHandler.callback = { deviceInfo in
-            DispatchQueue.global(qos: .background).async {
-                self.performInitialize(deviceInfo: deviceInfo)
+            DispatchQueue.global(qos: .background).async { [weak self] in
+                self?.performInitialize(deviceInfo: deviceInfo)
             }
         }
         DeviceInfoClient.getDeviceInfo(deviceCallback: deviceCallbackHandler)

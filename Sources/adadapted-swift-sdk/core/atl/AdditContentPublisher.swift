@@ -65,8 +65,8 @@ class AdditContentPublisher {
     }
     
     private func notifyContentAvailable(content: AddToListContent) {
-        DispatchQueue.main.async {
-            self.listener?.onContentAvailable(content: content)
+        DispatchQueue.main.async { [weak self] in
+            self?.listener?.onContentAvailable(content: content)
         }
     }
     
