@@ -11,6 +11,7 @@ class AdZonePresenter: SessionListener {
     
     private var currentAd = Ad()
     private var zoneId = ""
+    private var isZoneVisible = true
     private var adZonePresenterListener: AdZonePresenterListener?
     private var attached = false
     private var sessionId: String?
@@ -100,7 +101,7 @@ class AdZonePresenter: SessionListener {
     
     private func completeCurrentAd() {
         if !currentAd.isEmpty() && adStarted && !adCompleted {
-            if !currentAd.impressionWasTracked() {
+            if !currentAd.impressionWasTracked() && !isZoneVisible {
                 EventClient.trackInvisibleImpression(ad: currentAd)
             }
             currentAd.resetImpressionTracking()
@@ -109,6 +110,7 @@ class AdZonePresenter: SessionListener {
     }
     
     func onAdDisplayed(ad: inout Ad, isAdVisible: Bool) {
+        isZoneVisible = isAdVisible
         startZoneTimer()
         adStarted = true
         if (ad.id != currentAd.id) {
@@ -118,6 +120,7 @@ class AdZonePresenter: SessionListener {
     }
     
     func onAdVisibilityChanged(isAdVisible: Bool) {
+        isZoneVisible = isAdVisible
         adZonePresenterListener?.onAdVisibilityChanged(ad: currentAd)
         trackAdImpression(ad: &currentAd, isAdVisible: isAdVisible)
     }
