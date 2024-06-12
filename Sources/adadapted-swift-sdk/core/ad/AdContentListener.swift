@@ -6,6 +6,7 @@ import Foundation
 
 public protocol AdContentListener {
     func onContentAvailable(zoneId: String, content: AddToListContent)
+    func onNonContentAction(zoneId: String, adId: String)
 }
 
 private struct AdContentListenerIDProvider {
@@ -17,5 +18,9 @@ private struct AdContentListenerIDProvider {
 public extension AdContentListener {
     var listenerId: String {
         return AdContentListenerIDProvider.sharedListenerId
+    }
+    
+    func onNonContentAction(zoneId: String, adId: String) {
+        // Default implementation to make this method optional
     }
 }

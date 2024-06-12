@@ -203,16 +203,17 @@ class AdZonePresenter: SessionListener {
     }
     
     private func handleContentAction(ad: Ad) {
-        let zoneId = ad.zoneId
-        AdContentPublisher.getInstance().publishContent(zoneId: zoneId(), content: ad.getContent())
+        AdContentPublisher.getInstance().publishContent(zoneId: ad.zoneId(), content: ad.getContent())
     }
     
     private func handleLinkAction(ad: Ad) {
         adViewHandler.handleLink(ad: ad)
+        AdContentPublisher.getInstance().publishNonContentNotification(zoneId: ad.zoneId(), adId: ad.id)
     }
     
     private func handlePopupAction(ad: Ad) {
         adViewHandler.handlePopup(ad: ad)
+        AdContentPublisher.getInstance().publishNonContentNotification(zoneId: ad.zoneId(), adId: ad.id)
     }
     
     private func notifyZoneAvailable() {
