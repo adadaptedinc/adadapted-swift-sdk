@@ -29,11 +29,37 @@ class AdContentPublisherTests: XCTestCase {
         
         wait(for: [expectation], timeout: 1.0)
     }
+    
+    func testPublishContentWithNoItems() {
+        let expectation = XCTestExpectation(description: "NonContent available expectation")
+        
+        let publisher = AdContentPublisher.getInstance()
+        let mockListener = MockAdContentListener()
+        publisher.addListener(listener: mockListener)
+        
+        let zoneId = "testZoneId"
+        let adId = "1234"
+        
+        publisher.publishNonContentNotification(zoneId: zoneId, adId: adId)
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            XCTAssertTrue(mockListener.onNonContentNotificationCalled)
+            XCTAssertEqual(mockListener.notifiedZoneId, zoneId)
+            XCTAssertEqual(mockListener.notifiedAdId, adId)
+            
+            expectation.fulfill()
+        }
+        
+        wait(for: [expectation], timeout: 1.0)
+    }
 }
 
 class MockAdContentListener: AdContentListener {
     var listenerId: String = UUID().uuidString
     var onContentAvailableCalled: Bool = false
+    var onNonContentNotificationCalled: Bool = false
+    var notifiedZoneId: String?
+    var notifiedAdId: String?
     var receivedZoneId: String?
     var receivedContent: AddToListContent?
     
@@ -41,5 +67,11 @@ class MockAdContentListener: AdContentListener {
         onContentAvailableCalled = true
         receivedZoneId = zoneId
         receivedContent = content
+    }
+    
+    func onNonContentAction(zoneId: String, adId: String) {
+        onNonContentNotificationCalled = true
+        notifiedZoneId = zoneId
+        notifiedAdId = adId
     }
 }
