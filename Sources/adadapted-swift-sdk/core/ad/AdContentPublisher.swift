@@ -37,4 +37,12 @@ class AdContentPublisher {
             }
         }
     }
+    
+    func publishNonContentNotification(zoneId: String, adId: String) {
+        DispatchQueue.main.async {
+            for (listener) in self.listeners {
+                listener.onNonContentAction(zoneId: zoneId, adId: adId)
+            }
+        }
+    }
 }
