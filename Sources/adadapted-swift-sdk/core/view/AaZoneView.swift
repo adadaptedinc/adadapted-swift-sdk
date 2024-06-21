@@ -36,7 +36,7 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
         configuration.mediaTypesRequiringUserActionForPlayback = .audio
         webView = AdWebView(frame: .zero, listener: self)
         reportButton = UIButton(type: .custom)
-        reportButton.setImage(UIImage(named: "reportAdImage", in: Bundle.module, compatibleWith: nil), for: .normal)
+        reportButton.setImage(UIImage(named: "reportAdImage", in: .main, compatibleWith: nil), for: .normal)
         reportButton.addTarget(self, action: #selector(reportButtonTapped), for: .touchUpInside)
         reportButton.frame = CGRect(x: (Int(frame.width)) - 25, y: (Int(frame.height) - (Int(frame.height) - 10)), width: 14,height:14)
         reportButton.backgroundColor = .clear
