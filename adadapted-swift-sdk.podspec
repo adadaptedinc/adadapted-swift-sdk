@@ -17,7 +17,11 @@ Pod::Spec.new do |s|
   s.source_files = 'Sources/adadapted-swift-sdk/core/**/*'
 
   s.resources = "Sources/adadapted-swift-sdk/Assets.xcassets/**/*.xib"
-
+  s.resource_bundles = {
+     'adadapted-swift-sdk' => [
+     'Sources/adadapted-swift-sdk/Assets.xcassets/*.xib'
+     ]
+  }
   s.dependency 'Logging'
 
 end
