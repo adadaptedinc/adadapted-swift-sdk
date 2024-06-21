@@ -16,7 +16,7 @@ Pod::Spec.new do |s|
 
   s.source_files = 'Sources/adadapted-swift-sdk/**/*'
 
-  s.resources = "Sources/adadapted-swift-sdk/Assets/**/*.xib"
+  s.resources = "Sources/adadapted-swift-sdk/Assets.xcassets/**/*.xib"
 
   s.dependency 'SwiftLog'
 
