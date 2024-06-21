@@ -3,7 +3,7 @@
 //
 
 import Foundation
-import Logging
+import SwiftLog
 
 class AALogger {
     static let logger = Logger(label: "adadapted-swift-sdk")
