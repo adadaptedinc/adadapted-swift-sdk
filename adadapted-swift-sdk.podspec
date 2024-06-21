@@ -3,7 +3,11 @@ Pod::Spec.new do |s|
   s.version          = '1.0.6'
   s.summary          = 'adadapted-swift-sdk'
 
-  s.source           = { :git => 'https://github.com/smaksymov/adadapted-swift-sdk', :tag => s.version.to_s }
+  s.homepage         = 'https://github.com/smaksymov/adadapted-swift-sdk'
+  s.license          = { :type => 'MIT', :file => 'LICENSE' }
+  s.author           = { 'Stepan Maksymov' => 'maksymov.steve@gmail.com' }
+  s.source           = { :git => 'https://github.com/smaksymov/adadapted-swift-sdk.git', :tag => s.version.to_s }
+
   s.resource_bundles = {"Privacy" => ["adadapted-swift-sdk/PrivacyInfo.xcprivacy"]}
 
   s.ios.deployment_target = '13.0'
