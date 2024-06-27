@@ -88,7 +88,9 @@ class AdZonePresenter: SessionListener {
         
         adStarted = false
         adCompleted = false
-        displayAd()
+        DispatchQueue.main.async { [weak self] in
+            self?.displayAd()
+        }
     }
     
     private func displayAd() {
