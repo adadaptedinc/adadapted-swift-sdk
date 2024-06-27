@@ -123,8 +123,8 @@ class EventClient: SessionListener {
     }
     
     static func trackSdkEvent(name: String, params: [String: String] = [:]) {
-        DispatchQueue.global(qos: .background).async {
-            sdkEventsQueue.sync {
+        DispatchQueue.global(qos: .background).async { 
+            sdkEventsQueue.sync { 
                 performTrackSdkEvent(name: name, params: params)
             }
         }

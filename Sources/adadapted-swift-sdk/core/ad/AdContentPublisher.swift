@@ -31,7 +31,9 @@ class AdContentPublisher {
             return
         }
         
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            
             for (listener) in self.listeners {
                 listener.onContentAvailable(zoneId: zoneId, content: content)
             }
@@ -39,7 +41,9 @@ class AdContentPublisher {
     }
     
     func publishNonContentNotification(zoneId: String, adId: String) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            
             for (listener) in self.listeners {
                 listener.onNonContentAction(zoneId: zoneId, adId: adId)
             }

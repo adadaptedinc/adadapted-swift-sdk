@@ -9,6 +9,7 @@ class InterceptClient: SessionListener, InterceptAdapterListener {
     private var events: Set<InterceptEvent>
     private var currentSession: Session!
     private var interceptListener: InterceptListener?
+    private var backSerialQueue = DispatchQueue(label: "processingQueue")
     
     private init(adapter: InterceptAdapter) {
         self.adapter = adapter
@@ -22,8 +23,7 @@ class InterceptClient: SessionListener, InterceptAdapterListener {
         }
         
         self.interceptListener = interceptListener
-        
-        DispatchQueue.global(qos: .background).async { [weak self] in
+        backSerialQueue.async { [weak self] in
             guard let self = self else { return }
             self.adapter.retrieve(session: session, adapterListener: self)
         }
@@ -63,7 +63,9 @@ class InterceptClient: SessionListener, InterceptAdapterListener {
         let currentEvents = events
         events.removeAll()
         
-        DispatchQueue.global(qos: .background).async {
+        backSerialQueue.async { [weak self] in
+            guard let self else { return }
+            
             self.adapter.sendEvents(session: self.currentSession, events: currentEvents)
         }
     }
@@ -77,13 +79,13 @@ class InterceptClient: SessionListener, InterceptAdapterListener {
     }
     
     func onPublishEvents() {
-        DispatchQueue.global(qos: .background).async { [weak self] in
+        backSerialQueue.async { [weak self] in
             self?.performPublishEvents()
         }
     }
     
     func initialize(session: Session?, interceptListener: InterceptListener?) {
-        DispatchQueue.global(qos: .background).async { [weak self] in
+        backSerialQueue.async { [weak self] in
             self?.performInitialize(session: session, interceptListener: interceptListener)
         }
     }
