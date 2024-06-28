@@ -108,7 +108,7 @@ class InterceptClient: SessionListener, InterceptAdapterListener {
     
     private func trackEvent(searchId: String, termId: String, term: String, userInput: String, eventType: String) {
         let event = InterceptEvent(searchId: searchId, event: eventType, userInput: userInput, termId: termId, term: term)
-        DispatchQueue.global(qos: .background).async { [weak self] in
+        backSerialQueue.async { [weak self] in
             self?.fileEvent(event)
         }
     }
