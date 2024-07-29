@@ -18,8 +18,8 @@ public class AdAdapted {
     private static var isPayloadEnabled = false
     private static var eventListener: AaSdkEventListener!
     private static var contentListener: AaSdkAdditContentListener!
+    private static var params: Dictionary<String, String> = [:]
     static var sessionListener: AaSdkSessionListener!
-    static let params: Dictionary<String, String> = [:]
     
     public static func withAppId(key: String) -> AdAdapted.Type {
         self.apiKey = key
@@ -53,6 +53,11 @@ public class AdAdapted {
     
     public static func setSdkAdditContentListener(listener: AaSdkAdditContentListener) -> AdAdapted.Type {
         contentListener = listener
+        return self
+    }
+    
+    public static func setOptionalParams(params: Dictionary<String, String>) -> AdAdapted.Type {
+        self.params = params
         return self
     }
     
