@@ -96,9 +96,10 @@ public class AdAdapted {
         SessionClient.getInstance().start(listener: startupListener)
         
         if isKeywordInterceptEnabled {
-            KeywordInterceptMatcher.getInstance().match(constraint: "INIT") //init the matcher
+            KeywordInterceptMatcher.getInstance().match(constraint: "INIT"){ _ in
+                AALogger.logInfo(message: "AdAdapted SDK \(Config.LIBRARY_VERSION) initialized.")
+            }
         }
-        AALogger.logInfo(message: "AdAdapted SDK \(Config.LIBRARY_VERSION) initialized.")
     }
     
     private static func setupClients() {
