@@ -22,12 +22,12 @@ public class KeywordInterceptMatcher : SessionListener, InterceptListener {
     }
     
     private func matchKeyword(constraint: String, completion: @escaping (Array<Suggestion>) -> Void) {
-        currentSuggestions = []
         let input = constraint
-        if !isReadyToMatch(input: input) {
-            backSerialQueue.async { [weak self] in
-                guard let self else { return }
-                
+        backSerialQueue.async { [weak self] in
+            guard let self else { return }
+            
+            self.currentSuggestions = []
+            if !self.isReadyToMatch(input: input) {
                 completion(self.currentSuggestions)
             }
             return
@@ -96,8 +96,12 @@ public class KeywordInterceptMatcher : SessionListener, InterceptListener {
     }
     
     public func suggestionWasSelected(suggestionName: String) {
-        if var selectedSuggestion = currentSuggestions.first(where: { $0.name == suggestionName }) {
-            selectedSuggestion.wasSelected()
+        backSerialQueue.async { [weak self] in
+            guard let self else { return }
+
+            if var selectedSuggestion = currentSuggestions.first(where: { $0.name == suggestionName }) {
+                selectedSuggestion.wasSelected()
+            }
         }
     }
     

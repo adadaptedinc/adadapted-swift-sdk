@@ -16,22 +16,26 @@ class EventClient: SessionListener {
     private static let sdkEventsQueue = DispatchQueue(label: "com.adadapted.sdkEventsQueue")
     
     private static func performTrackSdkEvent(name: String, params: [String: String]) {
-        sdkEvents.insert(SdkEvent(type: EventStrings.SDK_EVENT_TYPE, name: name, params: params))
+        DispatchQueue.global(qos: .background).async {
+            EventClient.sdkEvents.insert(SdkEvent(type: EventStrings.SDK_EVENT_TYPE, name: name, params: params))
+        }
     }
     
     private static func performTrackSdkError(code: String, message: String, params: [String: String]) {
         AALogger.logError(message: "App Error: \(code) - \(message)")
-        sdkErrors.insert(SdkError(code: code, message: message, params: params))
+        DispatchQueue.global(qos: .background).async {
+            EventClient.sdkErrors.insert(SdkError(code: code, message: message, params: params))
+        }
     }
     
     private static func performPublishSdkErrors() {
         guard let currentSession = session, !sdkErrors.isEmpty else {
             return
         }
-        let currentSdkErrors = Array(sdkErrors)
-        sdkErrors.removeAll()
         DispatchQueue.global(qos: .background).async {
-            eventAdapter?.publishSdkErrors(session: currentSession, errors: currentSdkErrors)
+            let currentSdkErrors = Array(sdkErrors)
+            EventClient.sdkErrors.removeAll()
+            EventClient.eventAdapter?.publishSdkErrors(session: currentSession, errors: currentSdkErrors)
         }
     }
     
@@ -39,10 +43,10 @@ class EventClient: SessionListener {
         guard let currentSession = session, !sdkEvents.isEmpty else {
             return
         }
-        let currentSdkEvents = Array(sdkEvents)
-        sdkEvents.removeAll()
         DispatchQueue.global(qos: .background).async {
-            eventAdapter?.publishSdkEvents(session: currentSession, events: currentSdkEvents)
+            let currentSdkEvents = Array(sdkEvents)
+            EventClient.sdkEvents.removeAll()
+            EventClient.eventAdapter?.publishSdkEvents(session: currentSession, events: currentSdkEvents)
         }
     }
     
@@ -50,10 +54,10 @@ class EventClient: SessionListener {
         guard let currentSession = session, !adEvents.isEmpty else {
             return
         }
-        let currentAdEvents = Array(adEvents)
-        adEvents.removeAll()
         DispatchQueue.global(qos: .background).async {
-            eventAdapter?.publishAdEvents(session: currentSession, adEvents: currentAdEvents)
+            let currentAdEvents = Array(adEvents)
+            EventClient.adEvents.removeAll()
+            EventClient.eventAdapter?.publishAdEvents(session: currentSession, adEvents: currentAdEvents)
         }
     }
     
@@ -67,8 +71,10 @@ class EventClient: SessionListener {
             impressionId: ad.impressionId,
             eventType: eventType
         )
-        adEvents.insert(event)
-        notifyAdEventTracked(event: event)
+        DispatchQueue.global(qos: .background).async {
+            EventClient.adEvents.insert(event)
+            EventClient.notifyAdEventTracked(event: event)
+        }
     }
     
     private static func performAddListener(listener: EventClientListener) {
