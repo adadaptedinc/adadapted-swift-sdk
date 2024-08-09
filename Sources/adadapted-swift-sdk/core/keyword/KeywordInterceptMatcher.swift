@@ -107,7 +107,7 @@ public class KeywordInterceptMatcher : SessionListener, InterceptListener {
     
     public func onSessionAvailable(session: Session) {
         if (!session.id.isEmpty) {
-            InterceptClient.getInstance().initialize(session: session, interceptListener: self)
+            InterceptClient.getInstance()?.initialize(session: session, interceptListener: self)
         }
     }
 }

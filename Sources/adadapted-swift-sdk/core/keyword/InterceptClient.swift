@@ -7,7 +7,7 @@ import Foundation
 class InterceptClient: SessionListener, InterceptAdapterListener {
     private let adapter: InterceptAdapter
     private var events: Set<InterceptEvent>
-    private var currentSession: Session!
+    private var currentSession: Session?
     private var interceptListener: InterceptListener?
     private var backSerialQueue = DispatchQueue(label: "processingQueue")
     
@@ -64,9 +64,9 @@ class InterceptClient: SessionListener, InterceptAdapterListener {
         events.removeAll()
         
         backSerialQueue.async { [weak self] in
-            guard let self else { return }
+            guard let self, let currentSession = self.currentSession else { return }
             
-            self.adapter.sendEvents(session: self.currentSession, events: currentEvents)
+            self.adapter.sendEvents(session: currentSession, events: currentEvents)
         }
     }
     
@@ -113,9 +113,9 @@ class InterceptClient: SessionListener, InterceptAdapterListener {
         }
     }
     
-    static private var instance: InterceptClient!
+    static private var instance: InterceptClient?
     
-    static func getInstance() -> InterceptClient {
+    static func getInstance() -> InterceptClient? {
         return instance
     }
     
