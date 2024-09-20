@@ -20,7 +20,7 @@ class SuggestionTracker {
         let lcReplacement = convertToLowerCase(input: replacement)
         items[lcTerm] = lcUserInput
         replacements[lcReplacement] = lcTerm
-        InterceptClient.getInstance().trackMatched(searchId: searchId, termId: termId, term: lcTerm, userInput: lcUserInput)
+        InterceptClient.getInstance()?.trackMatched(searchId: searchId, termId: termId, term: lcTerm, userInput: lcUserInput)
     }
     
     static func suggestionPresented(searchId: String, termId: String, replacement: String) {
@@ -28,7 +28,7 @@ class SuggestionTracker {
         if replacements.keys.contains(lcReplacement) {
             guard let term = replacements[lcReplacement] else { return }
             guard let userInput = items[term] else { return }
-            InterceptClient.getInstance().trackPresented(searchId: searchId, termId: termId, term: term, userInput: userInput)
+            InterceptClient.getInstance()?.trackPresented(searchId: searchId, termId: termId, term: term, userInput: userInput)
         }
     }
     
@@ -37,13 +37,13 @@ class SuggestionTracker {
         if (replacements.keys.contains(lcReplacement)) {
             guard let term = replacements[lcReplacement] else { return }
             guard let userInput = items[term] else { return }
-            InterceptClient.getInstance().trackSelected(searchId: searchId, termId: termId, term: term, userInput: userInput)
+            InterceptClient.getInstance()?.trackSelected(searchId: searchId, termId: termId, term: term, userInput: userInput)
         }
     }
     
     static func suggestionNotMatched(searchId: String, userInput: String) {
         let lcUserInput = convertToLowerCase(input: userInput)
-        InterceptClient.getInstance().trackNotMatched(searchId: searchId, userInput: lcUserInput)
+        InterceptClient.getInstance()?.trackNotMatched(searchId: searchId, userInput: lcUserInput)
     }
     
     static private func convertToLowerCase(input: String?) -> String {

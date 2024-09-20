@@ -7,8 +7,9 @@ import Foundation
 class InterceptClient: SessionListener, InterceptAdapterListener {
     private let adapter: InterceptAdapter
     private var events: Set<InterceptEvent>
-    private var currentSession: Session!
+    private var currentSession: Session?
     private var interceptListener: InterceptListener?
+    private var backSerialQueue = DispatchQueue(label: "processingQueue")
     
     private init(adapter: InterceptAdapter) {
         self.adapter = adapter
@@ -22,8 +23,7 @@ class InterceptClient: SessionListener, InterceptAdapterListener {
         }
         
         self.interceptListener = interceptListener
-        
-        DispatchQueue.global(qos: .background).async { [weak self] in
+        backSerialQueue.async { [weak self] in
             guard let self = self else { return }
             self.adapter.retrieve(session: session, adapterListener: self)
         }
@@ -57,14 +57,16 @@ class InterceptClient: SessionListener, InterceptAdapterListener {
     }
     
     private func performPublishEvents() {
-        guard !events.isEmpty else {
-            return
-        }
-        let currentEvents = events
-        events.removeAll()
-        
-        DispatchQueue.global(qos: .background).async {
-            self.adapter.sendEvents(session: self.currentSession, events: currentEvents)
+        backSerialQueue.async { [weak self] in
+            guard let self = self else { return }
+            guard !self.events.isEmpty else { return }
+            
+            let currentEvents = self.events
+            self.events.removeAll()
+            
+            if let currentSession = self.currentSession {
+                self.adapter.sendEvents(session: currentSession, events: currentEvents)
+            }
         }
     }
     
@@ -83,7 +85,7 @@ class InterceptClient: SessionListener, InterceptAdapterListener {
     }
     
     func initialize(session: Session?, interceptListener: InterceptListener?) {
-        DispatchQueue.global(qos: .background).async { [weak self] in
+        backSerialQueue.async { [weak self] in
             self?.performInitialize(session: session, interceptListener: interceptListener)
         }
     }
@@ -106,12 +108,14 @@ class InterceptClient: SessionListener, InterceptAdapterListener {
     
     private func trackEvent(searchId: String, termId: String, term: String, userInput: String, eventType: String) {
         let event = InterceptEvent(searchId: searchId, event: eventType, userInput: userInput, termId: termId, term: term)
-        self.fileEvent(event)
+        backSerialQueue.async { [weak self] in
+            self?.fileEvent(event)
+        }
     }
     
-    static private var instance: InterceptClient!
+    static private var instance: InterceptClient?
     
-    static func getInstance() -> InterceptClient {
+    static func getInstance() -> InterceptClient? {
         return instance
     }
     
