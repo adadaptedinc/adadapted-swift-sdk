@@ -14,6 +14,7 @@ class EventClient: SessionListener {
     private static var session: Session? = nil
     private static var hasInstance: Bool = false
     private static let sdkEventsQueue = DispatchQueue(label: "com.adadapted.sdkEventsQueue")
+    private static let adEventsQueue = DispatchQueue(label: "com.adadapted.adEventsQueue")
     
     private static func performTrackSdkEvent(name: String, params: [String: String]) {
         sdkEvents.insert(SdkEvent(type: EventStrings.SDK_EVENT_TYPE, name: name, params: params))
@@ -67,7 +68,11 @@ class EventClient: SessionListener {
             impressionId: ad.impressionId,
             eventType: eventType
         )
-        adEvents.insert(event)
+        
+        _ = adEventsQueue.sync {
+            adEvents.insert(event)
+        }
+        
         notifyAdEventTracked(event: event)
     }
     
