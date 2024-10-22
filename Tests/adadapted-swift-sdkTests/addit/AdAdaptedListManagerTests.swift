@@ -46,7 +46,7 @@ class AdAdaptedListManagerTest: XCTestCase {
 
     func testItemAddedToListWithList() {
         let expectation = XCTestExpectation(description: "Content available expectation")
-        AdAdaptedListManager.itemAddedToList(item: "TestItem", list: "TestList")
+        AdAdaptedListManager.itemAddedToList(list: "TestList", item: "TestItem")
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             EventClient.getInstance().onPublishEvents()
         }
@@ -79,7 +79,7 @@ class AdAdaptedListManagerTest: XCTestCase {
 
     func testItemCrossedOffListWithList() {
         let expectation = XCTestExpectation(description: "Content available expectation")
-        AdAdaptedListManager.itemCrossedOffList(item: "TestItem", list: "TestList")
+        AdAdaptedListManager.itemCrossedOffList(list: "TestList", item: "TestItem")
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             EventClient.getInstance().onPublishEvents()
         }
@@ -112,7 +112,7 @@ class AdAdaptedListManagerTest: XCTestCase {
 
     func testItemDeletedFromListWithList() {
         let expectation = XCTestExpectation(description: "Content available expectation")
-        AdAdaptedListManager.itemDeletedFromList(item: "TestItem", list: "TestList")
+        AdAdaptedListManager.itemDeletedFromList(list: "TestList", item: "TestItem")
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             EventClient.getInstance().onPublishEvents()
         }
