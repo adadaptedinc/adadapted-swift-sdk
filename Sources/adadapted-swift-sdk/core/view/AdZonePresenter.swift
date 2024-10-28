@@ -46,7 +46,7 @@ class AdZonePresenter: SessionListener {
             attached = true
             self.adZonePresenterListener = adZonePresenterListener
             sessionClient?.addPresenter(listener: self)
-            setNextAd()
+            //setNextAd() TODO
         }
     }
     
