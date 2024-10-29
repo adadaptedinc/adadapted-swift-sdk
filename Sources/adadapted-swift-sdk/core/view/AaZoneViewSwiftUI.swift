@@ -7,12 +7,12 @@ class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWebViewLi
     // MARK: - Properties
     private let adContentListener: AdContentListener
     private let zoneViewListener: ZoneViewListener
-    private let presenter: AdZonePresenter
+    var presenter: AdZonePresenter
+    var isStopped = false
     @Published var currentAd: Ad?
     @Published var webViewLoaded = false
     @Binding var isZoneVisible: Bool
     @Binding var zoneContextId: String
-    var isStopped = false
 
     // MARK: - Initializer
     init(zoneId: String, adContentListener: AdContentListener, zoneViewListener: ZoneViewListener, isZoneVisible: Binding<Bool>, zoneContextId: Binding<String>) {
@@ -135,7 +135,7 @@ public struct AaZoneViewSwiftUI: View {
     // MARK: - Body
     public var body: some View {
         ZStack(alignment: .topTrailing) {
-            AdWebViewRepresentable(currentAd: $viewModel.currentAd, adWebViewListener: viewModel, isStopped: $viewModel.isStopped)
+            AdWebViewRepresentable(adWebViewListener: viewModel, currentAd: $viewModel.currentAd, isStopped: $viewModel.isStopped)
             ReportButton(action: viewModel.reportButtonTapped).opacity(viewModel.currentAd != nil ? 1 : 0)
         }
         .onChange(of: isZoneVisible) {
@@ -153,8 +153,8 @@ public struct AaZoneViewSwiftUI: View {
 // MARK: - WebView Representable
 
 struct AdWebViewRepresentable: UIViewRepresentable {
-    @Binding var currentAd: Ad?
     var adWebViewListener: AdWebViewListener?
+    @Binding var currentAd: Ad?
     @Binding var isStopped: Bool
 
     func makeUIView(context: Context) -> WKWebView {
