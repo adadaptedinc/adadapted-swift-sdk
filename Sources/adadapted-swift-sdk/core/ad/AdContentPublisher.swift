@@ -18,12 +18,14 @@ class AdContentPublisher {
     
     func addListener(listener: AdContentListener) {
         listeners.insert(listener, at: 0)
+        print("AdContentPublisher: added listener \(listeners.count)")
     }
     
     func removeListener(listener: AdContentListener) {
         if let index = listeners.firstIndex(where: { $0.listenerId == listener.listenerId }) {
             listeners.remove(at: index)
         }
+        print("AdContentPublisher: removed listener \(listeners.count)")
     }
     
     func publishContent(zoneId: String, content: AdContent) {

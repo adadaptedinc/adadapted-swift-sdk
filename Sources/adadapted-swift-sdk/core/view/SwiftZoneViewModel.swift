@@ -1,8 +1,5 @@
 //
-//  File.swift
-//  adadapted-swift-sdk
-//
-//  Created by Brett Clifton on 10/29/24.
+//  Created by Brett Clifton on 10/27/24.
 //
 
 import Foundation
@@ -29,9 +26,6 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
 
         initializePresenter(with: zoneId)
     }
-    
-    // MARK: - Deinitializer
-    deinit { onStop() }
 
     // MARK: - Initialization Helper
     private func initializePresenter(with zoneId: String) {
