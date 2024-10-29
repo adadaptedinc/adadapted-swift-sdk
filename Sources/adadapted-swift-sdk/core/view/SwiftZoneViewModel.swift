@@ -86,6 +86,9 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
     private func notifyClientZoneHasAds(hasAds: Bool) {
         zoneViewListener.onZoneHasAds(hasAds: hasAds)
     }
+    private func notifyClientAdLoaded() {
+        zoneViewListener.onAdLoaded()
+    }
     private func notifyClientAdLoadFailed() {
         zoneViewListener.onAdLoadFailed()
     }
@@ -100,6 +103,7 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
     func onAdAvailable(ad: Ad) {
         DispatchQueue.main.async { [weak self] in
             self?.currentAd = ad
+            self?.notifyClientAdLoaded()
         }
     }
     func onNoAdAvailable() {
