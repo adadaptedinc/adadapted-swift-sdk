@@ -15,12 +15,9 @@ final class SwiftZoneViewModelTests: XCTestCase {
         }
     }
     class MockZoneViewListener: ZoneViewListener {
-        func onAdLoaded() {
-        }
-        
         var zoneHasAdsCalled = false
         var adLoadFailedCalled = false
-        
+        func onAdLoaded() {}
         func onZoneHasAds(hasAds: Bool) { zoneHasAdsCalled = true }
         func onAdLoadFailed() { adLoadFailedCalled = true }
     }
