@@ -168,8 +168,8 @@ struct AdWebViewRepresentable: UIViewRepresentable {
         let tapGesture = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleTap))
         tapGesture.delegate = context.coordinator
         webView.addGestureRecognizer(tapGesture)
+        webView.isUserInteractionEnabled = true
         webView.navigationDelegate = context.coordinator
-
         return webView
     }
 
@@ -200,6 +200,10 @@ struct AdWebViewRepresentable: UIViewRepresentable {
             if let ad = parent.currentAd, !ad.id.isEmpty {
                 listener?.onAdInWebViewClicked(ad: ad)
             }
+        }
+        
+        func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+            return true
         }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
