@@ -45,6 +45,17 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
         }
     }
     
+    // MARK: - Client Notifications
+    private func notifyClientZoneHasAds(hasAds: Bool) {
+        zoneViewListener.onZoneHasAds(hasAds: hasAds)
+    }
+    private func notifyClientAdLoaded() {
+        zoneViewListener.onAdLoaded()
+    }
+    private func notifyClientAdLoadFailed() {
+        zoneViewListener.onAdLoadFailed()
+    }
+    
     // MARK: - Zone Visibility & Context Management
     func setAdZoneVisibility(isViewable: Bool) {
         if !webViewLoaded {
@@ -70,7 +81,6 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
         isStopped = true
         AdContentPublisher.getInstance().removeListener(listener: adContentListener)
         presenter.onDetach()
-        presenter = nil
     }
     
     // MARK: - Ad Loading & Interaction
@@ -88,17 +98,6 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
     }
     func onBlankAdInWebViewLoaded() {
         presenter.onBlankDisplayed()
-    }
-    
-    // MARK: - Client Notifications
-    private func notifyClientZoneHasAds(hasAds: Bool) {
-        zoneViewListener.onZoneHasAds(hasAds: hasAds)
-    }
-    private func notifyClientAdLoaded() {
-        zoneViewListener.onAdLoaded()
-    }
-    private func notifyClientAdLoadFailed() {
-        zoneViewListener.onAdLoadFailed()
     }
     
     // MARK: - AdZonePresenterListener Protocol Methods
