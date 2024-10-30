@@ -10,11 +10,16 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
     private let adContentListener: AdContentListener
     private let zoneViewListener: ZoneViewListener
     var presenter: AdZonePresenter
-    var isStopped = false
     @Published var currentAd: Ad?
     @Published var webViewLoaded = false
     @Binding var isZoneVisible: Bool
     @Binding var zoneContextId: String
+    private let stateQueue = DispatchQueue(label: "SwiftZoneViewModel.stateQueue")
+    private var _isStopped = false
+    var isStopped: Bool {
+        get { stateQueue.sync { _isStopped } }
+        set { stateQueue.sync { _isStopped = newValue } }
+    }
     
     // MARK: - Initializer
     public init(zoneId: String, adContentListener: AdContentListener, zoneViewListener: ZoneViewListener, isZoneVisible: Binding<Bool>, zoneContextId: Binding<String>) {
@@ -43,8 +48,10 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
     // MARK: - Zone Visibility & Context Management
     func setAdZoneVisibility(isViewable: Bool) {
         if !webViewLoaded {
-            onStart()
-            webViewLoaded = true
+            DispatchQueue.main.async { [weak self] in
+                self?.onStart()
+                self?.webViewLoaded = true
+            }
         }
         presenter.onAdVisibilityChanged(isAdVisible: isViewable)
     }
@@ -63,6 +70,7 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
         isStopped = true
         AdContentPublisher.getInstance().removeListener(listener: adContentListener)
         presenter.onDetach()
+        presenter = nil
     }
     
     // MARK: - Ad Loading & Interaction
@@ -109,7 +117,9 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
     func onNoAdAvailable() {
         currentAd = nil
     }
-    func onAdVisibilityChanged(ad: Ad) {}
+    func onAdVisibilityChanged(ad: Ad) {
+        //not needed in swift ui
+    }
     
     // MARK: - Reporting Ads
     func reportButtonTapped() {

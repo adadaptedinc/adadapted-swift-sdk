@@ -60,8 +60,12 @@ struct AdWebViewRepresentable: UIViewRepresentable {
     
     func updateUIView(_ uiView: WKWebView, context: Context) {
         if let ad = currentAd, let url = URL(string: ad.url) {
-            uiView.load(URLRequest(url: url))
+            // Load ad URL only if it's different from the current URL
+            if uiView.url != url {
+                uiView.load(URLRequest(url: url))
+            }
         } else {
+            // Load blank HTML if no ad is available
             uiView.loadHTMLString("<html><body></body></html>", baseURL: nil)
         }
     }
@@ -70,6 +74,7 @@ struct AdWebViewRepresentable: UIViewRepresentable {
         Coordinator(self, listener: adWebViewListener, isStopped: $isStopped)
     }
     
+    @MainActor
     class Coordinator: NSObject, WKNavigationDelegate, UIGestureRecognizerDelegate {
         var parent: AdWebViewRepresentable
         var listener: AdWebViewListener?
