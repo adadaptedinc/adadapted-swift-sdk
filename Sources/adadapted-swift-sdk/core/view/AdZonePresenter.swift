@@ -46,7 +46,6 @@ class AdZonePresenter: SessionListener {
             attached = true
             self.adZonePresenterListener = adZonePresenterListener
             sessionClient?.addPresenter(listener: self)
-            setNextAd()
         }
     }
     
@@ -56,6 +55,7 @@ class AdZonePresenter: SessionListener {
             adZonePresenterListener = nil
             completeCurrentAd()
             sessionClient?.removePresenter(listener: self)
+            stopTimer()
         }
     }
     
@@ -199,6 +199,13 @@ class AdZonePresenter: SessionListener {
             timer?.stopTimer()
             timerRunning = false
             startZoneTimer()
+        }
+    }
+    
+    private func stopTimer() {
+        if (timer != nil) {
+            timer?.stopTimer()
+            timerRunning = false
         }
     }
     

@@ -4,7 +4,7 @@
 
 import Foundation
 
-struct Ad: Codable {
+struct Ad: Codable, Equatable {
     let id: String
     let impressionId: String
     let url: String
@@ -65,5 +65,9 @@ struct Ad: Codable {
     
     func zoneId() -> String {
         return impressionId.split(separator: ":").map(String.init).first ?? ""
+    }
+    
+    static func == (lhs: Ad, rhs: Ad) -> Bool {
+        return lhs.id == rhs.id && lhs.url == rhs.url
     }
 }

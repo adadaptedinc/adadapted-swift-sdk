@@ -7,9 +7,7 @@ import UIKit
 import WebKit
 
 public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
-
     // MARK: - Properties
-    
     private var webView: AdWebView!
     private var reportButton: UIButton!
     private var presenter: AdZonePresenter = AdZonePresenter(adViewHandler: AdViewHandler(), sessionClient: SessionClient.getInstance())
@@ -19,7 +17,6 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
     private var webViewLoaded = false
     
     // MARK: - Initializers
-    
     public override init(frame: CGRect) {
         super.init(frame: frame)
         setup()
