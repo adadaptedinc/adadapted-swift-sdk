@@ -20,7 +20,9 @@ public struct AaZoneViewSwiftUI: View {
     // MARK: - Body
     public var body: some View {
         ZStack(alignment: .topTrailing) {
-            AdWebViewRepresentable(adWebViewListener: viewModel, currentAd: $viewModel.currentAd, isStopped: $viewModel.isStopped)
+            AdWebViewRepresentable(adWebViewListener: viewModel, currentAd: $viewModel.currentAd, isStopped: $viewModel.isStopped, webViewHandler: { webView in
+                viewModel.webView = webView
+            })
             ReportButton(action: viewModel.reportButtonTapped).opacity(viewModel.currentAd != nil ? 1 : 0)
         }
         .onChange(of: isZoneVisible) {
@@ -41,6 +43,7 @@ struct AdWebViewRepresentable: UIViewRepresentable {
     var adWebViewListener: AdWebViewListener?
     @Binding var currentAd: Ad?
     @Binding var isStopped: Bool
+    var webViewHandler: (WKWebView) -> Void
     
     func makeUIView(context: Context) -> WKWebView {
         let configuration = WKWebViewConfiguration()
@@ -48,6 +51,7 @@ struct AdWebViewRepresentable: UIViewRepresentable {
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.isOpaque = false
         webView.backgroundColor = .clear
+        webViewHandler(webView)
         
         // Setup tap gesture
         let tapGesture = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleTap))
@@ -99,14 +103,14 @@ struct AdWebViewRepresentable: UIViewRepresentable {
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             guard !isStopped, var ad = parent.currentAd, !ad.id.isEmpty else { return }
             listener?.onAdLoadedInWebView(ad: &ad)
-            let jsFunction = "showTestMessage('\("Hello Adadapted!")')"
-            webView.evaluateJavaScript(jsFunction) { (result, error) in
-                if let error = error {
-                    print("JavaScript error: \(error.localizedDescription)")
-                } else {
-                    print("JavaScript function executed successfully")
-                }
-            }
+//            let jsFunction = "showTestMessage('\("Hello Adadapted!")')"
+//            webView.evaluateJavaScript(jsFunction) { (result, error) in
+//                if let error = error {
+//                    print("JavaScript error: \(error.localizedDescription)")
+//                } else {
+//                    print("JavaScript function executed successfully")
+//                }
+//            }
         }
         
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {

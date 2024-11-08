@@ -4,12 +4,14 @@
 
 import Foundation
 import SwiftUI
+import WebKit
 
 public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWebViewListener {
     // MARK: - Properties
     private let adContentListener: AdContentListener
     private let zoneViewListener: ZoneViewListener
     var presenter: AdZonePresenter
+    var webView: WKWebView?
     @Published var currentAd: Ad?
     @Published var webViewLoaded = false
     @Binding var isZoneVisible: Bool
@@ -28,6 +30,7 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
         self.zoneViewListener = zoneViewListener
         self._isZoneVisible = isZoneVisible
         self._zoneContextId = zoneContextId
+        self.webView = nil
         
         initializePresenter(with: zoneId)
     }
@@ -65,6 +68,16 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
             }
         }
         presenter.onAdVisibilityChanged(isAdVisible: isViewable)
+        if(webViewLoaded) {
+            let jsFunction = "showTestMessage('\("Hello Adadapted!")')"
+            self.webView?.evaluateJavaScript(jsFunction) { (result, error) in
+                if let error = error {
+                    print("JavaScript error: \(error.localizedDescription)")
+                } else {
+                    print("JavaScript function executed successfully")
+                }
+            }
+        }
     }
     
     func setAdZoneContextId(contextId: String) {
