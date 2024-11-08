@@ -69,8 +69,7 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
         }
         presenter.onAdVisibilityChanged(isAdVisible: isViewable)
         if(webViewLoaded) {
-            let jsFunction = "showTestMessage('\("Hello Adadapted!")')"
-            self.webView?.evaluateJavaScript(jsFunction) { (result, error) in
+            self.webView?.evaluateJavaScript("showTestMessage('\(isViewable)')") { (result, error) in
                 if let error = error {
                     print("JavaScript error: \(error.localizedDescription)")
                 } else {
