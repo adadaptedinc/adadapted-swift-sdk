@@ -9,12 +9,13 @@ public struct AaZoneViewSwiftUI: View {
     @Binding var isZoneVisible: Bool
     @Binding var zoneContextId: String
     @StateObject private var viewModel: SwiftZoneViewModel
+    @Environment(\.presentationMode) var presentationMode
     
     // MARK: - Initializer
-    public init(zoneId: String, zoneListener: ZoneViewListener, contentListener: AdContentListener, isZoneVisible: Binding<Bool> = .constant(true), zoneContextId: Binding<String> = .constant("")) {
+    public init(zoneId: String, zoneListener: ZoneViewListener, contentListener: AdContentListener, isZoneVisible: Binding<Bool> = .constant(true), zoneContextId: Binding<String> = .constant(""), viewGroupId: String = "") {
         self._isZoneVisible = isZoneVisible
         self._zoneContextId = zoneContextId
-        _viewModel = StateObject(wrappedValue: SwiftZoneViewModel(zoneId: zoneId, adContentListener: contentListener, zoneViewListener: zoneListener, isZoneVisible: isZoneVisible, zoneContextId: zoneContextId))
+        _viewModel = StateObject(wrappedValue: SwiftZoneViewModel(zoneId: zoneId, adContentListener: contentListener, zoneViewListener: zoneListener, isZoneVisible: isZoneVisible, zoneContextId: zoneContextId, viewGroupId: viewGroupId))
     }
     
     // MARK: - Body
@@ -30,7 +31,13 @@ public struct AaZoneViewSwiftUI: View {
             viewModel.setAdZoneContextId(contextId: $0)
         }
         .onDisappear {
-            viewModel.onStop()
+            if presentationMode.wrappedValue.isPresented == false {
+                if(!viewModel.viewGroupId.isEmpty) {
+                    GroupGarbageCollector.shared.collectGarbage(for: viewModel)
+                } else {
+                    viewModel.onStop()
+                }
+            }
         }
     }
 }

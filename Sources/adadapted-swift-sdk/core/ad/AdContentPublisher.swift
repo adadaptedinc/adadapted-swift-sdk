@@ -18,6 +18,7 @@ class AdContentPublisher {
     
     func addListener(listener: AdContentListener) {
         listeners.insert(listener, at: 0)
+        print("Listeners: \(listeners.count)")
     }
     
     func removeListener(listener: AdContentListener) {

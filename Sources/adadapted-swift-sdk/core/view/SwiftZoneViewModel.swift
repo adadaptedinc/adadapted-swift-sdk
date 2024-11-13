@@ -14,6 +14,7 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
     @Published var webViewLoaded = false
     @Binding var isZoneVisible: Bool
     @Binding var zoneContextId: String
+    var viewGroupId: String
     private let stateQueue = DispatchQueue(label: "SwiftZoneViewModel.stateQueue")
     private var _isStopped = false
     var isStopped: Bool {
@@ -22,12 +23,13 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
     }
     
     // MARK: - Initializer
-    public init(zoneId: String, adContentListener: AdContentListener, zoneViewListener: ZoneViewListener, isZoneVisible: Binding<Bool>, zoneContextId: Binding<String>) {
+    public init(zoneId: String, adContentListener: AdContentListener, zoneViewListener: ZoneViewListener, isZoneVisible: Binding<Bool>, zoneContextId: Binding<String>, viewGroupId: String) {
         self.presenter = AdZonePresenter(adViewHandler: AdViewHandler(), sessionClient: SessionClient.getInstance())
         self.adContentListener = adContentListener
         self.zoneViewListener = zoneViewListener
         self._isZoneVisible = isZoneVisible
         self._zoneContextId = zoneContextId
+        self.viewGroupId = viewGroupId
         
         initializePresenter(with: zoneId)
     }
@@ -36,6 +38,10 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
     private func initializePresenter(with zoneId: String) {
         presenter.inititialize(zoneId: zoneId)
         AdContentPublisher.getInstance().addListener(listener: adContentListener)
+        
+        if(!self.viewGroupId.isEmpty) {
+            GroupGarbageCollector.shared.addViewModel(self)
+        }
         
         if !$zoneContextId.wrappedValue.isEmpty {
             setAdZoneContextId(contextId: $zoneContextId.wrappedValue)
