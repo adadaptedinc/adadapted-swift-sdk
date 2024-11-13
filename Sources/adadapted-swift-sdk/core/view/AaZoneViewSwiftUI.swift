@@ -103,14 +103,6 @@ struct AdWebViewRepresentable: UIViewRepresentable {
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             guard !isStopped, var ad = parent.currentAd, !ad.id.isEmpty else { return }
             listener?.onAdLoadedInWebView(ad: &ad)
-//            let jsFunction = "showTestMessage('\("Hello Adadapted!")')"
-//            webView.evaluateJavaScript(jsFunction) { (result, error) in
-//                if let error = error {
-//                    print("JavaScript error: \(error.localizedDescription)")
-//                } else {
-//                    print("JavaScript function executed successfully")
-//                }
-//            }
         }
         
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {

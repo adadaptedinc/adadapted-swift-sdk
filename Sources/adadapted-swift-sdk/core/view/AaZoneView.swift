@@ -72,6 +72,7 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
     public func setAdZoneVisibility(isViewable: Bool) {
         isAdVisible = isViewable
         presenter.onAdVisibilityChanged(isAdVisible: isAdVisible)
+        webView.fireTrackingPixelJavascript(isVisible: isViewable)
     }
     
     public func setAdZoneContextId(contextId: String) {

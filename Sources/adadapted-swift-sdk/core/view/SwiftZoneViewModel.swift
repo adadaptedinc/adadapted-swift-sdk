@@ -59,6 +59,17 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
         zoneViewListener.onAdLoadFailed()
     }
     
+    // MARK: - Pixel Tracking Visibility
+    private func fireTrackingPixelJavascript(isVisible: Bool) {
+        self.webView?.evaluateJavaScript("showTestMessage('\(isVisible)')") { (result, error) in
+            if let error = error {
+                print("JavaScript error: \(error.localizedDescription)")
+            } else {
+                print("JavaScript function executed successfully")
+            }
+        }
+    }
+    
     // MARK: - Zone Visibility & Context Management
     func setAdZoneVisibility(isViewable: Bool) {
         if !webViewLoaded {
@@ -69,13 +80,7 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
         }
         presenter.onAdVisibilityChanged(isAdVisible: isViewable)
         if(webViewLoaded) {
-            self.webView?.evaluateJavaScript("showTestMessage('\(isViewable)')") { (result, error) in
-                if let error = error {
-                    print("JavaScript error: \(error.localizedDescription)")
-                } else {
-                    print("JavaScript function executed successfully")
-                }
-            }
+            fireTrackingPixelJavascript(isVisible: isViewable)
         }
     }
     

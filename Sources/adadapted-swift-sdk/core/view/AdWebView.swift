@@ -58,6 +58,16 @@ class AdWebView: WKWebView, WKNavigationDelegate, UIGestureRecognizerDelegate {
         }
         notifyBlankLoaded()
     }
+    
+    func fireTrackingPixelJavascript(isVisible: Bool) {
+        self.evaluateJavaScript("showTestMessage('\(isVisible)')") { (result, error) in
+            if let error = error {
+                print("JavaScript error: \(error.localizedDescription)")
+            } else {
+                print("JavaScript function executed successfully")
+            }
+        }
+    }
 
     private func notifyAdLoaded() {
         listener?.onAdLoadedInWebView(ad: &currentAd)
