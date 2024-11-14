@@ -9,7 +9,6 @@ public struct AaZoneViewSwiftUI: View {
     @Binding var isZoneVisible: Bool
     @Binding var zoneContextId: String
     @StateObject private var viewModel: SwiftZoneViewModel
-    @Environment(\.presentationMode) var presentationMode
     
     // MARK: - Initializer
     public init(zoneId: String, zoneListener: ZoneViewListener, contentListener: AdContentListener, isZoneVisible: Binding<Bool> = .constant(true), zoneContextId: Binding<String> = .constant("")) {
@@ -31,9 +30,10 @@ public struct AaZoneViewSwiftUI: View {
             viewModel.setAdZoneContextId(contextId: $0)
         }
         .onDisappear {
-            if presentationMode.wrappedValue.isPresented == false {
-                viewModel.onStop()
-            }
+            viewModel.onStop()
+        }
+        .onAppear() {
+            viewModel.onStart()
         }
     }
 }

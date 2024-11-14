@@ -13,7 +13,7 @@ class ZoneViewModelManager {
 
     private func cleanupViewModels(for newViewModel: SwiftZoneViewModel) {
         let affectedViewModels = viewModelCollection.filter { $0.zoneId == newViewModel.zoneId }
-        affectedViewModels.forEach { $0.onStop() }
+        affectedViewModels.forEach { $0.onDetach() }
         
         viewModelCollection.removeAll { $0.zoneId == newViewModel.zoneId }
     }
