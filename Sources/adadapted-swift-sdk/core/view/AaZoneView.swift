@@ -48,6 +48,7 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
     
     public func initialize(zoneId: String) {
         presenter.inititialize(zoneId: zoneId)
+        presenter.setWebView(webView: webView)
     }
     
     func onStart() {

@@ -3,6 +3,7 @@
 //
 
 import Foundation
+import WebKit
 
 class AdZonePresenter: SessionListener {
     
@@ -23,6 +24,7 @@ class AdZonePresenter: SessionListener {
     private var timerRunning = false
     private var timer: Timer?
     private let eventClient: EventClient = EventClient.getInstance()
+    private var webView: WKWebView?
     
     init(adViewHandler: AdViewHandler, sessionClient: SessionClient?) {
         self.adViewHandler = adViewHandler
@@ -34,6 +36,10 @@ class AdZonePresenter: SessionListener {
         if self.zoneId.isEmpty {
             self.zoneId = zoneId
         }
+    }
+    
+    func setWebView(webView: WKWebView) {
+        self.webView = webView
     }
     
     func onAttach(adZonePresenterListener: AdZonePresenterListener?) {
@@ -172,7 +178,31 @@ class AdZonePresenter: SessionListener {
         }
 
         ad.setImpressionTracked()
+        callPixelTrackingJavaScript()
         EventClient.trackImpression(ad: ad)
+    }
+    
+    private func callPixelTrackingJavaScript() {
+//        webView.evaluateJavaScript("document.documentElement.outerHTML.toString()") { result, error in
+//            if let html = result as? String {
+//                print("HTML of the page: \(html)")
+//            } else if let error = error {
+//                print("Error fetching DOM structure: \(error.localizedDescription)")
+//            }
+//        }
+        
+        let isVisible = true // or false, depending on your use case
+        let jsFunction = "showTestMessage(\(isVisible))"
+
+        webView?.evaluateJavaScript("loadTrackingPixels()") { result, error in
+            if let error = error {
+                print("Error calling JavaScript function: \(error.localizedDescription)")
+            } else if let result = result as? String {
+                print("JavaScript function returned: \(result)")
+            } else {
+                print("JavaScript function returned nil or unexpected result")
+            }
+        }
     }
     
     private func startZoneTimer() {

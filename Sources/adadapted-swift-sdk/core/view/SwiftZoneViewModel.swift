@@ -4,6 +4,7 @@
 
 import Foundation
 import SwiftUI
+import WebKit
 
 public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWebViewListener {
     // MARK: - Properties
@@ -32,6 +33,10 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
         self.zoneId = zoneId
         
         initializePresenter(with: zoneId)
+    }
+    
+    func setupWebView(webView: WKWebView) {
+        presenter.setWebView(webView: webView)
     }
     
     // MARK: - Initialization Helper
