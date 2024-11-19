@@ -69,7 +69,7 @@ final class SwiftZoneViewModelTests: XCTestCase {
     }
 
     func testOnStart_AttachesPresenter() {
-        viewModel.onStart()
+        viewModel.onAttach()
         XCTAssertTrue(viewModel.mockPresenter.onAttachCalled, "Presenter should attach when onStart is called")
     }
 

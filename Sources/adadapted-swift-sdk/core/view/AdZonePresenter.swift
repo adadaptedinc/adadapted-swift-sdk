@@ -178,31 +178,13 @@ class AdZonePresenter: SessionListener {
         }
 
         ad.setImpressionTracked()
-        callPixelTrackingJavaScript()
         EventClient.trackImpression(ad: ad)
+        callPixelTrackingJavaScript()
     }
     
     private func callPixelTrackingJavaScript() {
-//        webView.evaluateJavaScript("document.documentElement.outerHTML.toString()") { result, error in
-//            if let html = result as? String {
-//                print("HTML of the page: \(html)")
-//            } else if let error = error {
-//                print("Error fetching DOM structure: \(error.localizedDescription)")
-//            }
-//        }
-        
-        let isVisible = true // or false, depending on your use case
-        let jsFunction = "showTestMessage(\(isVisible))"
-
-        webView?.evaluateJavaScript("loadTrackingPixels()") { result, error in
-            if let error = error {
-                print("Error calling JavaScript function: \(error.localizedDescription)")
-            } else if let result = result as? String {
-                print("JavaScript function returned: \(result)")
-            } else {
-                print("JavaScript function returned nil or unexpected result")
-            }
-        }
+        webView?.evaluateJavaScript("loadTrackingPixels()")
+        AALogger.logDebug(message: "Calling pixel tracking javascript")
     }
     
     private func startZoneTimer() {
