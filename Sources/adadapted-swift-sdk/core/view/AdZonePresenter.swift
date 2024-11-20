@@ -7,9 +7,9 @@ import WebKit
 
 class AdZonePresenter: SessionListener {
     
+    private let PIXEL_TRACKING_JS = "loadTrackingPixels()"
     private let adViewHandler: AdViewHandler
     private let sessionClient: SessionClient?
-    
     private var currentAd = Ad()
     private var zoneId = ""
     private var isZoneVisible = true
@@ -183,7 +183,7 @@ class AdZonePresenter: SessionListener {
     }
     
     private func callPixelTrackingJavaScript() {
-        webView?.evaluateJavaScript("loadTrackingPixels()")
+        webView?.evaluateJavaScript(PIXEL_TRACKING_JS)
         AALogger.logDebug(message: "Calling pixel tracking javascript")
     }
     
