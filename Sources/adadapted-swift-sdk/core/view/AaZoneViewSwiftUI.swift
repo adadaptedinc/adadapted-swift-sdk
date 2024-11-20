@@ -20,7 +20,9 @@ public struct AaZoneViewSwiftUI: View {
     // MARK: - Body
     public var body: some View {
         ZStack(alignment: .topTrailing) {
-            AdWebViewRepresentable(adWebViewListener: viewModel, currentAd: $viewModel.currentAd, isStopped: $viewModel.isStopped)
+            AdWebViewRepresentable(adWebViewListener: viewModel, currentAd: $viewModel.currentAd, isStopped: $viewModel.isStopped, webViewHandler: { webView in
+                viewModel.setupWebView(webView: webView)
+            })
             ReportButton(action: viewModel.reportButtonTapped).opacity(viewModel.currentAd != nil ? 1 : 0)
         }
         .onChange(of: isZoneVisible) {
@@ -32,6 +34,9 @@ public struct AaZoneViewSwiftUI: View {
         .onDisappear {
             viewModel.onStop()
         }
+        .onAppear() {
+            viewModel.onStart()
+        }
     }
 }
 
@@ -41,6 +46,7 @@ struct AdWebViewRepresentable: UIViewRepresentable {
     var adWebViewListener: AdWebViewListener?
     @Binding var currentAd: Ad?
     @Binding var isStopped: Bool
+    var webViewHandler: (WKWebView) -> Void
     
     func makeUIView(context: Context) -> WKWebView {
         let configuration = WKWebViewConfiguration()
@@ -55,6 +61,9 @@ struct AdWebViewRepresentable: UIViewRepresentable {
         webView.addGestureRecognizer(tapGesture)
         webView.isUserInteractionEnabled = true
         webView.navigationDelegate = context.coordinator
+        
+        webViewHandler(webView)
+        
         return webView
     }
     

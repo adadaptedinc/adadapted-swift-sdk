@@ -3,12 +3,13 @@
 //
 
 import Foundation
+import WebKit
 
 class AdZonePresenter: SessionListener {
     
+    private let PIXEL_TRACKING_JS = "loadTrackingPixels()"
     private let adViewHandler: AdViewHandler
     private let sessionClient: SessionClient?
-    
     private var currentAd = Ad()
     private var zoneId = ""
     private var isZoneVisible = true
@@ -23,6 +24,7 @@ class AdZonePresenter: SessionListener {
     private var timerRunning = false
     private var timer: Timer?
     private let eventClient: EventClient = EventClient.getInstance()
+    private var webView: WKWebView?
     
     init(adViewHandler: AdViewHandler, sessionClient: SessionClient?) {
         self.adViewHandler = adViewHandler
@@ -34,6 +36,10 @@ class AdZonePresenter: SessionListener {
         if self.zoneId.isEmpty {
             self.zoneId = zoneId
         }
+    }
+    
+    func setWebView(webView: WKWebView) {
+        self.webView = webView
     }
     
     func onAttach(adZonePresenterListener: AdZonePresenterListener?) {
@@ -173,6 +179,12 @@ class AdZonePresenter: SessionListener {
 
         ad.setImpressionTracked()
         EventClient.trackImpression(ad: ad)
+        callPixelTrackingJavaScript()
+    }
+    
+    private func callPixelTrackingJavaScript() {
+        webView?.evaluateJavaScript(PIXEL_TRACKING_JS)
+        AALogger.logDebug(message: "Calling pixel tracking javascript")
     }
     
     private func startZoneTimer() {

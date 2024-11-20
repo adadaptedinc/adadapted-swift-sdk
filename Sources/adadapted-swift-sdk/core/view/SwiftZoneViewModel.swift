@@ -4,6 +4,7 @@
 
 import Foundation
 import SwiftUI
+import WebKit
 
 public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWebViewListener {
     // MARK: - Properties
@@ -14,6 +15,7 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
     @Published var webViewLoaded = false
     @Binding var isZoneVisible: Bool
     @Binding var zoneContextId: String
+    var zoneId: String
     private let stateQueue = DispatchQueue(label: "SwiftZoneViewModel.stateQueue")
     private var _isStopped = false
     var isStopped: Bool {
@@ -28,12 +30,18 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
         self.zoneViewListener = zoneViewListener
         self._isZoneVisible = isZoneVisible
         self._zoneContextId = zoneContextId
+        self.zoneId = zoneId
         
         initializePresenter(with: zoneId)
     }
     
+    func setupWebView(webView: WKWebView) {
+        presenter.setWebView(webView: webView)
+    }
+    
     // MARK: - Initialization Helper
     private func initializePresenter(with zoneId: String) {
+        ZoneViewModelManager.shared.addViewModel(viewModel: self)
         presenter.inititialize(zoneId: zoneId)
         AdContentPublisher.getInstance().addListener(listener: adContentListener)
         
@@ -41,7 +49,8 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
             setAdZoneContextId(contextId: $zoneContextId.wrappedValue)
         }
         if $isZoneVisible.wrappedValue {
-            onStart()
+            onAttach()
+            //onStart()
         }
     }
     
@@ -60,7 +69,7 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
     func setAdZoneVisibility(isViewable: Bool) {
         if !webViewLoaded {
             DispatchQueue.main.async { [weak self] in
-                self?.onStart()
+                self?.onAttach()
                 self?.webViewLoaded = true
             }
         }
@@ -74,10 +83,18 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
     // MARK: - Start & Stop Handling
     func onStart() {
         isStopped = false
-        presenter.onAttach(adZonePresenterListener: self)
     }
     
     func onStop() {
+        isStopped = true
+    }
+    
+    func onAttach() {
+        isStopped = false
+        presenter.onAttach(adZonePresenterListener: self)
+    }
+    
+    func onDetach() {
         isStopped = true
         AdContentPublisher.getInstance().removeListener(listener: adContentListener)
         presenter.onDetach()
@@ -114,7 +131,9 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
         }
     }
     func onNoAdAvailable() {
-        currentAd = nil
+        DispatchQueue.main.async { [weak self] in
+            self?.currentAd = nil
+        }
     }
     func onAdVisibilityChanged(ad: Ad) {
         //not needed in swift ui
