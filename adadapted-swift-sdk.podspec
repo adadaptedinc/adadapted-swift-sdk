@@ -14,7 +14,7 @@ Pod::Spec.new do |s|
   s.swift_version    = '5.0'
   s.static_framework = true
 
-  s.source_files = 'Sources/adadapted-swift-sdk/core/**/*'
+  s.source_files = ['Sources/adadapted-swift-sdk/core/**/*', 'Sources/adadapted-swift-sdk/constants/**/*']
 
   s.resources = "Sources/adadapted-swift-sdk/Assets.xcassets/**/*.xib"
   s.resource_bundles = {
