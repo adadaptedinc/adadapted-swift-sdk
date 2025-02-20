@@ -8,7 +8,7 @@ public class KeywordInterceptMatcher : SessionListener, InterceptListener {
     private var intercept: Intercept = Intercept()
     private var loaded = false
     private var hasInstance = false
-    private var currentSuggestions: Array<Suggestion> = []
+    private var currentSuggestions: [Suggestion] = []
     
     static private var instance: KeywordInterceptMatcher = KeywordInterceptMatcher()
     
@@ -20,7 +20,7 @@ public class KeywordInterceptMatcher : SessionListener, InterceptListener {
         SessionClient.getInstance().addListener(listener: self)
     }
     
-    private func matchKeyword(constraint: String) -> Array<Suggestion> {
+    private func matchKeyword(constraint: String) -> [Suggestion] {
         currentSuggestions = []
         let input = constraint
         if !isReadyToMatch(input: input) {
@@ -38,7 +38,7 @@ public class KeywordInterceptMatcher : SessionListener, InterceptListener {
         return currentSuggestions
     }
     
-    private func fileTerm(term: Term?, input: String, suggestions: inout Array<Suggestion>) {
+    private func fileTerm(term: Term?, input: String, suggestions: inout [Suggestion]) {
         if let term = term {
             suggestions.insert(Suggestion(searchId: intercept.searchId, term: term), at: 0)
             SuggestionTracker.suggestionMatched(
@@ -64,7 +64,7 @@ public class KeywordInterceptMatcher : SessionListener, InterceptListener {
         loaded = true
     }
     
-    public func match(constraint: String) -> Array<Suggestion> {
+    public func match(constraint: String) -> [Suggestion] {
         if hasInstance {
             return matchKeyword(constraint: constraint)
         } else {
