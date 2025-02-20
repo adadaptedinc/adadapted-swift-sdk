@@ -7,7 +7,7 @@ import Foundation
 class SuggestionTracker {
     static private var items: [String: String] = [:]
     static private var replacements: [String: String] = [:]
-
+    
     static func suggestionMatched(
         searchId: String,
         termId: String,

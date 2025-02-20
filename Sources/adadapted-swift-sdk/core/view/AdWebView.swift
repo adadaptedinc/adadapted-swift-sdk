@@ -47,13 +47,15 @@ class AdWebView: WKWebView, WKNavigationDelegate, UIGestureRecognizerDelegate {
             }
         }
     }
-
+    
     func loadBlank() {
         currentAd = Ad()
         let dummyDocument = """
             <html><head><meta name="viewport" content="width=device-width, user-scalable=no" /></head><body></body></html>
         """
-        loadHTMLString(dummyDocument, baseURL: nil)
+        DispatchQueue.main.async { [weak self] in
+            self?.loadHTMLString(dummyDocument, baseURL: nil)
+        }
         notifyBlankLoaded()
     }
 

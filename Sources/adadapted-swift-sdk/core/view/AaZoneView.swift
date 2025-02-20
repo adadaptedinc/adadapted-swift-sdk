@@ -7,9 +7,7 @@ import UIKit
 import WebKit
 
 public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
-
     // MARK: - Properties
-    
     private var webView: AdWebView!
     private var reportButton: UIButton!
     private var presenter: AdZonePresenter = AdZonePresenter(adViewHandler: AdViewHandler(), sessionClient: SessionClient.getInstance())
@@ -19,7 +17,6 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
     private var webViewLoaded = false
     
     // MARK: - Initializers
-    
     public override init(frame: CGRect) {
         super.init(frame: frame)
         setup()
@@ -36,7 +33,7 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
         configuration.mediaTypesRequiringUserActionForPlayback = .audio
         webView = AdWebView(frame: .zero, listener: self)
         reportButton = UIButton(type: .custom)
-        reportButton.setImage(UIImage(named: "reportAdImage", in: .main, compatibleWith: nil), for: .normal)
+        reportButton.setImage(UIImage(named: "reportAdImage", in: Bundle.module, compatibleWith: nil), for: .normal)
         reportButton.addTarget(self, action: #selector(reportButtonTapped), for: .touchUpInside)
         reportButton.frame = CGRect(x: (Int(frame.width)) - 25, y: (Int(frame.height) - (Int(frame.height) - 10)), width: 14,height:14)
         reportButton.backgroundColor = .clear
@@ -51,6 +48,7 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
     
     public func initialize(zoneId: String) {
         presenter.inititialize(zoneId: zoneId)
+        presenter.setWebView(webView: webView)
     }
     
     func onStart() {

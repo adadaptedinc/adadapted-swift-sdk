@@ -34,10 +34,9 @@ class AdZonePresenterTests: XCTestCase {
         AdZonePresenterTests.testAdZonePresenter.inititialize(zoneId: "testZoneId")
         let zones = ["testZoneId": Zone(id: "testZoneId", ads: [Ad(id: "TestAdId")])]
         AdZonePresenterTests.testSession.updateZones(newZones: zones)
+        SessionClient.getInstance().onSessionInitialized(session: AdZonePresenterTests.testSession)
         
         let testListener = TestAdZonePresenterListener()
-        
-        AdZonePresenterTests.testAdZonePresenter.onSessionAvailable(session: AdZonePresenterTests.testSession)
         AdZonePresenterTests.testAdZonePresenter.onAttach(adZonePresenterListener: testListener)
         
         XCTAssertEqual("TestAdId", testListener.testAd.id)

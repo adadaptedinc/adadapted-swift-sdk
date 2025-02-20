@@ -14,7 +14,7 @@ class SuggestionTrackerTests: XCTestCase {
         super.setUp()
         SessionClient.createInstance(adapter: HttpSessionAdapter(initUrl: Config.getInitSessionUrl(), refreshUrl: Config.getRefreshAdsUrl()))
         testInterceptClient.createInstance(adapter: testInterceptAdapter)
-        testInterceptClient.getInstance().onSessionAvailable(session: MockData.session)
+        testInterceptClient.getInstance()?.onSessionAvailable(session: MockData.session)
     }
     
     override class func tearDown() {
@@ -26,7 +26,7 @@ class SuggestionTrackerTests: XCTestCase {
         let expectation = XCTestExpectation(description: "Content available expectation")
         SuggestionTracker.suggestionMatched(searchId: "testMatchId", termId: "testTermId", term: "testTerm", replacement: "testReplacement", userInput: "testInput")
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            self.testInterceptClient.getInstance().onPublishEvents()
+            self.testInterceptClient.getInstance()?.onPublishEvents()
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
             XCTAssertEqual(InterceptEvent.Constants.MATCHED, self.testInterceptAdapter.testEvents.first?.event)
@@ -43,7 +43,7 @@ class SuggestionTrackerTests: XCTestCase {
         SuggestionTracker.suggestionPresented(searchId: "testPresentedId", termId: "testTermId", replacement: "testReplacement")
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            self.testInterceptClient.getInstance().onPublishEvents()
+            self.testInterceptClient.getInstance()?.onPublishEvents()
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
             XCTAssertTrue(self.testInterceptAdapter.testEvents.contains { $0.event == InterceptEvent.Constants.PRESENTED })
@@ -63,7 +63,7 @@ class SuggestionTrackerTests: XCTestCase {
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
-            self.testInterceptClient.getInstance().onPublishEvents()
+            self.testInterceptClient.getInstance()?.onPublishEvents()
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 7) {
             XCTAssertTrue(self.testInterceptAdapter.testEvents.contains { $0.event == InterceptEvent.Constants.SELECTED })
@@ -78,7 +78,7 @@ class SuggestionTrackerTests: XCTestCase {
         let expectation = XCTestExpectation(description: "Content available expectation")
         SuggestionTracker.suggestionNotMatched(searchId: "testNotMatchedId", userInput: "testInput")
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            self.testInterceptClient.getInstance().onPublishEvents()
+            self.testInterceptClient.getInstance()?.onPublishEvents()
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
             XCTAssertEqual(InterceptEvent.Constants.NOT_MATCHED, self.testInterceptAdapter.testEvents.first?.event)

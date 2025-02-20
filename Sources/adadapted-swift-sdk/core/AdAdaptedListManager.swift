@@ -8,7 +8,7 @@ public class AdAdaptedListManager {
     static let LIST_NAME = "list_name"
     static let ITEM_NAME = "item_name"
     
-    public static func itemAddedToList(item: String, list: String = "") {
+    public static func itemAddedToList(list: String = "", item: String) {
         if (item.isEmpty) {
             return
         }
@@ -16,7 +16,7 @@ public class AdAdaptedListManager {
         AALogger.logInfo(message: "\(item) was added to \(list)")
     }
     
-    public static func itemCrossedOffList(item: String, list: String = "") {
+    public static func itemCrossedOffList(list: String = "", item: String) {
         if (item.isEmpty) {
             return
         }
@@ -24,7 +24,7 @@ public class AdAdaptedListManager {
         AALogger.logInfo(message: "\(item) was crossed off \(list)")
     }
     
-    public static func itemDeletedFromList(item: String, list: String = "") {
+    public static func itemDeletedFromList(list: String = "", item: String) {
         if (item.isEmpty) {
             return
         }

@@ -11,8 +11,7 @@ public class KeywordInterceptMatcher : SessionListener, InterceptListener {
     private var currentSuggestions: Array<Suggestion> = []
     
     static private var instance: KeywordInterceptMatcher = KeywordInterceptMatcher()
-    private var backSerialQueue = DispatchQueue(label: "processingMatchQueue")
-
+    
     public static func getInstance() -> KeywordInterceptMatcher {
         return instance
     }
@@ -21,32 +20,22 @@ public class KeywordInterceptMatcher : SessionListener, InterceptListener {
         SessionClient.getInstance().addListener(listener: self)
     }
     
-    private func matchKeyword(constraint: String, completion: @escaping (Array<Suggestion>) -> Void) {
+    private func matchKeyword(constraint: String) -> Array<Suggestion> {
+        currentSuggestions = []
         let input = constraint
-        backSerialQueue.async { [weak self] in
-            guard let self else { return }
-            
-            self.currentSuggestions = []
-            if !self.isReadyToMatch(input: input) {
-                completion(self.currentSuggestions)
-            }
-            return
+        if !isReadyToMatch(input: input) {
+            return currentSuggestions
         }
-
-        backSerialQueue.async { [weak self] in
-            guard let self else { return }
-
-            for interceptTerm in self.intercept.getTerms() {
-                if interceptTerm.searchTerm.lowercased().starts(with: input.lowercased()) {
-                    self.fileTerm(term: interceptTerm, input: input, suggestions: &self.currentSuggestions)
-                }
+        
+        for interceptTerm in intercept.getTerms() {
+            if interceptTerm.searchTerm.lowercased().starts(with: input.lowercased()) {
+                fileTerm(term: interceptTerm, input: input, suggestions: &currentSuggestions)
             }
-            if self.currentSuggestions.isEmpty {
-                SuggestionTracker.suggestionNotMatched(searchId: self.intercept.searchId, userInput: constraint)
-            }
-            completion(self.currentSuggestions)
         }
-
+        if currentSuggestions.isEmpty {
+            SuggestionTracker.suggestionNotMatched(searchId: intercept.searchId, userInput: constraint)
+        }
+        return currentSuggestions
     }
     
     private func fileTerm(term: Term?, input: String, suggestions: inout Array<Suggestion>) {
@@ -71,37 +60,26 @@ public class KeywordInterceptMatcher : SessionListener, InterceptListener {
     }
     
     func onKeywordInterceptInitialized(intercept: Intercept) {
-        backSerialQueue.async { [weak self] in
-            self?.intercept = intercept
-            self?.loaded = true
-        }
-        
+        self.intercept = intercept
+        loaded = true
     }
     
-    public func match(constraint: String, completion: @escaping (Array<Suggestion>) -> Void) {
+    public func match(constraint: String) -> Array<Suggestion> {
         if hasInstance {
-            matchKeyword(constraint: constraint){ result in
-                completion(result)
-            }
+            return matchKeyword(constraint: constraint)
         } else {
             if SessionClient.getInstance().hasInstance() {
                 createInstance()
-                matchKeyword(constraint: constraint){ result in
-                    completion(result)
-                }
+                return matchKeyword(constraint: constraint)
             } else {
-                completion([])
+                return []
             }
         }
     }
     
     public func suggestionWasSelected(suggestionName: String) {
-        backSerialQueue.async { [weak self] in
-            guard let self else { return }
-
-            if var selectedSuggestion = currentSuggestions.first(where: { $0.name == suggestionName }) {
-                selectedSuggestion.wasSelected()
-            }
+        if var selectedSuggestion = currentSuggestions.first(where: { $0.name == suggestionName }) {
+            selectedSuggestion.wasSelected()
         }
     }
     

@@ -57,16 +57,16 @@ class InterceptClient: SessionListener, InterceptAdapterListener {
     }
     
     private func performPublishEvents() {
-        guard !events.isEmpty else {
-            return
-        }
-        let currentEvents = events
-        events.removeAll()
-        
         backSerialQueue.async { [weak self] in
-            guard let self, let currentSession = self.currentSession else { return }
+            guard let self = self else { return }
+            guard !self.events.isEmpty else { return }
             
-            self.adapter.sendEvents(session: currentSession, events: currentEvents)
+            let currentEvents = self.events
+            self.events.removeAll()
+            
+            if let currentSession = self.currentSession {
+                self.adapter.sendEvents(session: currentSession, events: currentEvents)
+            }
         }
     }
     
@@ -79,7 +79,7 @@ class InterceptClient: SessionListener, InterceptAdapterListener {
     }
     
     func onPublishEvents() {
-        backSerialQueue.async { [weak self] in
+        DispatchQueue.global(qos: .background).async { [weak self] in
             self?.performPublishEvents()
         }
     }

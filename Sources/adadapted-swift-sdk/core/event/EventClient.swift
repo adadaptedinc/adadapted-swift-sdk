@@ -14,6 +14,7 @@ class EventClient: SessionListener {
     private static var session: Session? = nil
     private static var hasInstance: Bool = false
     private static let sdkEventsQueue = DispatchQueue(label: "com.adadapted.sdkEventsQueue")
+    private static let adEventsQueue = DispatchQueue(label: "com.adadapted.adEventsQueue")
     
     private static func performTrackSdkEvent(name: String, params: [String: String]) {
         EventClient.sdkEventsQueue.async {
@@ -44,7 +45,6 @@ class EventClient: SessionListener {
             guard let currentSession = session, !sdkEvents.isEmpty else {
                 return
             }
-
             let currentSdkEvents = Array(sdkEvents)
             EventClient.sdkEvents.removeAll()
             EventClient.eventAdapter?.publishSdkEvents(session: currentSession, events: currentSdkEvents)
@@ -55,7 +55,7 @@ class EventClient: SessionListener {
         guard let currentSession = session, !adEvents.isEmpty else {
             return
         }
-        EventClient.sdkEventsQueue.async {
+        EventClient.adEventsQueue.async {
             let currentAdEvents = Array(adEvents)
             EventClient.adEvents.removeAll()
             EventClient.eventAdapter?.publishAdEvents(session: currentSession, adEvents: currentAdEvents)
@@ -72,9 +72,10 @@ class EventClient: SessionListener {
             impressionId: ad.impressionId,
             eventType: eventType
         )
-        EventClient.sdkEventsQueue.async {
-            EventClient.adEvents.insert(event)
-            EventClient.notifyAdEventTracked(event: event)
+        
+        EventClient.adEventsQueue.async {
+            adEvents.insert(event)
+            notifyAdEventTracked(event: event)
         }
     }
     
@@ -130,7 +131,7 @@ class EventClient: SessionListener {
     }
     
     static func trackSdkEvent(name: String, params: [String: String] = [:]) {
-        EventClient.sdkEventsQueue.sync {
+        EventClient.sdkEventsQueue.async {
             performTrackSdkEvent(name: name, params: params)
         }
     }
@@ -151,26 +152,26 @@ class EventClient: SessionListener {
     
     static func trackImpression(ad: Ad) {
         AALogger.logDebug(message: "Ad Impression Tracked.")
-        EventClient.sdkEventsQueue.async {
+        EventClient.adEventsQueue.async {
             fileEvent(ad: ad, eventType: AdEventTypes.IMPRESSION)
         }
     }
     
     static func trackInvisibleImpression(ad: Ad) {
-        EventClient.sdkEventsQueue.async {
+        EventClient.adEventsQueue.async {
             fileEvent(ad: ad, eventType: AdEventTypes.INVISIBLE_IMPRESSION)
         }
     }
     
     static func trackInteraction(ad: Ad) {
         AALogger.logDebug(message: "Ad Interaction Tracked.")
-        EventClient.sdkEventsQueue.async {
+        EventClient.adEventsQueue.async {
             fileEvent(ad: ad, eventType: AdEventTypes.INTERACTION)
         }
     }
     
     static func trackPopupBegin(ad: Ad) {
-        EventClient.sdkEventsQueue.async {
+        EventClient.adEventsQueue.async {
             fileEvent(ad: ad, eventType: AdEventTypes.POPUP_BEGIN)
         }
     }

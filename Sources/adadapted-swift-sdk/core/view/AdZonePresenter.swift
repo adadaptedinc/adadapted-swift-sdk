@@ -3,12 +3,13 @@
 //
 
 import Foundation
+import WebKit
 
 class AdZonePresenter: SessionListener {
     
+    private let PIXEL_TRACKING_JS = "loadTrackingPixels()"
     private let adViewHandler: AdViewHandler
     private let sessionClient: SessionClient?
-    
     private var currentAd = Ad()
     private var zoneId = ""
     private var isZoneVisible = true
@@ -23,6 +24,7 @@ class AdZonePresenter: SessionListener {
     private var timerRunning = false
     private var timer: Timer?
     private let eventClient: EventClient = EventClient.getInstance()
+    private var webView: WKWebView?
     
     init(adViewHandler: AdViewHandler, sessionClient: SessionClient?) {
         self.adViewHandler = adViewHandler
@@ -36,6 +38,10 @@ class AdZonePresenter: SessionListener {
         }
     }
     
+    func setWebView(webView: WKWebView) {
+        self.webView = webView
+    }
+    
     func onAttach(adZonePresenterListener: AdZonePresenterListener?) {
         guard let adZonePresenterListener = adZonePresenterListener else {
             AALogger.logError(message: "NULL Listener provided")
@@ -46,7 +52,6 @@ class AdZonePresenter: SessionListener {
             attached = true
             self.adZonePresenterListener = adZonePresenterListener
             sessionClient?.addPresenter(listener: self)
-            setNextAd()
         }
     }
     
@@ -56,6 +61,7 @@ class AdZonePresenter: SessionListener {
             adZonePresenterListener = nil
             completeCurrentAd()
             sessionClient?.removePresenter(listener: self)
+            stopTimer()
         }
     }
     
@@ -88,9 +94,7 @@ class AdZonePresenter: SessionListener {
         
         adStarted = false
         adCompleted = false
-        DispatchQueue.main.async { [weak self] in
-            self?.displayAd()
-        }
+        displayAd()
     }
     
     private func displayAd() {
@@ -175,6 +179,12 @@ class AdZonePresenter: SessionListener {
 
         ad.setImpressionTracked()
         EventClient.trackImpression(ad: ad)
+        callPixelTrackingJavaScript()
+    }
+    
+    private func callPixelTrackingJavaScript() {
+        webView?.evaluateJavaScript(PIXEL_TRACKING_JS)
+        AALogger.logDebug(message: "Calling pixel tracking javascript")
     }
     
     private func startZoneTimer() {
@@ -201,6 +211,13 @@ class AdZonePresenter: SessionListener {
             timer?.stopTimer()
             timerRunning = false
             startZoneTimer()
+        }
+    }
+    
+    private func stopTimer() {
+        if (timer != nil) {
+            timer?.stopTimer()
+            timerRunning = false
         }
     }
     
