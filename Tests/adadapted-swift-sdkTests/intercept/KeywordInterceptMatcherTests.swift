@@ -26,7 +26,7 @@ class KeywordInterceptMatcherTests: XCTestCase {
         testInterceptAdapter.testIntercept = testIntercept
         InterceptClient.createInstance(adapter: testInterceptAdapter)
         InterceptClient.getInstance()?.onSessionAvailable(session: MockData.session)
-        KeywordInterceptMatcher.getInstance().match(constraint: "INIT")
+        KeywordInterceptMatcher.getInstance().match(constraint: "INIT"){ _ in}
         SessionClient.getInstance().onSessionInitialized(session: Session(id: "newSessionId", hasAds: true, refreshTime: 30, expiration: Int(Date().timeIntervalSince1970) + 10000000, willServeAds: true, zones: [:]))
         clearEvents()
     }
