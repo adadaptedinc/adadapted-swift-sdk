@@ -108,7 +108,7 @@ class Config {
         static let AD_REPORTING_URL = "https://dev.feedback.add-it.io/?"
     }
 }
-
+private class BundleFinder {}
 extension Foundation.Bundle {
     /// Returns the resource bundle associated with the current Swift module.
     static let module: Bundle = {
