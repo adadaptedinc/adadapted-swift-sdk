@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'adadapted-swift-sdk'
-  s.version          = '1.0.6'
+  s.version          = '1.1.1'
   s.summary          = 'adadapted-swift-sdk'
 
   s.homepage         = 'https://github.com/smaksymov/adadapted-swift-sdk'
@@ -10,7 +10,7 @@ Pod::Spec.new do |s|
 
   s.resource_bundles = {"Privacy" => ["adadapted-swift-sdk/PrivacyInfo.xcprivacy"]}
 
-  s.ios.deployment_target = '13.0'
+  s.ios.deployment_target = '15.0'
   s.swift_version    = '5.0'
   s.static_framework = true
 
