@@ -17,7 +17,9 @@ class AdContentPublisher {
     private var listeners: Array<AdContentListener> = []
     
     func addListener(listener: AdContentListener) {
-        listeners.insert(listener, at: 0)
+        if !listeners.contains(where: { $0.listenerId == listener.listenerId }) {
+            listeners.append(listener)
+        }
     }
     
     func removeListener(listener: AdContentListener) {
