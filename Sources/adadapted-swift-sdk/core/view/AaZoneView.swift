@@ -35,7 +35,6 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
         reportButton = UIButton(type: .custom)
         reportButton.setImage(UIImage(named: "reportAdImage", in: Bundle.module, compatibleWith: nil), for: .normal)
         reportButton.addTarget(self, action: #selector(reportButtonTapped), for: .touchUpInside)
-        reportButton.frame = CGRect(x: (Int(frame.width)) - 25, y: (Int(frame.height) - (Int(frame.height) - 10)), width: 14,height:14)
         reportButton.backgroundColor = .clear
         reportButton.clipsToBounds = true
         reportButton.setNeedsLayout()
@@ -49,6 +48,12 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
     public func initialize(zoneId: String) {
         presenter.inititialize(zoneId: zoneId)
         presenter.setWebView(webView: webView)
+    }
+    
+    public override func layoutSubviews() {
+        super.layoutSubviews()
+        self.webView.frame = bounds
+        reportButton.frame = CGRect(x: (Int(frame.width)) - 25, y: (Int(frame.height) - (Int(frame.height) - 10)), width: 14,height:14)
     }
     
     func onStart() {
@@ -106,7 +111,6 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
     func onZoneAvailable(zone: Zone) {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-            self.webView.frame = self.bounds
             if !self.reportButton.isDescendant(of: self) {
                 self.addSubview(self.reportButton)
             }
