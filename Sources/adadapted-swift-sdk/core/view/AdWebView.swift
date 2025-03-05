@@ -24,6 +24,7 @@ class AdWebView: WKWebView, WKNavigationDelegate, UIGestureRecognizerDelegate {
 
     private func configureWebView() {
         isUserInteractionEnabled = true
+        isOpaque = false
         backgroundColor = UIColor.clear
 
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
