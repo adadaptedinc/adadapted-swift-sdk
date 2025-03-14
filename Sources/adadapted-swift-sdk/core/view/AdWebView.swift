@@ -26,11 +26,6 @@ class AdWebView: WKWebView, WKNavigationDelegate, UIGestureRecognizerDelegate {
         isUserInteractionEnabled = true
         isOpaque = false
         backgroundColor = UIColor.clear
-
-        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
-        tapGesture.delegate = self
-        addGestureRecognizer(tapGesture)
-
         navigationDelegate = self
         scrollView.bounces = false
 
@@ -60,6 +55,10 @@ class AdWebView: WKWebView, WKNavigationDelegate, UIGestureRecognizerDelegate {
         notifyBlankLoaded()
     }
 
+    func notifyAdClicked() {
+        listener?.onAdInWebViewClicked(ad: currentAd)
+    }
+    
     private func notifyAdLoaded() {
         listener?.onAdLoadedInWebView(ad: &currentAd)
     }
@@ -70,16 +69,6 @@ class AdWebView: WKWebView, WKNavigationDelegate, UIGestureRecognizerDelegate {
 
     private func notifyBlankLoaded() {
         listener?.onBlankAdInWebViewLoaded()
-    }
-
-    private func notifyAdClicked() {
-        listener?.onAdInWebViewClicked(ad: currentAd)
-    }
-
-    @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
-        if !currentAd.id.isEmpty {
-            notifyAdClicked()
-        }
     }
 
     // MARK: - WKNavigationDelegate
@@ -96,11 +85,5 @@ class AdWebView: WKWebView, WKNavigationDelegate, UIGestureRecognizerDelegate {
             loaded = true
             notifyAdLoadFailed()
         }
-    }
-
-    // MARK: - UIGestureRecognizerDelegate
-
-    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
-        return true
     }
 }

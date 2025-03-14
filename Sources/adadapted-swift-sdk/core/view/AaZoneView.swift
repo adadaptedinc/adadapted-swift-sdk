@@ -8,7 +8,7 @@ import WebKit
 
 public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
     // MARK: - Properties
-    private var webView: AdWebView!
+    private var webViewManager: AdWebViewManager!
     private var reportButton: UIButton!
     private var presenter: AdZonePresenter = AdZonePresenter(adViewHandler: AdViewHandler(), sessionClient: SessionClient.getInstance())
     internal var zoneViewListener: ZoneViewListener?
@@ -31,7 +31,7 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
         let configuration = WKWebViewConfiguration()
         configuration.allowsInlineMediaPlayback = true
         configuration.mediaTypesRequiringUserActionForPlayback = .audio
-        webView = AdWebView(frame: .zero, listener: self)
+        webViewManager = AdWebViewManager(frame: .zero, listener: self)
         reportButton = UIButton(type: .custom)
         reportButton.setImage(UIImage(named: "reportAdImage", in: Bundle.module, compatibleWith: nil), for: .normal)
         reportButton.addTarget(self, action: #selector(reportButtonTapped), for: .touchUpInside)
@@ -40,19 +40,19 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
         reportButton.setNeedsLayout()
         reportButton.layoutIfNeeded()
     
-        addSubview(webView)
+        addSubview(webViewManager)
     }
     
     // MARK: - Public Methods
     
     public func initialize(zoneId: String) {
         presenter.inititialize(zoneId: zoneId)
-        presenter.setWebView(webView: webView)
+        presenter.setWebViewManager(webViewManager: webViewManager)
     }
     
     public override func layoutSubviews() {
         super.layoutSubviews()
-        self.webView.frame = bounds
+        self.webViewManager.frame = bounds
         reportButton.frame = CGRect(x: (Int(frame.width)) - 25, y: (Int(frame.height) - (Int(frame.height) - 10)), width: 14,height:14)
     }
     
@@ -127,7 +127,7 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
     }
     
     func onNoAdAvailable() {
-        webView.loadBlank()
+        webViewManager.loadBlank()
     }
     
     func onAdVisibilityChanged(ad: Ad) {
@@ -159,9 +159,9 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
     private func loadWebViewAd(ad: Ad) {
         if isVisible && isAdVisible && !webViewLoaded {
             webViewLoaded = true
-            webView.loadAd(ad: ad)
+            webViewManager.loadAd(ad: ad)
         } else if isVisible && webViewLoaded {
-            webView.loadAd(ad: ad)
+            webViewManager.loadAd(ad: ad)
         }
     }
     
@@ -182,7 +182,7 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
     @objc private func reportButtonTapped() {
         if let cachedDeviceInfo = DeviceInfoClient.getCachedDeviceInfo() {
             let udid = cachedDeviceInfo.udid
-            presenter.onReportAdClicked(adId: webView.currentAd.id, udid: udid)
+            presenter.onReportAdClicked(adId: webViewManager.currentAd().id, udid: udid)
         }
     }
 }

@@ -158,6 +158,7 @@ class EventClient: SessionListener {
     }
     
     static func trackInvisibleImpression(ad: Ad) {
+        AALogger.logDebug(message: "Invisible Ad Impression Tracked.")
         EventClient.adEventsQueue.async {
             fileEvent(ad: ad, eventType: AdEventTypes.INVISIBLE_IMPRESSION)
         }
