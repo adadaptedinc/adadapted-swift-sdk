@@ -36,7 +36,7 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
     }
     
     func setupWebView(webView: WKWebView) {
-        presenter.setWebView(webView: webView)
+        presenter.setSwiftUIWebView(webView: webView)
     }
     
     // MARK: - Initialization Helper

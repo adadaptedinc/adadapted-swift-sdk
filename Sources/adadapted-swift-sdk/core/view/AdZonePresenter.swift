@@ -24,7 +24,8 @@ class AdZonePresenter: SessionListener {
     private var timerRunning = false
     private var timer: Timer?
     private let eventClient: EventClient = EventClient.getInstance()
-    private var webView: WKWebView?
+    private var webViewManager: AdWebViewManager?
+    private var swiftUIWebView: WKWebView?
     
     init(adViewHandler: AdViewHandler, sessionClient: SessionClient?) {
         self.adViewHandler = adViewHandler
@@ -38,8 +39,12 @@ class AdZonePresenter: SessionListener {
         }
     }
     
-    func setWebView(webView: WKWebView) {
-        self.webView = webView
+    func setWebViewManager(webViewManager: AdWebViewManager) {
+        self.webViewManager = webViewManager
+    }
+    
+    func setSwiftUIWebView(webView: WKWebView) {
+        self.swiftUIWebView = webView
     }
     
     func onAttach(adZonePresenterListener: AdZonePresenterListener?) {
@@ -183,7 +188,8 @@ class AdZonePresenter: SessionListener {
     }
     
     private func callPixelTrackingJavaScript() {
-        webView?.evaluateJavaScript(PIXEL_TRACKING_JS)
+        webViewManager?.evaluateJavaScript(js: PIXEL_TRACKING_JS)
+        swiftUIWebView?.evaluateJavaScript(PIXEL_TRACKING_JS)
         AALogger.logDebug(message: "Calling pixel tracking javascript")
     }
     
