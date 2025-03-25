@@ -13,8 +13,12 @@ class EventClient: SessionListener {
     private static var sdkErrors: Set<SdkError> = []
     private static var session: Session? = nil
     private static var hasInstance: Bool = false
-    private static let sdkEventsQueue = DispatchQueue(label: "com.adadapted.sdkEventsQueue")
-    private static let adEventsQueue = DispatchQueue(label: "com.adadapted.adEventsQueue")
+    private static let sdkErrorsQueue = DispatchQueue(label: "com.adadapted.sdkErrorsQueue", attributes: .concurrent)
+    private static let sdkEventsQueue = DispatchQueue(label: "com.adadapted.sdkEventsQueue", attributes: .concurrent)
+    private static let adEventsQueue = DispatchQueue(label: "com.adadapted.adEventsQueue", attributes: .concurrent)
+    private static let sdkErrorsLock = NSLock()
+    private static let adEventsLock = NSLock()
+    private static let sdkEventsLock = NSLock()
     
     private static func performTrackSdkEvent(name: String, params: [String: String]) {
         EventClient.sdkEventsQueue.async {
@@ -30,35 +34,53 @@ class EventClient: SessionListener {
     }
     
     private static func performPublishSdkErrors() {
-        guard let currentSession = session, !sdkErrors.isEmpty else {
+        guard let currentSession = session,
+              let adapter = eventAdapter,
+              !sdkErrors.isEmpty else {
             return
         }
-        EventClient.sdkEventsQueue.async {
+        
+        sdkErrorsQueue.async(flags: .barrier) {
+            sdkErrorsLock.lock()
             let currentSdkErrors = Array(sdkErrors)
-            EventClient.sdkErrors.removeAll()
-            EventClient.eventAdapter?.publishSdkErrors(session: currentSession, errors: currentSdkErrors)
+            sdkErrors.removeAll()
+            sdkErrorsLock.unlock()
+            
+            adapter.publishSdkErrors(session: currentSession, errors: currentSdkErrors)
         }
     }
     
     private static func performPublishSdkEvents() {
-        EventClient.sdkEventsQueue.async {
-            guard let currentSession = session, !sdkEvents.isEmpty else {
-                return
-            }
-            let currentSdkEvents = Array(sdkEvents)
-            EventClient.sdkEvents.removeAll()
-            EventClient.eventAdapter?.publishSdkEvents(session: currentSession, events: currentSdkEvents)
-        }
-    }
-    
-    private static func performPublishAdEvents() {
-        guard let currentSession = session, !adEvents.isEmpty else {
+        guard let currentSession = session,
+              let adapter = eventAdapter,
+              !sdkEvents.isEmpty else {
             return
         }
-        EventClient.adEventsQueue.async {
+        
+        sdkEventsQueue.async(flags: .barrier) {
+            sdkEventsLock.lock()
+            let currentSdkEvents = Array(sdkEvents)
+            sdkEvents.removeAll()
+            sdkEventsLock.unlock()
+            
+            adapter.publishSdkEvents(session: currentSession, events: currentSdkEvents)
+        }
+    }
+
+    private static func performPublishAdEvents() {
+        guard let currentSession = session,
+              let adapter = eventAdapter,
+              !adEvents.isEmpty else {
+            return
+        }
+
+        adEventsQueue.async(flags: .barrier) {
+            adEventsLock.lock()
             let currentAdEvents = Array(adEvents)
-            EventClient.adEvents.removeAll()
-            EventClient.eventAdapter?.publishAdEvents(session: currentSession, adEvents: currentAdEvents)
+            adEvents.removeAll()
+            adEventsLock.unlock()
+
+            adapter.publishAdEvents(session: currentSession, adEvents: currentAdEvents)
         }
     }
     
@@ -106,11 +128,9 @@ class EventClient: SessionListener {
     }
     
     func onPublishEvents() {
-        EventClient.sdkEventsQueue.async {
-            EventClient.performPublishAdEvents()
-            EventClient.performPublishSdkEvents()
-            EventClient.performPublishSdkErrors()
-        }
+        EventClient.performPublishAdEvents()
+        EventClient.performPublishSdkEvents()
+        EventClient.performPublishSdkErrors()
     }
     
     static func hasBeenInitialized() -> Bool {
