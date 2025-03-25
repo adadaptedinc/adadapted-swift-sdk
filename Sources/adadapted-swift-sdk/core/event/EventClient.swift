@@ -37,7 +37,6 @@ class EventClient: SessionListener {
         guard let currentSession = session,
               let adapter = eventAdapter,
               !sdkErrors.isEmpty else {
-            AALogger.logError(message: "Cannot publish sdk errors: Missing session, adapter, or events.")
             return
         }
         
@@ -55,7 +54,6 @@ class EventClient: SessionListener {
         guard let currentSession = session,
               let adapter = eventAdapter,
               !sdkEvents.isEmpty else {
-            AALogger.logError(message: "Cannot publish sdk events: Missing session, adapter, or events.")
             return
         }
         
@@ -73,7 +71,6 @@ class EventClient: SessionListener {
         guard let currentSession = session,
               let adapter = eventAdapter,
               !adEvents.isEmpty else {
-            AALogger.logError(message: "Cannot publish ad events: Missing session, adapter, or events.")
             return
         }
 
