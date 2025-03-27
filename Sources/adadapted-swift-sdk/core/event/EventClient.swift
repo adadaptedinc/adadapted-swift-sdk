@@ -8,9 +8,9 @@ class EventClient: SessionListener {
     
     private static var eventAdapter: EventAdapter? = nil
     private static var listeners: Array<EventClientListener> = []
-    private static var adEvents: Set<AdEvent> = []
-    private static var sdkEvents: Set<SdkEvent> = []
-    private static var sdkErrors: Set<SdkError> = []
+    private static var adEvents: NSMutableSet = NSMutableSet()
+    private static var sdkEvents: NSMutableSet = NSMutableSet()
+    private static var sdkErrors: NSMutableSet = NSMutableSet()
     private static var session: Session? = nil
     private static var hasInstance: Bool = false
     private static let sdkErrorsQueue = DispatchQueue(label: "com.adadapted.sdkErrorsQueue", attributes: .concurrent)
@@ -19,14 +19,14 @@ class EventClient: SessionListener {
     
     private static func performTrackSdkEvent(name: String, params: [String: String]) {
         sdkEventsQueue.async(flags: .barrier) {
-            sdkEvents.insert(SdkEvent(type: EventStrings.SDK_EVENT_TYPE, name: name, params: params))
+            sdkEvents.add(SdkEvent(type: EventStrings.SDK_EVENT_TYPE, name: name, params: params))
         }
     }
     
     private static func performTrackSdkError(code: String, message: String, params: [String: String]) {
         AALogger.logError(message: "App Error: \(code) - \(message)")
         sdkErrorsQueue.async(flags: .barrier) {
-            sdkErrors.insert(SdkError(code: code, message: message, params: params))
+            sdkErrors.add(SdkError(code: code, message: message, params: params))
         }
     }
     
@@ -42,49 +42,49 @@ class EventClient: SessionListener {
         )
         
         adEventsQueue.async(flags: .barrier) {
-            adEvents.insert(event)
+            adEvents.add(event)
             notifyAdEventTracked(event: event)
         }
     }
 
     private static func performPublishSdkErrors() {
-        guard let currentSession = session,
-              let adapter = eventAdapter,
-              !sdkErrors.isEmpty else {
-            return
-        }
-        
         sdkErrorsQueue.async(flags: .barrier) {
-            let currentSdkErrors = Array(sdkErrors)
-            sdkErrors.removeAll()
+            guard let currentSession = session,
+                  let adapter = eventAdapter,
+                  sdkErrors.count > 0 else {
+                return
+            }
+            
+            let currentSdkErrors = Array(sdkErrors) as [SdkError]
+            sdkErrors.removeAllObjects()
             adapter.publishSdkErrors(session: currentSession, errors: currentSdkErrors)
         }
     }
     
     private static func performPublishSdkEvents() {
-        guard let currentSession = session,
-              let adapter = eventAdapter,
-              !sdkEvents.isEmpty else {
-            return
-        }
-
         sdkEventsQueue.async(flags: .barrier) {
-            let currentSdkEvents = Array(sdkEvents)
-            sdkEvents.removeAll()
+            guard let currentSession = session,
+                  let adapter = eventAdapter,
+                  sdkEvents.count > 0 else {
+                return
+            }
+            
+            let currentSdkEvents = Array(sdkEvents) as [SdkEvent]
+            sdkEvents.removeAllObjects()
             adapter.publishSdkEvents(session: currentSession, events: currentSdkEvents)
         }
     }
     
     private static func performPublishAdEvents() {
-        guard let currentSession = session,
-              let adapter = eventAdapter,
-              !adEvents.isEmpty else {
-            return
-        }
-
         adEventsQueue.async(flags: .barrier) {
-            let currentAdEvents = Array(adEvents)
-            adEvents.removeAll()
+            guard let currentSession = session,
+                  let adapter = eventAdapter,
+                  adEvents.count > 0 else {
+                return
+            }
+            
+            let currentAdEvents = Array(adEvents) as [AdEvent]
+            adEvents.removeAllObjects()
             adapter.publishAdEvents(session: currentSession, adEvents: currentAdEvents)
         }
     }
