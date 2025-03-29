@@ -47,12 +47,13 @@ class EventClient: SessionListener {
     private static func performPublishSdkErrors() {
         Task {
             guard let currentSession = session,
-                  let adapter = eventAdapter,
-                  !(await sdkErrors.isEmpty()) else {
+                  let adapter = eventAdapter else {
                 return
             }
 
             let currentSdkErrors = await sdkErrors.copyAndClear()
+            guard !currentSdkErrors.isEmpty else { return }
+
             adapter.publishSdkErrors(session: currentSession, errors: currentSdkErrors)
         }
     }
@@ -60,12 +61,13 @@ class EventClient: SessionListener {
     private static func performPublishSdkEvents() {
         Task {
             guard let currentSession = session,
-                  let adapter = eventAdapter,
-                  !(await sdkEvents.isEmpty()) else {
+                  let adapter = eventAdapter else {
                 return
             }
-
+            
             let currentSdkEvents = await sdkEvents.copyAndClear()
+            guard !currentSdkEvents.isEmpty else { return }
+
             adapter.publishSdkEvents(session: currentSession, events: currentSdkEvents)
         }
     }
@@ -73,12 +75,13 @@ class EventClient: SessionListener {
     private static func performPublishAdEvents() {
         Task {
             guard let currentSession = session,
-                  let adapter = eventAdapter,
-                  !(await adEvents.isEmpty()) else {
+                  let adapter = eventAdapter else {
                 return
             }
 
             let currentAdEvents = await adEvents.copyAndClear()
+            guard !currentAdEvents.isEmpty else { return }
+            
             adapter.publishAdEvents(session: currentSession, adEvents: currentAdEvents)
         }
     }
