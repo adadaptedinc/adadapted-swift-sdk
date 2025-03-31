@@ -8,25 +8,22 @@ class EventClient: SessionListener {
     
     private static var eventAdapter: EventAdapter? = nil
     private static var listeners: Array<EventClientListener> = []
-    private static var adEvents: Set<AdEvent> = []
-    private static var sdkEvents: Set<SdkEvent> = []
-    private static var sdkErrors: Set<SdkError> = []
+    private static var adEvents = SafeSet<AdEvent>()
+    private static var sdkEvents = SafeSet<SdkEvent>()
+    private static var sdkErrors = SafeSet<SdkError>()
     private static var session: Session? = nil
     private static var hasInstance: Bool = false
-    private static let sdkErrorsQueue = DispatchQueue(label: "com.adadapted.sdkErrorsQueue", attributes: .concurrent)
-    private static let sdkEventsQueue = DispatchQueue(label: "com.adadapted.sdkEventsQueue", attributes: .concurrent)
-    private static let adEventsQueue = DispatchQueue(label: "com.adadapted.adEventsQueue", attributes: .concurrent)
     
     private static func performTrackSdkEvent(name: String, params: [String: String]) {
-        sdkEventsQueue.async(flags: .barrier) {
-            sdkEvents.insert(SdkEvent(type: EventStrings.SDK_EVENT_TYPE, name: name, params: params))
+        Task {
+            await sdkEvents.insert(SdkEvent(type: EventStrings.SDK_EVENT_TYPE, name: name, params: params))
         }
     }
     
     private static func performTrackSdkError(code: String, message: String, params: [String: String]) {
         AALogger.logError(message: "App Error: \(code) - \(message)")
-        sdkErrorsQueue.async(flags: .barrier) {
-            sdkErrors.insert(SdkError(code: code, message: message, params: params))
+        Task {
+            await sdkErrors.insert(SdkError(code: code, message: message, params: params))
         }
     }
     
@@ -40,51 +37,51 @@ class EventClient: SessionListener {
             impressionId: ad.impressionId,
             eventType: eventType
         )
-        
-        adEventsQueue.async(flags: .barrier) {
-            adEvents.insert(event)
+
+        Task {
+            await adEvents.insert(event)
             notifyAdEventTracked(event: event)
         }
     }
-
+    
     private static func performPublishSdkErrors() {
-        guard let currentSession = session,
-              let adapter = eventAdapter,
-              !sdkErrors.isEmpty else {
-            return
-        }
-        
-        sdkErrorsQueue.async(flags: .barrier) {
-            let currentSdkErrors = Array(sdkErrors)
-            sdkErrors.removeAll()
+        Task {
+            guard let currentSession = session,
+                  let adapter = eventAdapter else {
+                return
+            }
+
+            let currentSdkErrors = await sdkErrors.copyAndClear()
+            guard !currentSdkErrors.isEmpty else { return }
+
             adapter.publishSdkErrors(session: currentSession, errors: currentSdkErrors)
         }
     }
     
     private static func performPublishSdkEvents() {
-        guard let currentSession = session,
-              let adapter = eventAdapter,
-              !sdkEvents.isEmpty else {
-            return
-        }
+        Task {
+            guard let currentSession = session,
+                  let adapter = eventAdapter else {
+                return
+            }
+            
+            let currentSdkEvents = await sdkEvents.copyAndClear()
+            guard !currentSdkEvents.isEmpty else { return }
 
-        sdkEventsQueue.async(flags: .barrier) {
-            let currentSdkEvents = Array(sdkEvents)
-            sdkEvents.removeAll()
             adapter.publishSdkEvents(session: currentSession, events: currentSdkEvents)
         }
     }
     
     private static func performPublishAdEvents() {
-        guard let currentSession = session,
-              let adapter = eventAdapter,
-              !adEvents.isEmpty else {
-            return
-        }
+        Task {
+            guard let currentSession = session,
+                  let adapter = eventAdapter else {
+                return
+            }
 
-        adEventsQueue.async(flags: .barrier) {
-            let currentAdEvents = Array(adEvents)
-            adEvents.removeAll()
+            let currentAdEvents = await adEvents.copyAndClear()
+            guard !currentAdEvents.isEmpty else { return }
+            
             adapter.publishAdEvents(session: currentSession, adEvents: currentAdEvents)
         }
     }
