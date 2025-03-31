@@ -106,4 +106,37 @@ class EventClientTests: XCTestCase {
         
         wait(for: [expectation], timeout: 4)
     }
+    
+    func testThreadSafetyOfSafeSets() async {
+        let adSet = SafeSet<AdEvent>()
+        let sdkSet = SafeSet<SdkEvent>()
+        let sdkErrorSet = SafeSet<SdkError>()
+        
+        // concurrently modify SafeSets to verify bad access is clear
+        await withTaskGroup(of: Void.self) { group in
+            for i in 0..<1000 {
+                group.addTask {
+                    await adSet.insert(AdEvent(adId: "\(i)", zoneId: "zone", impressionId: "imp", eventType: "test"))
+                    await sdkSet.insert(SdkEvent(type: "SDK", name: "Event\(i)", params: [:]))
+                    await sdkErrorSet.insert(SdkError(code: "E\(i)", message: "Error \(i)", params: [:]))
+                }
+                
+                group.addTask {
+                    _ = await adSet.copyAndClear()
+                    _ = await sdkSet.copyAndClear()
+                    _ = await sdkErrorSet.copyAndClear()
+                }
+            }
+        }
+        
+        let remainingAdEvents = await adSet.copyAndClear()
+        let remainingSdkEvents = await sdkSet.copyAndClear()
+        let remainingSdkErrors = await sdkErrorSet.copyAndClear()
+        
+        try? await Task.sleep(nanoseconds: 1_000_000_000)
+        
+        XCTAssertTrue(remainingAdEvents.isEmpty)
+        XCTAssertTrue(remainingSdkEvents.isEmpty)
+        XCTAssertTrue(remainingSdkErrors.isEmpty)
+    }
 }
