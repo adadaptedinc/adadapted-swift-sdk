@@ -20,7 +20,7 @@ class SessionClient: SessionAdapterListener {
     private var pollingTimerRunning: Bool
     private var eventTimerRunning: Bool
     private var hasActiveInstance: Bool
-    private var zoneContexts: [ZoneContext]
+    private var zoneContexts = Set<ZoneContext>()
     internal var eventTimer: Timer?
     internal var refreshTimer: Timer?
     
@@ -32,7 +32,6 @@ class SessionClient: SessionAdapterListener {
         eventTimerRunning = false
         status = .OK
         hasActiveInstance = false
-        zoneContexts = [ZoneContext]()
     }
     
     private func performAddListener(listener: SessionListener) {
@@ -110,10 +109,11 @@ class SessionClient: SessionAdapterListener {
         
         AALogger.logInfo(message: "Checking for more Ads")
         status = zoneContexts.isEmpty ? .IS_REFRESH_ADS : .OK
+        var zoneContextsArray = Array(self.zoneContexts)
         
         DispatchQueue.global(qos: .background).async { [weak self] in
             guard let self = self, let session = self.currentSession else { return }
-            self.adapter?.sendRefreshAds(session: session, listener: self, zoneContexts: self.zoneContexts)
+            self.adapter?.sendRefreshAds(session: session, listener: self, zoneContexts: zoneContextsArray)
         }
     }
     
@@ -260,19 +260,20 @@ class SessionClient: SessionAdapterListener {
     }
     
     func setZoneContext(zoneContext: ZoneContext) {
-        if zoneContexts.allSatisfy({ $0.zoneId != zoneContext.zoneId }) {
-            zoneContexts.append(zoneContext)
-            performRefreshAds()
+        if let existingContext = zoneContexts.first(where: { $0.zoneId == zoneContext.zoneId }) {
+            zoneContexts.remove(existingContext)
         }
+        zoneContexts.insert(zoneContext)
+        performRefreshAds()
     }
     
     func removeZoneContext(zoneId: String) {
-        zoneContexts.removeAll { $0.zoneId == zoneId }
+        zoneContexts = zoneContexts.filter { $0.zoneId != zoneId }
         performRefreshAds()
     }
     
     func clearZoneContext() {
-        zoneContexts = [ZoneContext]()
+        zoneContexts.removeAll()
         performRefreshAds()
     }
     

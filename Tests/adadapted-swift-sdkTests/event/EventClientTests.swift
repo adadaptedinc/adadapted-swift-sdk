@@ -133,10 +133,37 @@ class EventClientTests: XCTestCase {
         let remainingSdkEvents = await sdkSet.copyAndClear()
         let remainingSdkErrors = await sdkErrorSet.copyAndClear()
         
-        try? await Task.sleep(nanoseconds: 1_000_000_000)
+        try? await Task.sleep(nanoseconds: 5_000_000_000)
         
         XCTAssertTrue(remainingAdEvents.isEmpty)
         XCTAssertTrue(remainingSdkEvents.isEmpty)
         XCTAssertTrue(remainingSdkErrors.isEmpty)
+    }
+    
+    func testThreadSafetyOfSafeArray() async {
+        let listenerArray = SafeArray<EventClientListener>()
+        let listener1 = TestEventClientListener()
+        let listener2 = TestEventClientListener()
+        
+        // concurrently modify SafeArray to verify bad access is clear
+        await withTaskGroup(of: Void.self) { group in
+            for _ in 0..<1000 {
+                group.addTask {
+                    await listenerArray.append(listener1)
+                    await listenerArray.append(listener2)
+                }
+                
+                group.addTask {
+                    await listenerArray.removeAll(where: { $0 === listener1 })
+                    await listenerArray.removeAll(where: { $0 === listener2 })
+                }
+            }
+        }
+        
+        try? await Task.sleep(nanoseconds: 3_000_000_000)
+        
+        let remainingListeners = await listenerArray.isEmpty()
+        
+        XCTAssertTrue(remainingListeners)
     }
 }

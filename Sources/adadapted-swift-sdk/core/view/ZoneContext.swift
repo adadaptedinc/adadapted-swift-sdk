@@ -4,10 +4,10 @@
 
 import Foundation
 
-struct ZoneContext {
+struct ZoneContext: Hashable {
     let zoneId: String
     let contextId: String
-    
+
     init(zoneId: String = "", contextId: String = "") {
         self.zoneId = zoneId
         self.contextId = contextId
