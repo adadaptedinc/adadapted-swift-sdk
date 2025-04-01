@@ -7,7 +7,7 @@ import Foundation
 class EventClient: SessionListener {
     
     private static var eventAdapter: EventAdapter? = nil
-    private static var listeners: Array<EventClientListener> = []
+    private static var listeners = SafeArray<EventClientListener>()
     private static var adEvents = SafeSet<AdEvent>()
     private static var sdkEvents = SafeSet<SdkEvent>()
     private static var sdkErrors = SafeSet<SdkError>()
@@ -39,8 +39,9 @@ class EventClient: SessionListener {
         )
 
         Task {
-            await adEvents.insert(event)
-            notifyAdEventTracked(event: event)
+            async let insertTask: () = adEvents.insert(event)
+            async let notifyTask: () = notifyAdEventTracked(event: event)
+            _ = await (insertTask, notifyTask)
         }
     }
     
@@ -86,14 +87,12 @@ class EventClient: SessionListener {
         }
     }
     
-    private static func performAddListener(listener: EventClientListener) {
-        listeners.insert(listener, at: 0)
+    private static func performAddListener(listener: EventClientListener) async {
+        await listeners.insertAtBeginning(listener)
     }
     
-    private static func performRemoveListener(listener: EventClientListener) {
-        if let index = listeners.firstIndex(where: { $0 === listener }) {
-            listeners.remove(at: index)
-        }
+    private static func performRemoveListener(listener: EventClientListener) async {
+        await listeners.removeFirst(where: { $0 === listener })
     }
     
     private static func trackGAIDAvailability(session: Session) {
@@ -106,8 +105,8 @@ class EventClient: SessionListener {
         )
     }
     
-    private static func notifyAdEventTracked(event: AdEvent) {
-        for listener in listeners {
+    private static func notifyAdEventTracked(event: AdEvent) async {
+        await listeners.forEach { listener in
             listener.onAdEventTracked(event: event)
         }
     }
@@ -144,11 +143,15 @@ class EventClient: SessionListener {
     }
     
     static func addListener(listener: EventClientListener) {
-        performAddListener(listener: listener)
+        Task {
+            await performAddListener(listener: listener)
+        }
     }
     
     static func removeListener(listener: EventClientListener) {
-        performRemoveListener(listener: listener)
+        Task {
+            await performRemoveListener(listener: listener)
+        }
     }
     
     static func trackImpression(ad: Ad) {
