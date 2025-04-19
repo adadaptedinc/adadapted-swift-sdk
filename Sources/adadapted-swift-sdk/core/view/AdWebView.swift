@@ -5,7 +5,7 @@
 import Foundation
 import WebKit
 
-class AdWebView: WKWebView, WKNavigationDelegate, UIGestureRecognizerDelegate {
+class AdWebView: WKWebView, WKNavigationDelegate {
 
     var listener: AdWebViewListener?
     var currentAd: Ad = Ad()
