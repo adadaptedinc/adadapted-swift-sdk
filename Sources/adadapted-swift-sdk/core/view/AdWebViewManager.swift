@@ -39,6 +39,7 @@ class AdWebViewManager: UIView {
     private func setupContainer() {
         backgroundColor = UIColor.clear
         isOpaque = false
+        isUserInteractionEnabled = true
         webView?.isUserInteractionEnabled = false
         
         if let webView = webView {
@@ -52,14 +53,15 @@ class AdWebViewManager: UIView {
                         webView.bottomAnchor.constraint(equalTo: bottomAnchor)
                     ])
                 }
-        
-        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
-        addGestureRecognizer(tapGesture)
     }
+    
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesEnded(touches, with: event)
 
-    @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
-        if let webView = webView, !webView.currentAd.id.isEmpty {
-            webView.notifyAdClicked()
+        if webView?.currentAd.id.isEmpty == false {
+            webView?.notifyAdClicked()
+        } else {
+            EventClient.trackSdkError(code: "Ad_Click_Failed", message: "No Ad Id Present")
         }
     }
 }
