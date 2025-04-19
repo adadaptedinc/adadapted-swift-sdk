@@ -61,7 +61,7 @@ class AdWebViewManager: UIView {
         if webView?.currentAd.id.isEmpty == false {
             webView?.notifyAdClicked()
         } else {
-            EventClient.trackSdkError(code: "Ad_Click_Failed", message: "No Ad Id Present")
+            EventClient.trackSdkError(code: "AD_CLICK_FAILURE_NO_AD_ID", message: "No Ad Id Present")
         }
     }
 }
