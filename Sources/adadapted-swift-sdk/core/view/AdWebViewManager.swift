@@ -58,8 +58,13 @@ class AdWebViewManager: UIView {
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         super.touchesEnded(touches, with: event)
 
-        if webView?.currentAd.id.isEmpty == false {
-            webView?.notifyAdClicked()
+        guard let webView = webView else {
+            EventClient.trackSdkError(code: "AD_CLICK_FAILURE_NO_WEBVIEW", message: "WebView is nil")
+            return
+        }
+
+        if webView.currentAd.id.isEmpty == false {
+            webView.notifyAdClicked()
         } else {
             EventClient.trackSdkError(code: "AD_CLICK_FAILURE_NO_AD_ID", message: "No Ad Id Present")
         }

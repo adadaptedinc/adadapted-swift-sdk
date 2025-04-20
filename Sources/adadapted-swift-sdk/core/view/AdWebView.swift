@@ -54,12 +54,12 @@ class AdWebView: WKWebView, WKNavigationDelegate {
         }
         notifyBlankLoaded()
     }
-    
+        
     func notifyAdClicked() {
         if let listener = listener {
             listener.onAdInWebViewClicked(ad: currentAd)
         } else {
-            EventClient.trackSdkError(code: "AD_CLICK_FAILURE_LISTENER_NIL", message: "AdWebView listener is nil. Unable to notify that the ad was clicked.")
+            EventClient.trackSdkError(code: "AD_CLICK_FAILURE_LISTENER_NIL", message: "AdWebView listener is nil. Unable to notify that the ad was clicked for Ad Id: \(currentAd.id)")
         }
     }
 
