@@ -5,7 +5,7 @@
 import UIKit
 import WebKit
 
-class AdWebViewManager: UIView {
+class AdWebViewManager: UIView, UIGestureRecognizerDelegate {
     
     var webView: AdWebView?
     
@@ -18,22 +18,6 @@ class AdWebViewManager: UIView {
     required init?(coder: NSCoder) {
         super.init(coder: coder)
         setupContainer()
-    }
-    
-    func loadAd(ad: Ad) {
-        webView?.loadAd(ad: ad)
-    }
-    
-    func loadBlank() {
-        webView?.loadBlank()
-    }
-    
-    func currentAd() -> Ad {
-        return webView?.currentAd ?? Ad()
-    }
-    
-    func evaluateJavaScript(js: String) {
-        webView?.evaluateJavaScript(js)
     }
 
     private func setupContainer() {
@@ -53,20 +37,44 @@ class AdWebViewManager: UIView {
                         webView.bottomAnchor.constraint(equalTo: bottomAnchor)
                     ])
                 }
+        
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap))
+        tapGesture.delegate = self
+        tapGesture.cancelsTouchesInView = false
+        tapGesture.delaysTouchesBegan = false
+        addGestureRecognizer(tapGesture)
     }
     
-    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        super.touchesEnded(touches, with: event)
-
+    @objc internal func handleTap() {
         guard let webView = webView else {
             EventClient.trackSdkError(code: "AD_CLICK_FAILURE_NO_WEBVIEW", message: "WebView is nil")
             return
         }
 
-        if webView.currentAd.id.isEmpty == false {
+        if !webView.currentAd.id.isEmpty {
             webView.notifyAdClicked()
         } else {
             EventClient.trackSdkError(code: "AD_CLICK_FAILURE_NO_AD_ID", message: "No Ad Id Present")
         }
+    }
+    
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+        return true
+    }
+    
+    func loadAd(ad: Ad) {
+        webView?.loadAd(ad: ad)
+    }
+    
+    func loadBlank() {
+        webView?.loadBlank()
+    }
+    
+    func currentAd() -> Ad {
+        return webView?.currentAd ?? Ad()
+    }
+    
+    func evaluateJavaScript(js: String) {
+        webView?.evaluateJavaScript(js)
     }
 }
