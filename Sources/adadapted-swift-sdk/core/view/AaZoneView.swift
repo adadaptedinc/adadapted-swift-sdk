@@ -32,15 +32,34 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
         configuration.allowsInlineMediaPlayback = true
         configuration.mediaTypesRequiringUserActionForPlayback = .audio
         webViewManager = AdWebViewManager(frame: .zero, listener: self)
+        webViewManager.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(webViewManager)
+        
         reportButton = UIButton(type: .custom)
         reportButton.setImage(UIImage(named: "reportAdImage", in: Bundle.module, compatibleWith: nil), for: .normal)
         reportButton.addTarget(self, action: #selector(reportButtonTapped), for: .touchUpInside)
         reportButton.backgroundColor = .clear
         reportButton.clipsToBounds = true
-        reportButton.setNeedsLayout()
-        reportButton.layoutIfNeeded()
+        reportButton.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(reportButton)
+        
+        setupConstraints()
+    }
     
-        addSubview(webViewManager)
+    private func setupConstraints() {
+        NSLayoutConstraint.activate([
+            webViewManager.leadingAnchor.constraint(equalTo: leadingAnchor),
+            webViewManager.trailingAnchor.constraint(equalTo: trailingAnchor),
+            webViewManager.topAnchor.constraint(equalTo: topAnchor),
+            webViewManager.bottomAnchor.constraint(equalTo: bottomAnchor)
+        ])
+        
+        NSLayoutConstraint.activate([
+            reportButton.widthAnchor.constraint(equalToConstant: 14),
+            reportButton.heightAnchor.constraint(equalToConstant: 14),
+            reportButton.topAnchor.constraint(equalTo: topAnchor, constant: 8),
+            reportButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8)
+        ])
     }
     
     // MARK: - Public Methods
@@ -48,12 +67,6 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
     public func initialize(zoneId: String) {
         presenter.inititialize(zoneId: zoneId)
         presenter.setWebViewManager(webViewManager: webViewManager)
-    }
-    
-    public override func layoutSubviews() {
-        super.layoutSubviews()
-        self.webViewManager.frame = bounds
-        reportButton.frame = CGRect(x: (Int(frame.width)) - 25, y: (Int(frame.height) - (Int(frame.height) - 10)), width: 14,height:14)
     }
     
     func onStart() {
@@ -109,12 +122,6 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
     // MARK: - AdZonePresenterListener
     
     func onZoneAvailable(zone: Zone) {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            if !self.reportButton.isDescendant(of: self) {
-                self.addSubview(self.reportButton)
-            }
-        }
         notifyClientZoneHasAds(hasAds: zone.hasAds())
     }
     

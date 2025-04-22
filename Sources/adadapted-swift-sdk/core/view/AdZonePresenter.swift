@@ -168,6 +168,7 @@ class AdZonePresenter: SessionListener {
             handlePopupAction(ad: ad)
         default:
             AALogger.logError(message: "AdZonePresenter Cannot handle Action type: \(actionType)")
+            EventClient.trackSdkError(code: "AD_CLICK_FAILURE_BAD_ACTION_TYPE", message: "Invalid Ad Action Type for Ad Id: \(ad.id)")
         }
         
         cycleToNextAdIfPossible()

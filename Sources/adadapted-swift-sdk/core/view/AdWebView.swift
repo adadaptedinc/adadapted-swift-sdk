@@ -5,7 +5,7 @@
 import Foundation
 import WebKit
 
-class AdWebView: WKWebView, WKNavigationDelegate, UIGestureRecognizerDelegate {
+class AdWebView: WKWebView, WKNavigationDelegate {
 
     var listener: AdWebViewListener?
     var currentAd: Ad = Ad()
@@ -54,9 +54,13 @@ class AdWebView: WKWebView, WKNavigationDelegate, UIGestureRecognizerDelegate {
         }
         notifyBlankLoaded()
     }
-
+        
     func notifyAdClicked() {
-        listener?.onAdInWebViewClicked(ad: currentAd)
+        if let listener = listener {
+            listener.onAdInWebViewClicked(ad: currentAd)
+        } else {
+            EventClient.trackSdkError(code: "AD_CLICK_FAILURE_LISTENER_NIL", message: "AdWebView listener is nil. Unable to notify that the ad was clicked for Ad Id: \(currentAd.id)")
+        }
     }
     
     private func notifyAdLoaded() {

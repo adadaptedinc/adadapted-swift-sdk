@@ -58,6 +58,8 @@ struct AdWebViewRepresentable: UIViewRepresentable {
         // Setup tap gesture
         let tapGesture = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleTap))
         tapGesture.delegate = context.coordinator
+        tapGesture.cancelsTouchesInView = false
+        tapGesture.delaysTouchesBegan = false
         webView.addGestureRecognizer(tapGesture)
         webView.isUserInteractionEnabled = true
         webView.navigationDelegate = context.coordinator

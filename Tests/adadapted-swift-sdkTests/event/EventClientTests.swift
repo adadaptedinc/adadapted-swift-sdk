@@ -133,7 +133,7 @@ class EventClientTests: XCTestCase {
         let remainingSdkEvents = await sdkSet.copyAndClear()
         let remainingSdkErrors = await sdkErrorSet.copyAndClear()
         
-        try? await Task.sleep(nanoseconds: 5_000_000_000)
+        try? await Task.sleep(nanoseconds: 6_000_000_000)
         
         XCTAssertTrue(remainingAdEvents.isEmpty)
         XCTAssertTrue(remainingSdkEvents.isEmpty)

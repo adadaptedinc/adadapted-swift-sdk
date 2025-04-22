@@ -5,7 +5,7 @@
 import UIKit
 import WebKit
 
-class AdWebViewManager: UIView {
+class AdWebViewManager: UIView, UIGestureRecognizerDelegate {
     
     var webView: AdWebView?
     
@@ -18,6 +18,48 @@ class AdWebViewManager: UIView {
     required init?(coder: NSCoder) {
         super.init(coder: coder)
         setupContainer()
+    }
+
+    private func setupContainer() {
+        backgroundColor = UIColor.clear
+        isOpaque = false
+        isUserInteractionEnabled = true
+        webView?.isUserInteractionEnabled = false
+        
+        if let webView = webView {
+                    addSubview(webView)
+                    webView.translatesAutoresizingMaskIntoConstraints = false
+
+                    NSLayoutConstraint.activate([
+                        webView.leadingAnchor.constraint(equalTo: leadingAnchor),
+                        webView.trailingAnchor.constraint(equalTo: trailingAnchor),
+                        webView.topAnchor.constraint(equalTo: topAnchor),
+                        webView.bottomAnchor.constraint(equalTo: bottomAnchor)
+                    ])
+                }
+        
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap))
+        tapGesture.delegate = self
+        tapGesture.cancelsTouchesInView = false
+        tapGesture.delaysTouchesBegan = false
+        addGestureRecognizer(tapGesture)
+    }
+    
+    @objc internal func handleTap() {
+        guard let webView = webView else {
+            EventClient.trackSdkError(code: "AD_CLICK_FAILURE_NO_WEBVIEW", message: "WebView is nil")
+            return
+        }
+
+        if !webView.currentAd.id.isEmpty {
+            webView.notifyAdClicked()
+        } else {
+            EventClient.trackSdkError(code: "AD_CLICK_FAILURE_NO_AD_ID", message: "No Ad Id Present")
+        }
+    }
+    
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+        return true
     }
     
     func loadAd(ad: Ad) {
@@ -34,32 +76,5 @@ class AdWebViewManager: UIView {
     
     func evaluateJavaScript(js: String) {
         webView?.evaluateJavaScript(js)
-    }
-
-    private func setupContainer() {
-        backgroundColor = UIColor.clear
-        isOpaque = false
-        webView?.isUserInteractionEnabled = false
-        
-        if let webView = webView {
-                    addSubview(webView)
-                    webView.translatesAutoresizingMaskIntoConstraints = false
-
-                    NSLayoutConstraint.activate([
-                        webView.leadingAnchor.constraint(equalTo: leadingAnchor),
-                        webView.trailingAnchor.constraint(equalTo: trailingAnchor),
-                        webView.topAnchor.constraint(equalTo: topAnchor),
-                        webView.bottomAnchor.constraint(equalTo: bottomAnchor)
-                    ])
-                }
-        
-        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
-        addGestureRecognizer(tapGesture)
-    }
-
-    @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
-        if let webView = webView, !webView.currentAd.id.isEmpty {
-            webView.notifyAdClicked()
-        }
     }
 }
