@@ -19,7 +19,7 @@ class HttpPayloadAdapter: PayloadAdapter {
         var request = URLRequest(url: pickupUrl)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(deviceInfo.appId, forHTTPHeaderField: "API_HEADER")
+        request.setValue(deviceInfo.appId, forHTTPHeaderField: Config.API_HEADER)
         
         do {
             let requestBody = try JSONEncoder().encode(payloadRequest)
@@ -60,7 +60,7 @@ class HttpPayloadAdapter: PayloadAdapter {
         var request = URLRequest(url: trackUrl)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(deviceInfo.appId, forHTTPHeaderField: "API_HEADER")
+        request.setValue(deviceInfo.appId, forHTTPHeaderField: Config.API_HEADER)
         
         do {
             let requestBody = try JSONEncoder().encode(eventRequest)

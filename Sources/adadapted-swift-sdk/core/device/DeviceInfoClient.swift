@@ -40,8 +40,8 @@ class DeviceInfoClient {
         performGetInfo(deviceCallback: deviceCallback)
     }
 
-    static func getCachedDeviceInfo() -> DeviceInfo? {
-        return deviceInfo
+    static func getCachedDeviceInfo() -> DeviceInfo {
+        return deviceInfo ?? DeviceInfo()
     }
 
     static func createInstance(

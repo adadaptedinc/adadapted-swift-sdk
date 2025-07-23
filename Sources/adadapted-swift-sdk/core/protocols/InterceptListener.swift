@@ -5,5 +5,5 @@
 import Foundation
 
 protocol InterceptListener {
-    func onKeywordInterceptInitialized(intercept: Intercept)
+    func onKeywordInterceptInitialized(intercept: InterceptData)
 }

@@ -5,31 +5,32 @@
 import Foundation
 import WebKit
 
-class AdZonePresenter: SessionListener {
+class AdZonePresenter: ZoneAdListener {
     
     private let PIXEL_TRACKING_JS = "loadTrackingPixels()"
     private let adViewHandler: AdViewHandler
-    private let sessionClient: SessionClient?
     private var currentAd = Ad()
     private var zoneId = ""
+    private var zoneContextId = ""
+    private var currentAdZoneData = AdZoneData()
     private var isZoneVisible = true
     private var adZonePresenterListener: AdZonePresenterListener?
     private var attached = false
     private var sessionId: String?
     private var zoneLoaded = false
-    private var currentZone = Zone()
     private var randomAdStartPosition: Int
     private var adStarted = false
     private var adCompleted = false
     private var timerRunning = false
     private var timer: Timer?
+    private let adClient: AdClient
     private let eventClient: EventClient = EventClient.getInstance()
     private var webViewManager: AdWebViewManager?
     private var swiftUIWebView: WKWebView?
     
-    init(adViewHandler: AdViewHandler, sessionClient: SessionClient?) {
+    init(adViewHandler: AdViewHandler, adClient: AdClient) {
         self.adViewHandler = adViewHandler
-        self.sessionClient = sessionClient
+        self.adClient = adClient
         self.randomAdStartPosition = Int(Date().timeIntervalSince1970) % 10
     }
     
@@ -56,7 +57,9 @@ class AdZonePresenter: SessionListener {
         if !attached {
             attached = true
             self.adZonePresenterListener = adZonePresenterListener
-            sessionClient?.addPresenter(listener: self)
+            if(currentAd.id.isEmpty) {
+                AdClient.fetchNewAd(zoneId: self.zoneId, listener: self)
+            }
         }
     }
     
@@ -65,38 +68,40 @@ class AdZonePresenter: SessionListener {
             attached = false
             adZonePresenterListener = nil
             completeCurrentAd()
-            sessionClient?.removePresenter(listener: self)
             stopTimer()
         }
     }
     
     func setZoneContext(contextId: String) {
-        sessionClient?.setZoneContext(zoneContext: ZoneContext(zoneId: self.zoneId, contextId: contextId))
+        zoneContextId = contextId
         EventClient.trackRecipeContextEvent(contextId: contextId, zoneId: self.zoneId)
     }
     
     func removeZoneContext() {
-        sessionClient?.removeZoneContext(zoneId: self.zoneId)
+        zoneContextId = ""
     }
     
-    func clearZoneContext() {
-        sessionClient?.clearZoneContext()
-    }
-    
-    private func setNextAd() {
-        if !zoneLoaded || sessionClient?.hasStaleAds() == true {
-            return
-        }
+    private func getNextAd() {
+        restartTimer()
+        if (!zoneLoaded) { return }
         completeCurrentAd()
         
-        if let adZonePresenterListener = adZonePresenterListener, currentZone.hasAds() {
-            let adPosition = randomAdStartPosition % currentZone.ads.count
-            randomAdStartPosition += 1
-            currentAd = currentZone.ads[adPosition]
-        } else {
-            currentAd = Ad()
-        }
-        
+        AdClient.fetchNewAd(
+            zoneId: zoneId,
+            listener: ClosureZoneAdListener(
+                onAdLoaded: { adZoneData in
+                    self.handleAd(ad: adZoneData.ad)
+                },
+                onAdLoadFailed: {
+                    self.handleAd(ad: Ad()) // Passes an empty Ad as a fallback
+                }
+            ),
+            contextId: zoneContextId
+        )
+    }
+    
+    private func handleAd(ad: Ad) {
+        currentAd = ad
         adStarted = false
         adCompleted = false
         displayAd()
@@ -115,7 +120,6 @@ class AdZonePresenter: SessionListener {
             if !currentAd.impressionWasTracked() && !isZoneVisible {
                 EventClient.trackInvisibleImpression(ad: currentAd)
             }
-            currentAd.resetImpressionTracking()
             adCompleted = true
         }
     }
@@ -151,7 +155,7 @@ class AdZonePresenter: SessionListener {
     func onAdClicked(ad: Ad) {
         let actionType = ad.actionType
         var params = [String: String]()
-        params["ad_id"] = ad.id
+        params["id"] = ad.id
         
         switch actionType {
         case AdActionType.CONTENT:
@@ -171,7 +175,7 @@ class AdZonePresenter: SessionListener {
             EventClient.trackSdkError(code: "AD_CLICK_FAILURE_BAD_ACTION_TYPE", message: "Invalid Ad Action Type for Ad Id: \(ad.id)")
         }
         
-        cycleToNextAdIfPossible()
+        getNextAd()
     }
     
     func onReportAdClicked(adId: String, udid: String) {
@@ -183,7 +187,6 @@ class AdZonePresenter: SessionListener {
             return
         }
 
-        ad.setImpressionTracked()
         EventClient.trackImpression(ad: ad)
         callPixelTrackingJavaScript()
     }
@@ -198,19 +201,12 @@ class AdZonePresenter: SessionListener {
         if !zoneLoaded || timerRunning {
             return
         }
-        let timerDelay = currentAd.refreshTime * 1000
+        let timerDelay = Config.DEFAULT_AD_REFRESH
         timerRunning = true
         timer = Timer(repeatMillis: timerDelay, delayMillis: timerDelay, timerAction: {
-            self.setNextAd()
+            self.getNextAd()
         })
         timer?.startTimer()
-    }
-    
-    private func cycleToNextAdIfPossible() {
-        if currentZone.ads.count > 1 {
-            restartTimer()
-            setNextAd()
-        }
     }
     
     private func restartTimer() {
@@ -243,11 +239,7 @@ class AdZonePresenter: SessionListener {
     }
     
     private func notifyZoneAvailable() {
-        adZonePresenterListener?.onZoneAvailable(zone: currentZone)
-    }
-    
-    private func notifyAdsRefreshed() {
-        adZonePresenterListener?.onAdsRefreshed(zone: currentZone)
+        adZonePresenterListener?.onZoneAvailable(adZoneData: currentAdZoneData)
     }
     
     private func notifyAdAvailable(ad: Ad) {
@@ -259,37 +251,23 @@ class AdZonePresenter: SessionListener {
         adZonePresenterListener?.onNoAdAvailable()
     }
     
-    private func updateSessionId(sessionId: String) -> Bool {
-        if self.sessionId == nil || self.sessionId != sessionId {
-            self.sessionId = sessionId
-            return true
-        }
-        return false
-    }
-    
-    private func updateCurrentZone(zone: Zone) {
+    private func updateCurrentZone(adZoneData: AdZoneData) {
         zoneLoaded = true
-        currentZone = zone
+        currentAdZoneData = adZoneData
         restartTimer()
-        setNextAd()
+        getNextAd()
     }
     
-    func onSessionAvailable(session: Session) {
+    func onAdLoaded(_ adZoneData: AdZoneData) {
         if zoneId.isEmpty {
             AALogger.logError(message: "AdZoneId is empty. Was onStop() called outside the host view's overriding function?")
         }
-        updateCurrentZone(zone: session.getZone(zoneId: zoneId))
-        if updateSessionId(sessionId: session.id) {
-            notifyZoneAvailable()
-        }
+        updateCurrentZone(adZoneData: adZoneData)
+        notifyZoneAvailable()
     }
     
-    func onAdsAvailable(session: Session) {
-        updateCurrentZone(zone: session.getZone(zoneId: zoneId))
-        notifyAdsRefreshed()
-    }
-    
-    func onSessionInitFailed() {
-        updateCurrentZone(zone: Zone())
+    func onAdLoadFailed() {
+        updateCurrentZone(adZoneData: AdZoneData())
+        notifyNoAdAvailable()
     }
 }

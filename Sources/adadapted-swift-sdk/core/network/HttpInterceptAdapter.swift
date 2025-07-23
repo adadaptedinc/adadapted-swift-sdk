@@ -5,36 +5,38 @@
 import Foundation
 
 class HttpInterceptAdapter: InterceptAdapter {
-    private let initUrl: URL
+    private let keywordRequestUrl: URL
     private let eventUrl: URL
     
-    init(initUrl: URL, eventUrl: URL) {
-        self.initUrl = initUrl
+    init(keywordRequestUrl: URL, eventUrl: URL) {
+        self.keywordRequestUrl = keywordRequestUrl
         self.eventUrl = eventUrl
     }
     
-    func retrieve(session: Session, adapterListener: InterceptAdapterListener) {
-        if session.id.isEmpty {
-            return
-        }
-        
-        var urlComponents = URLComponents(url: initUrl, resolvingAgainstBaseURL: false)
-        urlComponents?.queryItems = [
-            URLQueryItem(name: "aid", value: session.deviceInfo.appId),
-            URLQueryItem(name: "uid", value: session.deviceInfo.udid),
-            URLQueryItem(name: "sid", value: session.id),
-            URLQueryItem(name: "sdk", value: session.deviceInfo.sdkVersion)
-        ]
-        
-        guard let url = urlComponents?.url else {
-            AALogger.logError(message: "Failed to construct URL")
-            return
-        }
-        
-        var request = URLRequest(url: url)
+    func retrieve(sessionId: String, adapterListener: InterceptAdapterListener) {
+        let deviceInfo = DeviceInfoClient.getCachedDeviceInfo()
+
+        let keywordRequest = KeywordRequest(
+            sdkId: deviceInfo.sdkVersion,
+            bundleId: "",
+            userId: deviceInfo.udid,
+            zoneId: "",
+            sessionId: sessionId,
+            extra: ""
+        )
+
+        var request = URLRequest(url: keywordRequestUrl)
+        request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(session.deviceInfo.appId, forHTTPHeaderField: "API_HEADER")
-        
+        request.setValue(deviceInfo.appId, forHTTPHeaderField: Config.API_HEADER)
+
+        do {
+            request.httpBody = try JSONEncoder().encode(keywordRequest)
+        } catch {
+            AALogger.logError(message: "Failed to encode KeywordRequest: \(error)")
+            return
+        }
+
         let task = URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
                 AALogger.logError(message: error.localizedDescription)
@@ -42,37 +44,46 @@ class HttpInterceptAdapter: InterceptAdapter {
                     errorCause: error.localizedDescription,
                     errorMessage: response?.description ?? "Unknown response",
                     errorEventCode: EventStrings.KI_INIT_REQUEST_FAILED,
-                    url: url.absoluteString
+                    url: self.keywordRequestUrl.absoluteString
                 )
                 return
             }
+
+            guard let data = data else {
+                AALogger.logError(message: "No data received in keyword request")
+                return
+            }
             
-            if let data = data {
-                do {
-                    let intercept = try JSONDecoder().decode(Intercept.self, from: data)
-                    adapterListener.onSuccess(intercept: intercept)
-                } catch {
-                    AALogger.logError(message: "Failed to decode intercept: \(error)")
-                    return
+            // DEBUG: Log raw response body
+            let responseRaw = ("Raw Response: \(String(data: data, encoding: .utf8) ?? "Invalid UTF-8")")
+            print(responseRaw)
+
+            do {
+                let keywordResponse = try JSONDecoder().decode(KeywordResponse.self, from: data)
+                if let interceptData = keywordResponse.data {
+                    adapterListener.onSuccess(intercept: interceptData)
                 }
+            } catch {
+                AALogger.logError(message: "Failed to decode KeywordResponse: \(error)")
             }
         }
         task.resume()
     }
     
-    func sendEvents(session: Session, events: Set<InterceptEvent>) {
+    func sendEvents(sessionId: String, events: Set<InterceptEvent>) {
+        let deviceInfo = DeviceInfoClient.getCachedDeviceInfo()
         let compiledInterceptEventRequest = InterceptEventWrapper(
-            sessionId: session.id,
-            appId: session.deviceInfo.appId,
-            udid: session.deviceInfo.udid,
-            sdkVersion: session.deviceInfo.sdkVersion,
+            sessionId: sessionId,
+            appId: deviceInfo.appId,
+            udid: deviceInfo.udid,
+            sdkVersion: deviceInfo.sdkVersion,
             events: events
         )
         
         var request = URLRequest(url: eventUrl)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(session.deviceInfo.appId, forHTTPHeaderField: "API_HEADER")
+        request.setValue(deviceInfo.appId, forHTTPHeaderField: Config.API_HEADER)
         
         do {
             let requestBody = try JSONEncoder().encode(compiledInterceptEventRequest)

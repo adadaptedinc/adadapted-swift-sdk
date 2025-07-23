@@ -5,5 +5,5 @@
 import Foundation
 
 protocol InterceptAdapterListener: AnyObject {
-    func onSuccess(intercept: Intercept)
+    func onSuccess(intercept: InterceptData)
 }

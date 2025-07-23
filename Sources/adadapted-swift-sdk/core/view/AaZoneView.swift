@@ -10,7 +10,7 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
     // MARK: - Properties
     private var webViewManager: AdWebViewManager!
     private var reportButton: UIButton!
-    private var presenter: AdZonePresenter = AdZonePresenter(adViewHandler: AdViewHandler(), sessionClient: SessionClient.getInstance())
+    private var presenter: AdZonePresenter = AdZonePresenter(adViewHandler: AdViewHandler(), adClient: AdClient.getInstance())
     internal var zoneViewListener: ZoneViewListener?
     internal var isVisible = true
     private var isAdVisible = true
@@ -101,10 +101,6 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
         presenter.removeZoneContext()
     }
     
-    public func clearAdZoneContext() {
-        presenter.clearZoneContext()
-    }
-    
     public func onStop() {
         zoneViewListener = nil
         presenter.onDetach()
@@ -121,12 +117,8 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
     
     // MARK: - AdZonePresenterListener
     
-    func onZoneAvailable(zone: Zone) {
-        notifyClientZoneHasAds(hasAds: zone.hasAds())
-    }
-    
-    func onAdsRefreshed(zone: Zone) {
-        notifyClientZoneHasAds(hasAds: zone.hasAds())
+    func onZoneAvailable(adZoneData: AdZoneData) {
+        notifyClientZoneHasAds(hasAds: adZoneData.hasAd())
     }
     
     func onAdAvailable(ad: Ad) {
@@ -187,9 +179,6 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
     // MARK: - Action
     
     @objc private func reportButtonTapped() {
-        if let cachedDeviceInfo = DeviceInfoClient.getCachedDeviceInfo() {
-            let udid = cachedDeviceInfo.udid
-            presenter.onReportAdClicked(adId: webViewManager.currentAd().id, udid: udid)
-        }
+        presenter.onReportAdClicked(adId: webViewManager.currentAd().id, udid: DeviceInfoClient.getCachedDeviceInfo().udid)
     }
 }

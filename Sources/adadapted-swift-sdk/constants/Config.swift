@@ -11,17 +11,18 @@ class Config {
     static let LOG_TAG = "ADADAPTED_SWIFT_SDK"
     static let DEFAULT_AD_POLLING = 300000 // If the new Ad polling isn't set it will default to every 5 minutes
     static let DEFAULT_EVENT_POLLING = 3000 // Events will be pushed to the server every 3 seconds
-    static let DEFAULT_AD_REFRESH = 6000 // If an Ad does not have a refresh time it will default to 60 seconds
+    static let DEFAULT_AD_REFRESH = 60000 // If an Ad does not have a refresh time it will default to 60 seconds
     
     static let AASDK_PREFS_KEY = "AASDK_PREFS"
     static let AASDK_PREFS_GENERATED_ID_KEY = "GENERATED_ID"
+    
+    static let API_HEADER = "X-API-KEY"
     
     internal static let AD_SERVER_VERSION = "/v/0.9.5/"
     internal static let TRACKING_SERVER_VERSION = "/v/1/"
     internal static let PAYLOAD_SERVER_VERSION = "/v/1/"
     
-    private static let SESSION_INIT_PATH = "ios/sessions/initialize"
-    private static let REFRESH_ADS_PATH = "ios/ads/retrieve"
+    private static let RETRIEVE_ADS_PATH = "ios/ads/retrieve"
     private static let AD_EVENTS_PATH = "ios/ads/events"
     private static let RETRIEVE_INTERCEPTS_PATH = "ios/intercepts/retrieve"
     private static let INTERCEPT_EVENTS_PATH = "ios/intercepts/events"
@@ -32,8 +33,7 @@ class Config {
     static let AD_ID_PARAM = "aid"
     static let UDID_PARAM = "uid"
     
-    static func getInitSessionUrl() -> URL { getAdServerFormattedUrl(path: Config.SESSION_INIT_PATH) }
-    static func getRefreshAdsUrl() -> URL { getAdServerFormattedUrl(path: Config.REFRESH_ADS_PATH) }
+    static func getRefreshAdsUrl() -> URL { getAdServerFormattedUrl(path: Config.RETRIEVE_ADS_PATH) }
     static func getAdEventsUrl() -> URL { getAdServerFormattedUrl(path: Config.AD_EVENTS_PATH) }
     static func getRetrieveInterceptsUrl() -> URL { getAdServerFormattedUrl(path: Config.RETRIEVE_INTERCEPTS_PATH) }
     static func getInterceptEventsUrl() -> URL { getAdServerFormattedUrl(path: Config.INTERCEPT_EVENTS_PATH) }

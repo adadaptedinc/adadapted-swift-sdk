@@ -4,28 +4,28 @@
 
 import Foundation
 
-class InterceptClient: SessionListener, InterceptAdapterListener {
+class InterceptClient: InterceptAdapterListener {
     private let adapter: InterceptAdapter
     private var events: Set<InterceptEvent>
-    private var currentSession: Session?
     private var interceptListener: InterceptListener?
     private var backSerialQueue = DispatchQueue(label: "processingQueue")
+    private var eventTimer: Timer?
+    private var interceptEventTimerRunning = false
     
     private init(adapter: InterceptAdapter) {
         self.adapter = adapter
         self.events = Set()
-        SessionClient.getInstance().addListener(listener: self)
     }
     
-    private func performInitialize(session: Session?, interceptListener: InterceptListener?) {
-        guard let session = session, let interceptListener = interceptListener else {
+    private func performInitialize(sessionId: String, interceptListener: InterceptListener?) {
+        guard let interceptListener = interceptListener else {
             return
         }
         
         self.interceptListener = interceptListener
         backSerialQueue.async { [weak self] in
             guard let self = self else { return }
-            self.adapter.retrieve(session: session, adapterListener: self)
+            self.adapter.retrieve(sessionId: sessionId, adapterListener: self)
         }
     }
     
@@ -63,19 +63,28 @@ class InterceptClient: SessionListener, InterceptAdapterListener {
             
             let currentEvents = self.events
             self.events.removeAll()
-            
-            if let currentSession = self.currentSession {
-                self.adapter.sendEvents(session: currentSession, events: currentEvents)
-            }
+            self.adapter.sendEvents(sessionId: SessionClient.getSessionId(), events: currentEvents)
         }
     }
     
-    func onSuccess(intercept: Intercept) {
-        self.interceptListener?.onKeywordInterceptInitialized(intercept: intercept)
+    private func startPublishTimer() {
+        if interceptEventTimerRunning {
+            return
+        }
+        interceptEventTimerRunning = true
+        
+        eventTimer = Timer(
+            repeatMillis: Config.DEFAULT_EVENT_POLLING,
+            delayMillis: Config.DEFAULT_EVENT_POLLING,
+            timerAction: {
+                self.performPublishEvents()
+            }
+        )
+        eventTimer?.startTimer()
     }
     
-    func onSessionAvailable(session: Session) {
-        currentSession = session
+    func onSuccess(intercept: InterceptData) {
+        self.interceptListener?.onKeywordInterceptInitialized(intercept: intercept)
     }
     
     func onPublishEvents() {
@@ -84,9 +93,9 @@ class InterceptClient: SessionListener, InterceptAdapterListener {
         }
     }
     
-    func initialize(session: Session?, interceptListener: InterceptListener?) {
+    func initialize(sessionId: String, interceptListener: InterceptListener?) {
         backSerialQueue.async { [weak self] in
-            self?.performInitialize(session: session, interceptListener: interceptListener)
+            self?.performInitialize(sessionId: sessionId, interceptListener: interceptListener)
         }
     }
     
@@ -113,13 +122,16 @@ class InterceptClient: SessionListener, InterceptAdapterListener {
         }
     }
     
-    static private var instance: InterceptClient?
+    static private var instance: InterceptClient!
     
-    static func getInstance() -> InterceptClient? {
+    static func getInstance() -> InterceptClient {
         return instance
     }
     
-    static func createInstance(adapter: InterceptAdapter) {
+    static func createInstance(adapter: InterceptAdapter, isKeywordInterceptEnabled: Bool) {
         instance = InterceptClient(adapter: adapter)
+        if (isKeywordInterceptEnabled) {
+            instance?.startPublishTimer()
+        }
     }
 }

@@ -14,15 +14,15 @@ class HttpEventAdapter: EventAdapter {
         self.sdkEventUrl = sdkEventUrl
         self.errorUrl = errorUrl
     }
-    
-    func publishAdEvents(session: Session, adEvents: Array<AdEvent>) {
+
+    func publishAdEvents(sessionId: String, deviceInfo: DeviceInfo, adEvents: Array<AdEvent>) {
         var request = URLRequest(url: adEventUrl)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(session.deviceInfo.appId, forHTTPHeaderField: "API_HEADER")
+        request.setValue(deviceInfo.appId, forHTTPHeaderField: Config.API_HEADER)
         
         do {
-            let requestBody = try JSONEncoder().encode(EventRequestBuilder.buildAdEventRequest(session: session, adEvents: adEvents))
+            let requestBody = try JSONEncoder().encode(EventRequestBuilder.buildAdEventRequest(sessionId: sessionId, deviceInfo: deviceInfo, adEvents: adEvents))
             request.httpBody = requestBody
         } catch {
             AALogger.logError(message: "Failed to build ad event request: \(error)")
@@ -44,14 +44,14 @@ class HttpEventAdapter: EventAdapter {
         task.resume()
     }
     
-    func publishSdkEvents(session: Session, events: Array<SdkEvent>) {
+    func publishSdkEvents(sessionId: String, deviceInfo: DeviceInfo, events: Array<SdkEvent>) {
         var request = URLRequest(url: sdkEventUrl)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(session.deviceInfo.appId, forHTTPHeaderField: "API_HEADER")
+        request.setValue(deviceInfo.appId, forHTTPHeaderField: Config.API_HEADER)
         
         do {
-            let requestBody = try JSONEncoder().encode(EventRequestBuilder.buildEventRequest(session: session, sdkEvents: events))
+            let requestBody = try JSONEncoder().encode(EventRequestBuilder.buildEventRequest(sessionId: sessionId, deviceInfo: deviceInfo, sdkEvents: events))
             request.httpBody = requestBody
         } catch {
             AALogger.logError(message: "Failed to build SDK event request: \(error)")
@@ -73,14 +73,14 @@ class HttpEventAdapter: EventAdapter {
         task.resume()
     }
     
-    func publishSdkErrors(session: Session, errors: Array<SdkError>) {
+    func publishSdkErrors(sessionId: String, deviceInfo: DeviceInfo, errors: Array<SdkError>) {
         var request = URLRequest(url: errorUrl)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(session.deviceInfo.appId, forHTTPHeaderField: "API_HEADER")
+        request.setValue(deviceInfo.appId, forHTTPHeaderField: Config.API_HEADER)
         
         do {
-            let requestBody = try JSONEncoder().encode(EventRequestBuilder.buildEventRequest(session: session, sdkErrors: errors))
+            let requestBody = try JSONEncoder().encode(EventRequestBuilder.buildEventRequest(sessionId: sessionId, deviceInfo: deviceInfo, sdkErrors: errors))
             request.httpBody = requestBody
         } catch {
             AALogger.logError(message: "Failed to build SDK error request: \(error)")

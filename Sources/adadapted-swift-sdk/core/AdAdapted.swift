@@ -19,7 +19,6 @@ public class AdAdapted {
     private static var eventListener: AaSdkEventListener!
     private static var contentListener: AaSdkAdditContentListener!
     private static var params: Dictionary<String, String> = [:]
-    static var sessionListener: AaSdkSessionListener!
     
     public static func withAppId(key: String) -> AdAdapted.Type {
         self.apiKey = key
@@ -28,11 +27,6 @@ public class AdAdapted {
     
     public static func inEnv(env: Env) -> AdAdapted.Type {
         isProd = env == Env.PROD
-        return self
-    }
-    
-    public static func setSdkSessionListener(listener: AaSdkSessionListener) -> AdAdapted.Type {
-        sessionListener = listener
         return self
     }
     
@@ -97,9 +91,6 @@ public class AdAdapted {
             }
         }
         
-        let startupListener = StartupListener(sessionListener: sessionListener)
-        SessionClient.getInstance().start(listener: startupListener)
-        
         if isKeywordInterceptEnabled {
             KeywordInterceptMatcher.getInstance().match(constraint: "INIT") //init the matcher
         }
@@ -108,12 +99,20 @@ public class AdAdapted {
     
     private static func setupClients() {
         Config.initialize(useProd: isProd)
+        SessionClient.start()
         
         let deviceInfoExtractor = DeviceInfoExtractor()
         DeviceInfoClient.createInstance(appId: apiKey, isProd: isProd, params: params, customIdentifier: customIdentifier, deviceInfoExtractor: deviceInfoExtractor)
-        SessionClient.createInstance(adapter: HttpSessionAdapter(initUrl: Config.getInitSessionUrl(), refreshUrl: Config.getRefreshAdsUrl()))
+        //TODO AdClient Setup
+        AdClient.createInstance(adapter: HttpAdAdapter(zoneAdRequestUrl: URL(string: "https://dev.adadapted.dev/api/ad-service/v100-alpha/ad/retrieve")!))
         EventClient.createInstance(eventAdapter: HttpEventAdapter(adEventUrl: Config.getAdEventsUrl(), sdkEventUrl: Config.getSdkEventsUrl(), errorUrl: Config.getSdkErrorsUrl()))
-        InterceptClient.createInstance(adapter: HttpInterceptAdapter(initUrl: Config.getRetrieveInterceptsUrl(), eventUrl: Config.getInterceptEventsUrl()))
+        InterceptClient.createInstance(
+            adapter: HttpInterceptAdapter(
+                keywordRequestUrl: URL(string: "https://dev.adadapted.dev/api/ad-service/v100-alpha/intercept/retrieve")!,
+                //keywordRequestUrl: Config.getRetrieveInterceptsUrl(),
+                eventUrl: Config.getInterceptEventsUrl()),
+            isKeywordInterceptEnabled: isKeywordInterceptEnabled
+        )
         PayloadClient.createInstance(adapter: HttpPayloadAdapter(pickupUrl: Config.getPickupPayloadsUrl(), trackUrl: Config.getTrackingPayloadUrl()))
     }
 }

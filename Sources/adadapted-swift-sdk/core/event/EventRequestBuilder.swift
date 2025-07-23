@@ -5,35 +5,35 @@
 import Foundation
 
 class EventRequestBuilder {
-    static func buildAdEventRequest(session: Session, adEvents: Array<AdEvent>) -> AdEventRequest {
+    static func buildAdEventRequest(sessionId: String, deviceInfo: DeviceInfo, adEvents: Array<AdEvent>) -> AdEventRequest {
         return AdEventRequest(
-            sessionId: session.id,
-            appId: session.deviceInfo.appId,
-            udid: session.deviceInfo.udid,
-            sdkVersion: session.deviceInfo.sdkVersion,
+            sessionId: sessionId,
+            appId: deviceInfo.appId,
+            udid: deviceInfo.udid,
+            sdkVersion: deviceInfo.sdkVersion,
             events: adEvents
         )
     }
     
-    static func buildEventRequest(session: Session, sdkEvents: Array<SdkEvent> = [], sdkErrors: Array<SdkError> = []) -> EventRequest {
+    static func buildEventRequest(sessionId: String, deviceInfo: DeviceInfo, sdkEvents: Array<SdkEvent> = [], sdkErrors: Array<SdkError> = []) -> EventRequest {
         return EventRequest(
-            sessionId: session.id,
-            appId: session.deviceInfo.appId,
-            bundleId: session.deviceInfo.bundleId,
-            bundleVersion: session.deviceInfo.bundleVersion,
-            udid: session.deviceInfo.udid,
-            device: session.deviceInfo.deviceName,
-            deviceUdid: session.deviceInfo.deviceUdid,
-            os: session.deviceInfo.os,
-            osv: session.deviceInfo.osv,
-            locale: session.deviceInfo.locale,
-            timezone: session.deviceInfo.timezone,
-            carrier: session.deviceInfo.carrier,
-            dw: session.deviceInfo.dw,
-            dh: session.deviceInfo.dh,
-            density: session.deviceInfo.density,
-            sdkVersion: session.deviceInfo.sdkVersion,
-            isAllowRetargetingEnabled: getNumericalForRetargeting(isRetargetingEnabled: session.deviceInfo.isAllowRetargetingEnabled),
+            sessionId: sessionId,
+            appId: deviceInfo.appId,
+            bundleId: deviceInfo.bundleId,
+            bundleVersion: deviceInfo.bundleVersion,
+            udid: deviceInfo.udid,
+            device: deviceInfo.deviceName,
+            deviceUdid: deviceInfo.deviceUdid,
+            os: deviceInfo.os,
+            osv: deviceInfo.osv,
+            locale: deviceInfo.locale,
+            timezone: deviceInfo.timezone,
+            carrier: deviceInfo.carrier,
+            dw: deviceInfo.dw,
+            dh: deviceInfo.dh,
+            density: deviceInfo.density,
+            sdkVersion: deviceInfo.sdkVersion,
+            isAllowRetargetingEnabled: getNumericalForRetargeting(isRetargetingEnabled: deviceInfo.isAllowRetargetingEnabled),
             events: sdkEvents,
             errors: sdkErrors
         )
