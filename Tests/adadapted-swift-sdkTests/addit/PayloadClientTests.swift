@@ -14,11 +14,7 @@ class PayloadClientTests: XCTestCase {
         
         let deviceInfoExtractor = DeviceInfoExtractor()
         DeviceInfoClient.createInstance(appId: "apiKey", isProd: false, params: [:], customIdentifier: "", deviceInfoExtractor: deviceInfoExtractor)
-        SessionClient.createInstance(adapter: HttpSessionAdapter(initUrl: Config.getInitSessionUrl(), refreshUrl: Config.getRefreshAdsUrl()))
         EventClient.createInstance(eventAdapter: TestEventAdapter.shared)
-        EventClient.getInstance().onSessionAvailable(session: MockData.session)
-        EventClient.getInstance().onAdsAvailable(session: MockData.session)
-        
         PayloadClient.createInstance(adapter: testPayloadAdapter)
         TestEventAdapter.shared.cleanupEvents()
     }
@@ -29,8 +25,6 @@ class PayloadClientTests: XCTestCase {
     }
     
     override class func tearDown() {
-        SessionClient.getInstance().refreshTimer?.stopTimer()
-        SessionClient.getInstance().eventTimer?.stopTimer()
         TestEventAdapter.shared.cleanupEvents()
     }
     

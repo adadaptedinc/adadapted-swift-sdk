@@ -14,8 +14,7 @@ class AdTests: XCTestCase {
             url: "https://example.com",
             actionType: "click",
             actionPath: "/path/to/action",
-            payload: Payload(),
-            refreshTime: 60
+            payload: Payload()
         )
         
         XCTAssertEqual(ad.id, "ad123")
@@ -23,7 +22,6 @@ class AdTests: XCTestCase {
         XCTAssertEqual(ad.url, "https://example.com")
         XCTAssertEqual(ad.actionType, "click")
         XCTAssertEqual(ad.actionPath, "/path/to/action")
-        XCTAssertEqual(ad.refreshTime, 60)
         XCTAssertFalse(ad.isEmpty())
         XCTAssertFalse(ad.impressionWasTracked())
     }
@@ -39,9 +37,6 @@ class AdTests: XCTestCase {
         
         ad.setImpressionTracked()
         XCTAssertTrue(ad.impressionWasTracked())
-        
-        ad.resetImpressionTracking()
-        XCTAssertFalse(ad.impressionWasTracked())
     }
 
     func testZoneIdExtraction() {

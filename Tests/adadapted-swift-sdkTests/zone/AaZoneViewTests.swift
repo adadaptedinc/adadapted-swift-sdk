@@ -12,16 +12,9 @@ class AaZoneViewTests: XCTestCase {
         super.setUp()
         let deviceInfoExtractor = DeviceInfoExtractor()
         DeviceInfoClient.createInstance(appId: "apiKey", isProd: false, params: [:], customIdentifier: "", deviceInfoExtractor: deviceInfoExtractor)
-        SessionClient.createInstance(adapter: HttpSessionAdapter(initUrl: Config.getInitSessionUrl(), refreshUrl: Config.getRefreshAdsUrl()))
         EventClient.createInstance(eventAdapter: TestEventAdapter.shared)
-        EventClient.getInstance().onSessionAvailable(session: MockData.session)
-        EventClient.getInstance().onAdsAvailable(session: MockData.session)
+        AdClient.createInstance(adapter: TestAdAdapter())
         AaZoneViewTests.testAaZoneView = AaZoneView()
-    }
-    
-    override class func tearDown() {
-        SessionClient.getInstance().refreshTimer?.stopTimer()
-        SessionClient.getInstance().eventTimer?.stopTimer()
     }
     
     func testStart() {
@@ -97,7 +90,6 @@ class AaZoneViewTests: XCTestCase {
         let testListener = TestAaZoneViewListener()
         AaZoneViewTests.testAaZoneView.initialize(zoneId: "TestZoneId")
         AaZoneViewTests.testAaZoneView.onStart(listener: testListener)
-        AaZoneViewTests.testAaZoneView.onAdsRefreshed(zone: Zone(id: "TestZoneId", ads: [Ad(id: "NewZoneAdId")]))
         AaZoneViewTests.testAaZoneView.onStop()
         
         XCTAssertTrue(AaZoneViewTests.testAaZoneView.zoneViewListener == nil)
@@ -108,7 +100,6 @@ class AaZoneViewTests: XCTestCase {
         let testAdContentListener = MockAdContentListener()
         AaZoneViewTests.testAaZoneView.initialize(zoneId: "TestZoneId")
         AaZoneViewTests.testAaZoneView.onStart(listener: testListener, contentListener: testAdContentListener)
-        AaZoneViewTests.testAaZoneView.onAdsRefreshed(zone: Zone(id: "TestZoneId", ads: [Ad(id: "NewZoneAdId")]))
         AaZoneViewTests.testAaZoneView.onStop(listener: testAdContentListener)
         
         XCTAssertTrue(AaZoneViewTests.testAaZoneView.zoneViewListener == nil)
@@ -128,16 +119,7 @@ class AaZoneViewTests: XCTestCase {
         let testListener = TestAaZoneViewListener()
         AaZoneViewTests.testAaZoneView.initialize(zoneId: "TestZoneId")
         AaZoneViewTests.testAaZoneView.onStart(listener: testListener)
-        AaZoneViewTests.testAaZoneView.onZoneAvailable(zone: Zone(id: "TestZoneId", ads: [Ad(id: "NewZoneAdId")]))
-        
-        XCTAssertEqual(testListener.zoneHasAds, true)
-    }
-    
-    func testOnAdsRefreshed() {
-        let testListener = TestAaZoneViewListener()
-        AaZoneViewTests.testAaZoneView.initialize(zoneId: "TestZoneId")
-        AaZoneViewTests.testAaZoneView.onStart(listener: testListener)
-        AaZoneViewTests.testAaZoneView.onAdsRefreshed(zone: Zone(id: "TestZoneId", ads: [Ad(id: "NewZoneAdId")]))
+        AaZoneViewTests.testAaZoneView.onZoneAvailable(adZoneData: AdZoneData(ad: Ad(id: "NewZoneAdId")))
         
         XCTAssertEqual(testListener.zoneHasAds, true)
     }
@@ -223,4 +205,8 @@ class TestAaZoneViewListener: ZoneViewListener {
     func onAdLoadFailed() {
         adFailed = true
     }
+}
+
+class TestAdAdapter: AdAdapter {
+    
 }

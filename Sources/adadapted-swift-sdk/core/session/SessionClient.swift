@@ -11,7 +11,7 @@ public final class SessionClient: NSObject {
     private static let thirtyMinutes: TimeInterval = 30 * 60
     private static let idCharacters = Array("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
     private static var sessionId: String = ""
-    private static var backgroundTime: TimeInterval = 0
+    private static var backgroundTime: TimeInterval = Date().timeIntervalSince1970
 
     private override init() {}
 

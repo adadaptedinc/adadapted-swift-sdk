@@ -12,33 +12,23 @@ class KeywordInterceptMatcherTests: XCTestCase {
         super.setUp()
         let deviceInfoExtractor = DeviceInfoExtractor()
         DeviceInfoClient.createInstance(appId: "apiKey", isProd: false, params: [:], customIdentifier: "", deviceInfoExtractor: deviceInfoExtractor)
-        SessionClient.createInstance(adapter: HttpSessionAdapter(initUrl: Config.getInitSessionUrl(), refreshUrl: Config.getRefreshAdsUrl()))
         EventClient.createInstance(eventAdapter: TestEventAdapter.shared)
-        EventClient.getInstance().onSessionAvailable(session: MockData.session)
-        EventClient.getInstance().onAdsAvailable(session: MockData.session)
         
-        let testIntercept = Intercept(searchId: "test_searchId", refreshTime: 5, minMatchLength: 3, terms: [
-            Term(termId: "testTermId", searchTerm: "testTerm", replacement: "replacementTerm", icon: "testIcon", tagline: "testTagLine", priority: 1),
-            Term(termId: "twoTermId", searchTerm: "twoTestTerm", replacement: "replacementTerm", icon: "testIcon", tagline: "testTagLine", priority: 1),
-            Term(termId: "threeTermId", searchTerm: "threeTestTerm", replacement: "replacementTerm", icon: "testIcon", tagline: "testTagLine", priority: 1),
-            Term(termId: "testTermTwoId", searchTerm: "testTermTwo", replacement: "replacementTermTwo", icon: "testIcon", tagline: "testTagLine", priority: 2)
+        let testIntercept = InterceptData(searchId: "test_searchId", terms: [
+            InterceptTerm(termId: "testTermId", term: "testTerm", replacement: "replacementTerm", priority: 1),
+            InterceptTerm(termId: "twoTermId", term: "twoTestTerm", replacement: "replacementTerm", priority: 1),
+            InterceptTerm(termId: "threeTermId", term: "threeTestTerm", replacement: "replacementTerm", priority: 1),
+            InterceptTerm(termId: "testTermTwoId", term: "testTermTwo", replacement: "replacementTermTwo", priority: 2)
         ])
         testInterceptAdapter.testIntercept = testIntercept
-        InterceptClient.createInstance(adapter: testInterceptAdapter)
-        InterceptClient.getInstance()?.onSessionAvailable(session: MockData.session)
+        InterceptClient.createInstance(adapter: testInterceptAdapter, isKeywordInterceptEnabled: true)
         KeywordInterceptMatcher.getInstance().match(constraint: "INIT")
-        SessionClient.getInstance().onSessionInitialized(session: Session(id: "newSessionId", hasAds: true, refreshTime: 30, expiration: Int(Date().timeIntervalSince1970) + 10000000, willServeAds: true, zones: [:]))
         clearEvents()
     }
     
     override func tearDown() {
         super.tearDown()
         TestEventAdapter.shared.cleanupEvents()
-    }
-    
-    override class func tearDown() {
-        SessionClient.getInstance().refreshTimer?.stopTimer()
-        SessionClient.getInstance().eventTimer?.stopTimer()
     }
     
     func testInterceptMatches() {
@@ -49,7 +39,7 @@ class KeywordInterceptMatcherTests: XCTestCase {
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            InterceptClient.getInstance()?.onPublishEvents()
+            InterceptClient.getInstance().onPublishEvents()
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
@@ -68,7 +58,7 @@ class KeywordInterceptMatcherTests: XCTestCase {
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            InterceptClient.getInstance()?.onPublishEvents()
+            InterceptClient.getInstance().onPublishEvents()
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
@@ -83,12 +73,11 @@ class KeywordInterceptMatcherTests: XCTestCase {
         let expectation = XCTestExpectation(description: "Content available expectation")
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            SessionClient.getInstance().onSessionInitialized(session: Session(id: "", hasAds: true, refreshTime: 30, expiration: Int(Date().timeIntervalSince1970) + 10000000, willServeAds: true, zones: [:]))
             KeywordInterceptMatcher.getInstance().match(constraint: "two")
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            InterceptClient.getInstance()?.onPublishEvents()
+            InterceptClient.getInstance().onPublishEvents()
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
@@ -107,12 +96,11 @@ class KeywordInterceptMatcherTests: XCTestCase {
         let expectation = XCTestExpectation(description: "Content available expectation")
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            SessionClient.getInstance().onNewAdsLoaded(session: Session(id: "newSessionId", hasAds: true, refreshTime: 30, expiration: Int(Date().timeIntervalSince1970) + 10000000, willServeAds: true, zones: [:]))
             KeywordInterceptMatcher.getInstance().match(constraint: "thr")
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            InterceptClient.getInstance()?.onPublishEvents()
+            InterceptClient.getInstance().onPublishEvents()
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {

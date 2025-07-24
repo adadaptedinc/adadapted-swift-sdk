@@ -27,19 +27,7 @@ class InterceptClientTests: XCTestCase {
             customIdentifier: "",
             deviceInfoExtractor: deviceInfoExtractor
         )
-        SessionClient.createInstance(
-            adapter: HttpSessionAdapter(
-                initUrl: Config.getInitSessionUrl(),
-                refreshUrl: Config.getRefreshAdsUrl()
-            )
-        )
-        InterceptClient.createInstance(adapter: testInterceptAdapter)
-        InterceptClient.getInstance()?.onSessionAvailable(session: MockData.session)
-    }
-    
-    override class func tearDown() {
-        SessionClient.getInstance().refreshTimer?.stopTimer()
-        SessionClient.getInstance().eventTimer?.stopTimer()
+        InterceptClient.createInstance(adapter: testInterceptAdapter, isKeywordInterceptEnabled: true)
     }
     
     func testCreateInstance() {
@@ -51,7 +39,7 @@ class InterceptClientTests: XCTestCase {
         let mockListener = InterceptListenerMock()
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            InterceptClient.getInstance()?.initialize(session: MockData.session,interceptListener: mockListener)
+            InterceptClient.getInstance().initialize(sessionId: "123",interceptListener: mockListener)
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
@@ -66,7 +54,7 @@ class InterceptClientTests: XCTestCase {
         let expectation = XCTestExpectation(description: "Content available expectation")
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            InterceptClient.getInstance()?.trackMatched(
+            InterceptClient.getInstance().trackMatched(
                 searchId: InterceptClientTests.testEvent.searchId,
                 termId: InterceptClientTests.testEvent.termId,
                 term: InterceptClientTests.testEvent.term,
@@ -75,7 +63,7 @@ class InterceptClientTests: XCTestCase {
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            InterceptClient.getInstance()?.onPublishEvents()
+            InterceptClient.getInstance().onPublishEvents()
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
@@ -90,7 +78,7 @@ class InterceptClientTests: XCTestCase {
         let expectation = XCTestExpectation(description: "Content available expectation")
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            InterceptClient.getInstance()?.trackPresented(
+            InterceptClient.getInstance().trackPresented(
                 searchId: InterceptClientTests.testEvent.searchId,
                 termId: InterceptClientTests.testEvent.termId,
                 term: InterceptClientTests.testEvent.term,
@@ -99,7 +87,7 @@ class InterceptClientTests: XCTestCase {
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            InterceptClient.getInstance()?.onPublishEvents()
+            InterceptClient.getInstance().onPublishEvents()
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
@@ -114,7 +102,7 @@ class InterceptClientTests: XCTestCase {
         let expectation = XCTestExpectation(description: "Content available expectation")
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            InterceptClient.getInstance()?.trackSelected(
+            InterceptClient.getInstance().trackSelected(
                 searchId: InterceptClientTests.testEvent.searchId,
                 termId: InterceptClientTests.testEvent.termId,
                 term: InterceptClientTests.testEvent.term,
@@ -123,7 +111,7 @@ class InterceptClientTests: XCTestCase {
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            InterceptClient.getInstance()?.onPublishEvents()
+            InterceptClient.getInstance().onPublishEvents()
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
@@ -138,14 +126,14 @@ class InterceptClientTests: XCTestCase {
         let expectation = XCTestExpectation(description: "Content available expectation")
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            InterceptClient.getInstance()?.trackNotMatched(
+            InterceptClient.getInstance().trackNotMatched(
                 searchId: InterceptClientTests.testEvent.searchId,
                 userInput: InterceptClientTests.testEvent.userInput
             )
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            InterceptClient.getInstance()?.onPublishEvents()
+            InterceptClient.getInstance().onPublishEvents()
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
@@ -160,7 +148,7 @@ class InterceptClientTests: XCTestCase {
 class InterceptListenerMock: InterceptListener {
     var onKeywordInterceptInitializedCalled = false
     
-    func onKeywordInterceptInitialized(intercept: Intercept) {
+    func onKeywordInterceptInitialized(intercept: InterceptData) {
         onKeywordInterceptInitializedCalled = true
     }
 }

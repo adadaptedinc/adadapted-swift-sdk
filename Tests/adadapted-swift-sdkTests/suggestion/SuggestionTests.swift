@@ -21,6 +21,6 @@ class SuggestionTest: XCTestCase {
     }
 
     private func getTestSuggestion() -> Suggestion {
-        return Suggestion(searchId: "searchId", term: Term(termId: "testTermId", searchTerm: "testTerm", replacement: "testReplacement", icon: "testIcon", tagline: "testTagLine", priority: 0))
+        return Suggestion(searchId: "searchId", term: InterceptTerm(termId: "testTermId", term: "testTerm", replacement: "testReplacement", priority: 0))
     }
 }
