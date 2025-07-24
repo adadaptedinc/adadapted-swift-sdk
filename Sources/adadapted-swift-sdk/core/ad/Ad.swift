@@ -4,7 +4,7 @@
 
 import Foundation
 
-struct Ad: Codable, Equatable {
+class Ad: Codable, Equatable {
     let id: String
     let impressionId: String
     let url: String
@@ -47,10 +47,8 @@ struct Ad: Codable, Equatable {
         return AdContent.createAddToListContent(ad: self)
     }
     
-    func withImpressionTracked() -> Ad {
-        var copy = self
-        copy.isImpressionTracked = true
-        return copy
+    func setImpressionTracked() {
+        isImpressionTracked = true
     }
     
     func impressionWasTracked() -> Bool {
