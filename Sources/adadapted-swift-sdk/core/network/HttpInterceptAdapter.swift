@@ -53,10 +53,6 @@ class HttpInterceptAdapter: InterceptAdapter {
                 AALogger.logError(message: "No data received in keyword request")
                 return
             }
-            
-            // DEBUG: Log raw response body
-            let responseRaw = ("Raw Response: \(String(data: data, encoding: .utf8) ?? "Invalid UTF-8")")
-            print(responseRaw)
 
             do {
                 let keywordResponse = try JSONDecoder().decode(KeywordResponse.self, from: data)

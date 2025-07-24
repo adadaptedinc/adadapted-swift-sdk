@@ -149,7 +149,7 @@ class EventClient {
     
     static func trackImpression(ad: Ad) {
         AALogger.logDebug(message: "Ad Impression Tracked.")
-        ad.withImpressionTracked()
+        ad.setImpressionTracked()
         fileEvent(ad: ad, eventType: AdEventTypes.IMPRESSION)
     }
     
