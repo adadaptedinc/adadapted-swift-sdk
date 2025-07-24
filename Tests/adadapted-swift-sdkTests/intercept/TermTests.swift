@@ -6,9 +6,11 @@ import XCTest
 @testable import adadapted_swift_sdk
 
 class TermTest: XCTestCase {
-    let testTerm = Term(termId: "termId", searchTerm: "term", replacement: "replacement", icon: "icon", tagline: "tagLine", priority: 1)
+    let testTerm = InterceptTerm(termId: "termId", term: "term", replacement: "replacement", priority: 1)
 
     func testCompareToPriority() {
-        XCTAssertEqual(testTerm.compareTo(a2: Term(termId: "termId2", searchTerm: "newTerm", replacement: "replacement2", icon: "icon", tagline: "tagLane", priority: 0)), true)
+        let otherTerm = InterceptTerm(termId: "termId2", term: "newTerm", replacement: "replacement2", priority: 0)
+        XCTAssertFalse(testTerm < otherTerm, "testTerm should not come before otherTerm")
+        XCTAssertTrue(otherTerm < testTerm, "otherTerm should come before testTerm")
     }
 }

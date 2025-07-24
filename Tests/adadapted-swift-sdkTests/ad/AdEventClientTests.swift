@@ -13,19 +13,11 @@ class AdEventClientTests: XCTestCase {
         
         let deviceInfoExtractor = DeviceInfoExtractor()
         DeviceInfoClient.createInstance(appId: "apiKey", isProd: false, params: [:], customIdentifier: "", deviceInfoExtractor: deviceInfoExtractor)
-        SessionClient.createInstance(adapter: HttpSessionAdapter(initUrl: Config.getInitSessionUrl(), refreshUrl: Config.getRefreshAdsUrl()))
         EventClient.createInstance(eventAdapter: TestEventAdapter.shared)
-        EventClient.getInstance().onSessionAvailable(session: MockData.session)
-        EventClient.getInstance().onAdsAvailable(session: MockData.session)
     }
     
     override func tearDown() {
         super.tearDown()
-    }
-    
-    override class func tearDown() {
-        SessionClient.getInstance().refreshTimer?.stopTimer()
-        SessionClient.getInstance().eventTimer?.stopTimer()
     }
     
     func testCreateInstance() {
@@ -106,25 +98,6 @@ class AdEventClientTests: XCTestCase {
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
             XCTAssertEqual(mockListener.trackedEvent?.eventType, AdEventTypes.POPUP_BEGIN)
-            expectation.fulfill()
-        }
-        
-        wait(for: [expectation], timeout: 3.5)
-    }
-    
-    func testOnSessionInitFailed() {
-        let expectation = XCTestExpectation(description: "Content available expectation")
-        EventClient.getInstance().onSessionInitFailed()
-        
-        let mockListener = TestEventClientListener()
-        EventClient.addListener(listener: mockListener)
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventClient.trackImpression(ad: self.testAd)
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-            XCTAssertNotNil(mockListener.trackedEvent)
             expectation.fulfill()
         }
         

@@ -14,14 +14,7 @@ class AdContentTests: XCTestCase {
         super.setUp()
         let deviceInfoExtractor = DeviceInfoExtractor()
         DeviceInfoClient.createInstance(appId: "apiKey", isProd: false, params: [:], customIdentifier: "", deviceInfoExtractor: deviceInfoExtractor)
-        SessionClient.createInstance(adapter: HttpSessionAdapter(initUrl: Config.getInitSessionUrl(), refreshUrl: Config.getRefreshAdsUrl()))
         EventClient.createInstance(eventAdapter: TestEventAdapter.shared)
-        EventClient.getInstance().onSessionAvailable(session: Session())
-    }
-    
-    override class func tearDown() {
-        SessionClient.getInstance().refreshTimer?.stopTimer()
-        SessionClient.getInstance().eventTimer?.stopTimer()
     }
     
     func testInitializationWithEmptyPayload() {
@@ -142,15 +135,15 @@ class TestEventAdapter: EventAdapter {
     
     private init() {}
     
-    func publishAdEvents(session: Session, adEvents: [AdEvent]) {
+    func publishAdEvents(sessionId: String, deviceInfo:DeviceInfo, adEvents: [AdEvent]) {
         testAdEvents.append(contentsOf: adEvents)
     }
     
-    func publishSdkEvents(session: Session, events: [SdkEvent]) {
+    func publishSdkEvents(sessionId: String, deviceInfo:DeviceInfo, events: [SdkEvent]) {
         testSdkEvents.append(contentsOf: events)
     }
     
-    func publishSdkErrors(session: Session, errors: [SdkError]) {
+    func publishSdkErrors(sessionId: String, deviceInfo:DeviceInfo, errors: [SdkError]) {
         testSdkErrors.append(contentsOf: errors)
     }
     

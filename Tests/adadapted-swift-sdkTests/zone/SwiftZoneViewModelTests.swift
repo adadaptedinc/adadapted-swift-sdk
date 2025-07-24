@@ -32,10 +32,8 @@ final class SwiftZoneViewModelTests: XCTestCase {
         super.setUp()
         mockAdContentListener = MockAdContentListener()
         mockZoneViewListener = MockZoneViewListener()
-        SessionClient.createInstance(adapter: HttpSessionAdapter(initUrl: Config.getInitSessionUrl(), refreshUrl: Config.getRefreshAdsUrl()))
         EventClient.createInstance(eventAdapter: TestEventAdapter.shared)
-        EventClient.getInstance().onSessionAvailable(session: MockData.session)
-        EventClient.getInstance().onAdsAvailable(session: MockData.session)
+        AdClient.createInstance(adapter: TestAdAdapter())
         
         viewModel = TestableSwiftZoneViewModel(
             zoneId: "testZoneId",
@@ -48,8 +46,6 @@ final class SwiftZoneViewModelTests: XCTestCase {
 
     override func tearDown() {
         viewModel = nil
-        SessionClient.getInstance().refreshTimer?.stopTimer()
-        SessionClient.getInstance().eventTimer?.stopTimer()
         super.tearDown()
     }
     
@@ -92,8 +88,8 @@ final class SwiftZoneViewModelTests: XCTestCase {
     }
 
     func testOnZoneAvailable_NotifiesZoneAvailability() {
-        let zone = Zone(ads:[Ad()])
-        viewModel.onZoneAvailable(zone: zone)
+        let zone = AdZoneData(ad:Ad())
+        viewModel.onZoneAvailable(adZoneData: zone)
         XCTAssertTrue(mockZoneViewListener.zoneHasAdsCalled, "Listener should be notified when zone is available with ads")
     }
 
@@ -106,7 +102,7 @@ final class SwiftZoneViewModelTests: XCTestCase {
 class TestableSwiftZoneViewModel: SwiftZoneViewModel {
     var mockPresenter: MockAdZonePresenter!
     override init(zoneId: String, adContentListener: AdContentListener, zoneViewListener: ZoneViewListener, isZoneVisible: Binding<Bool>, zoneContextId: Binding<String>) {
-        mockPresenter = MockAdZonePresenter(adViewHandler: AdViewHandler(), sessionClient: SessionClient.getInstance())
+        mockPresenter = MockAdZonePresenter(adViewHandler: AdViewHandler(), adClient: AdClient.getInstance())
         super.init(zoneId: zoneId, adContentListener: adContentListener, zoneViewListener: zoneViewListener, isZoneVisible: isZoneVisible, zoneContextId: zoneContextId)
         
         self.presenter = mockPresenter
