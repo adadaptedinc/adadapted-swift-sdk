@@ -104,11 +104,11 @@ public class AdAdapted {
         let deviceInfoExtractor = DeviceInfoExtractor()
         DeviceInfoClient.createInstance(appId: apiKey, isProd: isProd, params: params, customIdentifier: customIdentifier, deviceInfoExtractor: deviceInfoExtractor)
         //TODO AdClient Setup
-        AdClient.createInstance(adapter: HttpAdAdapter(zoneAdRequestUrl: URL(string: "https://dev.adadapted.dev/api/ad-service/v100-alpha/ad/retrieve")!))
+        AdClient.createInstance(adapter: HttpAdAdapter(zoneAdRequestUrl: URL(string: "https://dev.adadapted.dev/api/ad-service-aa/dev/v/1.0.0/ad/retrieve")!))
         EventClient.createInstance(eventAdapter: HttpEventAdapter(adEventUrl: Config.getAdEventsUrl(), sdkEventUrl: Config.getSdkEventsUrl(), errorUrl: Config.getSdkErrorsUrl()))
         InterceptClient.createInstance(
             adapter: HttpInterceptAdapter(
-                keywordRequestUrl: URL(string: "https://dev.adadapted.dev/api/ad-service/v100-alpha/intercept/retrieve")!,
+                keywordRequestUrl: URL(string: "https://dev.adadapted.dev/api/ad-service-aa/dev/v/1.0.0/intercept/retrieve")!,
                 //keywordRequestUrl: Config.getRetrieveInterceptsUrl(),
                 eventUrl: Config.getInterceptEventsUrl()),
             isKeywordInterceptEnabled: isKeywordInterceptEnabled

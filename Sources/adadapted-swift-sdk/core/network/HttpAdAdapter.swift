@@ -35,6 +35,7 @@ class HttpAdAdapter: AdAdapter {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(deviceInfo.appId, forHTTPHeaderField: Config.API_HEADER)
+        request.setValue("br", forHTTPHeaderField: "Accept-Encoding")
 
         do {
             request.httpBody = try JSONEncoder().encode(zoneAdRequest)
