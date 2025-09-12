@@ -18,7 +18,7 @@ class HttpSessionAdapter: SessionAdapter {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(deviceInfo.appId, forHTTPHeaderField: "API_HEADER")
-        request.setValue("gzip, deflate", forHTTPHeaderField: "Accept-Encoding")
+        request.setValue(Config.ENCODING_FORMATS, forHTTPHeaderField: Config.ENCODING_HEADER)
         
         do {
             let requestBody = try JSONEncoder().encode(deviceInfo)
@@ -100,7 +100,7 @@ class HttpSessionAdapter: SessionAdapter {
         var request = URLRequest(url: url)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(session.deviceInfo.appId, forHTTPHeaderField: "API_HEADER")
-        request.setValue("gzip, deflate", forHTTPHeaderField: "Accept-Encoding")
+        request.setValue(Config.ENCODING_FORMATS, forHTTPHeaderField: Config.ENCODING_HEADER)
         
         let task = URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
