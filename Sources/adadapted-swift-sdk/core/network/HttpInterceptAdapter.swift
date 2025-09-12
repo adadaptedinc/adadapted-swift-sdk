@@ -29,7 +29,7 @@ class HttpInterceptAdapter: InterceptAdapter {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(deviceInfo.appId, forHTTPHeaderField: Config.API_HEADER)
-        request.setValue("br", forHTTPHeaderField: "Accept-Encoding")
+        request.setValue(Config.ENCODING_FORMATS, forHTTPHeaderField: Config.ENCODING_HEADER)
 
         do {
             request.httpBody = try JSONEncoder().encode(keywordRequest)
@@ -81,7 +81,7 @@ class HttpInterceptAdapter: InterceptAdapter {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(deviceInfo.appId, forHTTPHeaderField: Config.API_HEADER)
-        request.setValue("br", forHTTPHeaderField: "Accept-Encoding")
+        request.setValue(Config.ENCODING_FORMATS, forHTTPHeaderField: Config.ENCODING_HEADER)
         
         do {
             let requestBody = try JSONEncoder().encode(compiledInterceptEventRequest)

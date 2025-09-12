@@ -17,6 +17,8 @@ class Config {
     static let AASDK_PREFS_GENERATED_ID_KEY = "GENERATED_ID"
     
     static let API_HEADER = "X-API-KEY"
+    static let ENCODING_HEADER = "Accept-Encoding"
+    static let ENCODING_FORMATS = "gzip, deflate"
     
     internal static let AD_SERVER_VERSION = "/v/0.9.5/"
     internal static let TRACKING_SERVER_VERSION = "/v/1/"
