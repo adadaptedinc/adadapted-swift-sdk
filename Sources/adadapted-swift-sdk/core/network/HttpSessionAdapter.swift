@@ -18,6 +18,7 @@ class HttpSessionAdapter: SessionAdapter {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(deviceInfo.appId, forHTTPHeaderField: "API_HEADER")
+        request.setValue("gzip, deflate", forHTTPHeaderField: "Accept-Encoding")
         
         do {
             let requestBody = try JSONEncoder().encode(deviceInfo)
@@ -45,6 +46,14 @@ class HttpSessionAdapter: SessionAdapter {
                 AALogger.logError(message: "No data received in response")
                 listener.onSessionInitializeFailed()
                 return
+            }
+            
+            if let httpResponse = response as? HTTPURLResponse {
+                if let encoding = httpResponse.value(forHTTPHeaderField: "Content-Encoding") {
+                    AALogger.logDebug(message: "Server responded with Content-Encoding: \(encoding)")
+                } else {
+                    AALogger.logDebug(message: "No Content-Encoding in response")
+                }
             }
             
             do {
@@ -91,6 +100,7 @@ class HttpSessionAdapter: SessionAdapter {
         var request = URLRequest(url: url)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(session.deviceInfo.appId, forHTTPHeaderField: "API_HEADER")
+        request.setValue("gzip, deflate", forHTTPHeaderField: "Accept-Encoding")
         
         let task = URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {

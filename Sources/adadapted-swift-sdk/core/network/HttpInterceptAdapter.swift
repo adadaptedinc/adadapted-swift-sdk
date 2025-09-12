@@ -34,6 +34,7 @@ class HttpInterceptAdapter: InterceptAdapter {
         var request = URLRequest(url: url)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(session.deviceInfo.appId, forHTTPHeaderField: "API_HEADER")
+        request.setValue("gzip, deflate", forHTTPHeaderField: "Accept-Encoding")
         
         let task = URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
@@ -73,6 +74,7 @@ class HttpInterceptAdapter: InterceptAdapter {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(session.deviceInfo.appId, forHTTPHeaderField: "API_HEADER")
+        request.setValue("gzip, deflate", forHTTPHeaderField: "Accept-Encoding")
         
         do {
             let requestBody = try JSONEncoder().encode(compiledInterceptEventRequest)

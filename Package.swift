@@ -5,7 +5,7 @@ import PackageDescription
 
 let package = Package(
     name: "adadapted-swift-sdk",
-    platforms: [.iOS(.v13)],
+    platforms: [.iOS(.v15)],
     products: [
         .library(
             name: "adadapted-swift-sdk",
