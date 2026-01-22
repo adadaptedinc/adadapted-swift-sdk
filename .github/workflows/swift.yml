@@ -18,4 +18,4 @@ jobs:
         with:
           swift-version: '5.7.1'
       - name: Build
-        run: xcodebuild -scheme adadapted-swift-sdk -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone'
+        run: xcodebuild -scheme adadapted-swift-sdk -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 14,OS=latest'
