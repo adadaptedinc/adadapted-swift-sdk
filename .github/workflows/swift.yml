@@ -17,5 +17,25 @@ jobs:
         uses: swift-actions/setup-swift@v1
         with:
           swift-version: '5.7.1'
+          
+      - name: Ensure iPhone 16 Simulator Exists
+        run: |
+          # Find available runtimes
+          RUNTIME=$(xcrun simctl list runtimes | grep -E 'iOS [0-9]+\.[0-9]+' | head -n1 | awk '{print $NF}' | tr -d '()')
+          echo "Using runtime: $RUNTIME"
+
+          # Check if iPhone 16 simulator already exists
+          SIM_ID=$(xcrun simctl list devices | grep "iPhone 16 (" | awk -F '[()]' '{print $2}')
+          if [ -z "$SIM_ID" ]; then
+            echo "iPhone 16 simulator not found. Creating..."
+            xcrun simctl create "iPhone 16" com.apple.CoreSimulator.SimDeviceType.iPhone-16 "$RUNTIME"
+          else
+            echo "iPhone 16 simulator already exists."
+          fi
+
       - name: Build
-        run: xcodebuild -scheme adadapted-swift-sdk -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 14'
+        run: |
+          xcodebuild \
+            -scheme adadapted-swift-sdk \
+            -sdk iphonesimulator \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest'

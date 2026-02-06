@@ -7,7 +7,7 @@ import Foundation
 class Config {
     internal static var isProd = false
 
-    static let LIBRARY_VERSION: String = "1.1.10"
+    static let LIBRARY_VERSION: String = "1.2.0"
     static let LOG_TAG = "ADADAPTED_SWIFT_SDK"
     static let DEFAULT_AD_POLLING = 300000 // If the new Ad polling isn't set it will default to every 5 minutes
     static let DEFAULT_EVENT_POLLING = 3000 // Events will be pushed to the server every 3 seconds
@@ -15,6 +15,10 @@ class Config {
     
     static let AASDK_PREFS_KEY = "AASDK_PREFS"
     static let AASDK_PREFS_GENERATED_ID_KEY = "GENERATED_ID"
+    
+    static let API_HEADER = "X-API-KEY"
+    static let ENCODING_HEADER = "Accept-Encoding"
+    static let ENCODING_FORMATS = "gzip, deflate"
     
     internal static let AD_SERVER_VERSION = "/v/0.9.5/"
     internal static let TRACKING_SERVER_VERSION = "/v/1/"
