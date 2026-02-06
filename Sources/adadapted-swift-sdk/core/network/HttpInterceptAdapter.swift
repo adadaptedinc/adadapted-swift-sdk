@@ -33,7 +33,7 @@ class HttpInterceptAdapter: InterceptAdapter {
         
         var request = URLRequest(url: url)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(session.deviceInfo.appId, forHTTPHeaderField: "API_HEADER")
+        request.setValue(session.deviceInfo.appId, forHTTPHeaderField: Config.API_HEADER)
         request.setValue(Config.ENCODING_FORMATS, forHTTPHeaderField: Config.ENCODING_HEADER)
         
         let task = URLSession.shared.dataTask(with: request) { data, response, error in
@@ -73,7 +73,7 @@ class HttpInterceptAdapter: InterceptAdapter {
         var request = URLRequest(url: eventUrl)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(session.deviceInfo.appId, forHTTPHeaderField: "API_HEADER")
+        request.setValue(session.deviceInfo.appId, forHTTPHeaderField: Config.API_HEADER)
         request.setValue(Config.ENCODING_FORMATS, forHTTPHeaderField: Config.ENCODING_HEADER)
         
         do {

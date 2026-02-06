@@ -19,7 +19,7 @@ class HttpEventAdapter: EventAdapter {
         var request = URLRequest(url: adEventUrl)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(session.deviceInfo.appId, forHTTPHeaderField: "API_HEADER")
+        request.setValue(session.deviceInfo.appId, forHTTPHeaderField: Config.API_HEADER)
         
         do {
             let requestBody = try JSONEncoder().encode(EventRequestBuilder.buildAdEventRequest(session: session, adEvents: adEvents))
@@ -48,7 +48,7 @@ class HttpEventAdapter: EventAdapter {
         var request = URLRequest(url: sdkEventUrl)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(session.deviceInfo.appId, forHTTPHeaderField: "API_HEADER")
+        request.setValue(session.deviceInfo.appId, forHTTPHeaderField: Config.API_HEADER)
         
         do {
             let requestBody = try JSONEncoder().encode(EventRequestBuilder.buildEventRequest(session: session, sdkEvents: events))
@@ -77,7 +77,7 @@ class HttpEventAdapter: EventAdapter {
         var request = URLRequest(url: errorUrl)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(session.deviceInfo.appId, forHTTPHeaderField: "API_HEADER")
+        request.setValue(session.deviceInfo.appId, forHTTPHeaderField: Config.API_HEADER)
         
         do {
             let requestBody = try JSONEncoder().encode(EventRequestBuilder.buildEventRequest(session: session, sdkErrors: errors))
