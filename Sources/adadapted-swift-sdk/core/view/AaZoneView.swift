@@ -64,7 +64,7 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
     
     // MARK: - Public Methods
     
-    public func initialize(zoneId: String) {
+    @objc public func initialize(zoneId: String) {
         presenter.inititialize(zoneId: zoneId)
         presenter.setWebViewManager(webViewManager: webViewManager)
     }
@@ -88,24 +88,25 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
         onStart()
     }
     
+    @objc(setAdZoneVisibility:)
     public func setAdZoneVisibility(isViewable: Bool) {
         isAdVisible = isViewable
         presenter.onAdVisibilityChanged(isAdVisible: isAdVisible)
     }
     
-    public func setAdZoneContextId(contextId: String) {
+    @objc public func setAdZoneContextId(contextId: String) {
         presenter.setZoneContext(contextId: contextId)
     }
     
-    public func removeAdZoneContext() {
+    @objc public func removeAdZoneContext() {
         presenter.removeZoneContext()
     }
     
-    public func clearAdZoneContext() {
+    @objc public func clearAdZoneContext() {
         presenter.clearZoneContext()
     }
     
-    public func onStop() {
+    @objc public func onStop() {
         zoneViewListener = nil
         presenter.onDetach()
     }
