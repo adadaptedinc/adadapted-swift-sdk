@@ -12,9 +12,6 @@ import ObjectiveC
 // Associated object key for storing the content listener adapter
 private var contentAdapterKey: UInt8 = 0
 
-/// ObjC-friendly methods for AaZoneView.
-/// ObjC apps can use AaZoneView directly (it's a UIView subclass),
-/// but the overloaded onStart/onStop methods need distinct selectors.
 extension AaZoneView {
 
     /// Stores the content adapter so the same instance is used for start and stop.

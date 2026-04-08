@@ -37,7 +37,6 @@ class AAKeywordInterceptMatcherObjCTests: XCTestCase {
     }
 }
 
-// Minimal stub to satisfy SessionClient initialization
 private class StubSessionAdapter: SessionAdapter {
     func sendInit(deviceInfo: DeviceInfo, listener: SessionInitListener) {}
     func sendRefreshAds(session: Session, listener: AdGetListener, zoneContexts: [ZoneContext]) {}

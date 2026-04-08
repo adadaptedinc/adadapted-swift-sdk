@@ -1,7 +1,6 @@
 import XCTest
 @testable import adadapted_swift_sdk
 
-// Mock implementation of AddToListContent for testing
 private class MockAddToListContent: AddToListContent {
     var acknowledgedCount = 0
     var itemAcknowledgedCount = 0

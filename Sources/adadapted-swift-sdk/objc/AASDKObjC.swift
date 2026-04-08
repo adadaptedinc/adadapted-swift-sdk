@@ -9,8 +9,6 @@ import Foundation
 
 @objc(AASDK)
 public class AASDKObjC: NSObject {
-
-    // Hold strong references to adapters so they aren't deallocated
     private static var sessionListenerAdapter: SessionListenerAdapter?
     private static var eventListenerAdapter: EventListenerAdapter?
     private static var additContentListenerAdapter: AdditContentListenerAdapter?
