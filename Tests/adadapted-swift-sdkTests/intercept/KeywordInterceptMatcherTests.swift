@@ -13,10 +13,13 @@ class KeywordInterceptMatcherTests: XCTestCase {
         let deviceInfoExtractor = DeviceInfoExtractor()
         DeviceInfoClient.createInstance(appId: "apiKey", isProd: false, params: [:], customIdentifier: "", deviceInfoExtractor: deviceInfoExtractor)
         SessionClient.createInstance(adapter: HttpSessionAdapter(initUrl: Config.getInitSessionUrl(), refreshUrl: Config.getRefreshAdsUrl()))
+        // Re-register the matcher singleton with the new SessionClient (it may have been
+        // registered with a previous instance created by an earlier test suite)
+        SessionClient.getInstance().addListener(listener: KeywordInterceptMatcher.getInstance())
         EventClient.createInstance(eventAdapter: TestEventAdapter.shared)
         EventClient.getInstance().onSessionAvailable(session: MockData.session)
         EventClient.getInstance().onAdsAvailable(session: MockData.session)
-        
+
         let testIntercept = Intercept(searchId: "test_searchId", refreshTime: 5, minMatchLength: 3, terms: [
             Term(termId: "testTermId", searchTerm: "testTerm", replacement: "replacementTerm", icon: "testIcon", tagline: "testTagLine", priority: 1),
             Term(termId: "twoTermId", searchTerm: "twoTestTerm", replacement: "replacementTerm", icon: "testIcon", tagline: "testTagLine", priority: 1),
