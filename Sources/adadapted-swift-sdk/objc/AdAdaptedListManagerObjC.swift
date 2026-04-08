@@ -1,5 +1,5 @@
 //
-//  AAListManagerObjC.swift
+//  AdAdaptedListManagerObjC.swift
 //  adadapted-swift-sdk
 //
 //  ObjC-compatible wrapper for AdAdaptedListManager
@@ -7,8 +7,8 @@
 
 import Foundation
 
-@objc(AAListManager)
-public class AAListManagerObjC: NSObject {
+@objc(AdAdaptedListManager)
+public class AdAdaptedListManagerObjC: NSObject {
 
     @objc public static func itemAddedToList(_ item: String) {
         AdAdaptedListManager.itemAddedToList(item: item)

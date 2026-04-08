@@ -27,7 +27,7 @@ private class MockAddToListContent: AddToListContent {
     func hasNoItems() -> Bool { return mockItems.isEmpty }
 }
 
-class AAAddToListContentObjCTests: XCTestCase {
+class AddToListContentObjCTests: XCTestCase {
 
     private func makeItem() -> AddToListItem {
         return AddToListItem(
@@ -44,14 +44,14 @@ class AAAddToListContentObjCTests: XCTestCase {
 
     func testSourceProperty() {
         let mock = MockAddToListContent(source: "payload")
-        let wrapper = AAAddToListContentObjC(content: mock)
+        let wrapper = AddToListContentObjC(content: mock)
 
         XCTAssertEqual(wrapper.source, "payload")
     }
 
     func testHasNoItemsWhenEmpty() {
         let mock = MockAddToListContent(items: [])
-        let wrapper = AAAddToListContentObjC(content: mock)
+        let wrapper = AddToListContentObjC(content: mock)
 
         XCTAssertTrue(wrapper.hasNoItems)
         XCTAssertTrue(wrapper.items.isEmpty)
@@ -59,7 +59,7 @@ class AAAddToListContentObjCTests: XCTestCase {
 
     func testHasItemsWhenPopulated() {
         let mock = MockAddToListContent(items: [makeItem()])
-        let wrapper = AAAddToListContentObjC(content: mock)
+        let wrapper = AddToListContentObjC(content: mock)
 
         XCTAssertFalse(wrapper.hasNoItems)
         XCTAssertEqual(wrapper.items.count, 1)
@@ -68,7 +68,7 @@ class AAAddToListContentObjCTests: XCTestCase {
 
     func testAcknowledgeDelegatesToContent() {
         let mock = MockAddToListContent()
-        let wrapper = AAAddToListContentObjC(content: mock)
+        let wrapper = AddToListContentObjC(content: mock)
 
         wrapper.acknowledge()
 
@@ -78,8 +78,8 @@ class AAAddToListContentObjCTests: XCTestCase {
     func testItemAcknowledgeDelegatesToContent() {
         let item = makeItem()
         let mock = MockAddToListContent()
-        let wrapper = AAAddToListContentObjC(content: mock)
-        let wrappedItem = AAAddToListItemObjC(item: item)
+        let wrapper = AddToListContentObjC(content: mock)
+        let wrappedItem = AddToListItemObjC(item: item)
 
         wrapper.itemAcknowledge(wrappedItem)
 
@@ -88,7 +88,7 @@ class AAAddToListContentObjCTests: XCTestCase {
 
     func testFailedDelegatesToContent() {
         let mock = MockAddToListContent()
-        let wrapper = AAAddToListContentObjC(content: mock)
+        let wrapper = AddToListContentObjC(content: mock)
 
         wrapper.failed("Something went wrong")
 
@@ -98,8 +98,8 @@ class AAAddToListContentObjCTests: XCTestCase {
     func testItemFailedDelegatesToContent() {
         let item = makeItem()
         let mock = MockAddToListContent()
-        let wrapper = AAAddToListContentObjC(content: mock)
-        let wrappedItem = AAAddToListItemObjC(item: item)
+        let wrapper = AddToListContentObjC(content: mock)
+        let wrappedItem = AddToListItemObjC(item: item)
 
         wrapper.itemFailed(wrappedItem, message: "Item error")
 

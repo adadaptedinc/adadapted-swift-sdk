@@ -1,5 +1,5 @@
 //
-//  AASDKObjC.swift
+//  AdAdaptedObjC.swift
 //  adadapted-swift-sdk
 //
 //  ObjC-compatible facade for AdAdapted SDK initialization
@@ -7,8 +7,8 @@
 
 import Foundation
 
-@objc(AASDK)
-public class AASDKObjC: NSObject {
+@objc(AdAdapted)
+public class AdAdaptedObjC: NSObject {
     private static var sessionListenerAdapter: SessionListenerAdapter?
     private static var eventListenerAdapter: EventListenerAdapter?
     private static var additContentListenerAdapter: AdditContentListenerAdapter?
@@ -21,8 +21,8 @@ public class AASDKObjC: NSObject {
         _ = AdAdapted.inEnv(env: isProd ? .PROD : .DEV)
     }
 
-    @objc public static func setSdkSessionListener(_ listener: AASessionListenerObjC) {
-        let adapter = SessionListenerAdapter(listener: listener as AnyObject & AASessionListenerObjC)
+    @objc public static func setSdkSessionListener(_ listener: SessionListenerObjC) {
+        let adapter = SessionListenerAdapter(listener: listener as AnyObject & SessionListenerObjC)
         sessionListenerAdapter = adapter
         _ = AdAdapted.setSdkSessionListener(listener: adapter)
     }
@@ -35,14 +35,14 @@ public class AASDKObjC: NSObject {
         _ = AdAdapted.enablePayloads(value: value)
     }
 
-    @objc public static func setSdkEventListener(_ listener: AAEventListenerObjC) {
-        let adapter = EventListenerAdapter(listener: listener as AnyObject & AAEventListenerObjC)
+    @objc public static func setSdkEventListener(_ listener: AaSdkEventListenerObjC) {
+        let adapter = EventListenerAdapter(listener: listener as AnyObject & AaSdkEventListenerObjC)
         eventListenerAdapter = adapter
         _ = AdAdapted.setSdkEventListener(listener: adapter)
     }
 
-    @objc public static func setSdkAdditContentListener(_ listener: AAAdditContentListenerObjC) {
-        let adapter = AdditContentListenerAdapter(listener: listener as AnyObject & AAAdditContentListenerObjC)
+    @objc public static func setSdkAdditContentListener(_ listener: AaSdkAdditContentListenerObjC) {
+        let adapter = AdditContentListenerAdapter(listener: listener as AnyObject & AaSdkAdditContentListenerObjC)
         additContentListenerAdapter = adapter
         _ = AdAdapted.setSdkAdditContentListener(listener: adapter)
     }

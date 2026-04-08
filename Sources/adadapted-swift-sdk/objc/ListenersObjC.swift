@@ -1,5 +1,5 @@
 //
-//  AAListenersObjC.swift
+//  ListenersObjC.swift
 //  adadapted-swift-sdk
 //
 //  ObjC-compatible listener protocols
@@ -9,29 +9,29 @@ import Foundation
 
 // MARK: - Session Listener
 
-@objc(AASessionListener)
-public protocol AASessionListenerObjC {
+@objc(SessionListener)
+public protocol SessionListenerObjC {
     @objc func onHasAdsToServe(_ hasAds: Bool, availableZoneIds: [String])
 }
 
 // MARK: - Event Listener
 
-@objc(AAEventListener)
-public protocol AAEventListenerObjC {
+@objc(AaSdkEventListener)
+public protocol AaSdkEventListenerObjC {
     @objc func onNextAdEvent(_ zoneId: String, eventType: String)
 }
 
 // MARK: - Addit Content Listener
 
-@objc(AAAdditContentListener)
-public protocol AAAdditContentListenerObjC {
-    @objc func onContentAvailable(_ content: AAAddToListContentObjC)
+@objc(AaSdkAdditContentListener)
+public protocol AaSdkAdditContentListenerObjC {
+    @objc func onContentAvailable(_ content: AddToListContentObjC)
 }
 
 // MARK: - Zone View Listener
 
-@objc(AAZoneViewListener)
-public protocol AAZoneViewListenerObjC {
+@objc(ZoneViewListener)
+public protocol ZoneViewListenerObjC {
     @objc func onZoneHasAds(_ hasAds: Bool)
     @objc func onAdLoaded()
     @objc func onAdLoadFailed()
@@ -39,18 +39,18 @@ public protocol AAZoneViewListenerObjC {
 
 // MARK: - Ad Content Listener
 
-@objc(AAAdContentListener)
-public protocol AAAdContentListenerObjC {
-    @objc func onContentAvailableForZone(_ zoneId: String, content: AAAddToListContentObjC)
+@objc(AdContentListener)
+public protocol AdContentListenerObjC {
+    @objc func onContentAvailableForZone(_ zoneId: String, content: AddToListContentObjC)
     @objc optional func onNonContentAction(_ zoneId: String, adId: String)
 }
 
 // MARK: - Internal Adapters (bridge ObjC listeners to Swift protocols)
 
 internal class SessionListenerAdapter: AaSdkSessionListener {
-    private weak var objcListener: (AnyObject & AASessionListenerObjC)?
+    private weak var objcListener: (AnyObject & SessionListenerObjC)?
 
-    init(listener: AnyObject & AASessionListenerObjC) {
+    init(listener: AnyObject & SessionListenerObjC) {
         self.objcListener = listener
     }
 
@@ -60,9 +60,9 @@ internal class SessionListenerAdapter: AaSdkSessionListener {
 }
 
 internal class EventListenerAdapter: AaSdkEventListener {
-    private weak var objcListener: (AnyObject & AAEventListenerObjC)?
+    private weak var objcListener: (AnyObject & AaSdkEventListenerObjC)?
 
-    init(listener: AnyObject & AAEventListenerObjC) {
+    init(listener: AnyObject & AaSdkEventListenerObjC) {
         self.objcListener = listener
     }
 
@@ -72,22 +72,22 @@ internal class EventListenerAdapter: AaSdkEventListener {
 }
 
 internal class AdditContentListenerAdapter: AaSdkAdditContentListener {
-    private weak var objcListener: (AnyObject & AAAdditContentListenerObjC)?
+    private weak var objcListener: (AnyObject & AaSdkAdditContentListenerObjC)?
 
-    init(listener: AnyObject & AAAdditContentListenerObjC) {
+    init(listener: AnyObject & AaSdkAdditContentListenerObjC) {
         self.objcListener = listener
     }
 
     func onContentAvailable(content: AddToListContent) {
-        let wrapped = AAAddToListContentObjC(content: content)
+        let wrapped = AddToListContentObjC(content: content)
         objcListener?.onContentAvailable(wrapped)
     }
 }
 
 internal class ZoneViewListenerAdapter: ZoneViewListener {
-    private weak var objcListener: (AnyObject & AAZoneViewListenerObjC)?
+    private weak var objcListener: (AnyObject & ZoneViewListenerObjC)?
 
-    init(listener: AnyObject & AAZoneViewListenerObjC) {
+    init(listener: AnyObject & ZoneViewListenerObjC) {
         self.objcListener = listener
     }
 
@@ -105,14 +105,14 @@ internal class ZoneViewListenerAdapter: ZoneViewListener {
 }
 
 internal class AdContentListenerAdapter: AdContentListener {
-    private weak var objcListener: (AnyObject & AAAdContentListenerObjC)?
+    private weak var objcListener: (AnyObject & AdContentListenerObjC)?
 
-    init(listener: AnyObject & AAAdContentListenerObjC) {
+    init(listener: AnyObject & AdContentListenerObjC) {
         self.objcListener = listener
     }
 
     func onContentAvailable(zoneId: String, content: AddToListContent) {
-        let wrapped = AAAddToListContentObjC(content: content)
+        let wrapped = AddToListContentObjC(content: content)
         objcListener?.onContentAvailableForZone(zoneId, content: wrapped)
     }
 

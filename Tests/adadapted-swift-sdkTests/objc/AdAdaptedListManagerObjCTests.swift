@@ -1,43 +1,43 @@
 import XCTest
 @testable import adadapted_swift_sdk
 
-class AAListManagerObjCTests: XCTestCase {
+class AdAdaptedListManagerObjCTests: XCTestCase {
 
     func testItemAddedToListWithList() {
         // Should not crash — event tracking requires EventClient but we verify the call path
-        AAListManagerObjC.itemAddedToList("Milk", list: "Grocery List")
+        AdAdaptedListManagerObjC.itemAddedToList("Milk", list: "Grocery List")
     }
 
     func testItemAddedToListWithoutList() {
-        AAListManagerObjC.itemAddedToList("Milk")
+        AdAdaptedListManagerObjC.itemAddedToList("Milk")
     }
 
     func testItemAddedToListEmptyItemIgnored() {
         // Empty item should be silently ignored per AdAdaptedListManager logic
-        AAListManagerObjC.itemAddedToList("")
+        AdAdaptedListManagerObjC.itemAddedToList("")
     }
 
     func testItemCrossedOffListWithList() {
-        AAListManagerObjC.itemCrossedOffList("Milk", list: "Grocery List")
+        AdAdaptedListManagerObjC.itemCrossedOffList("Milk", list: "Grocery List")
     }
 
     func testItemCrossedOffListWithoutList() {
-        AAListManagerObjC.itemCrossedOffList("Milk")
+        AdAdaptedListManagerObjC.itemCrossedOffList("Milk")
     }
 
     func testItemCrossedOffListEmptyItemIgnored() {
-        AAListManagerObjC.itemCrossedOffList("")
+        AdAdaptedListManagerObjC.itemCrossedOffList("")
     }
 
     func testItemDeletedFromListWithList() {
-        AAListManagerObjC.itemDeletedFromList("Milk", list: "Grocery List")
+        AdAdaptedListManagerObjC.itemDeletedFromList("Milk", list: "Grocery List")
     }
 
     func testItemDeletedFromListWithoutList() {
-        AAListManagerObjC.itemDeletedFromList("Milk")
+        AdAdaptedListManagerObjC.itemDeletedFromList("Milk")
     }
 
     func testItemDeletedFromListEmptyItemIgnored() {
-        AAListManagerObjC.itemDeletedFromList("")
+        AdAdaptedListManagerObjC.itemDeletedFromList("")
     }
 }

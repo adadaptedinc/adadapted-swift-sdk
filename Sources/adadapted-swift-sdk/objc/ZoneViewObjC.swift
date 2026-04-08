@@ -1,5 +1,5 @@
 //
-//  AAZoneViewObjC.swift
+//  ZoneViewObjC.swift
 //  adadapted-swift-sdk
 //
 //  ObjC-compatible extensions for AaZoneView
@@ -27,22 +27,22 @@ extension AaZoneView {
     // MARK: - ObjC-compatible start methods
 
     @objc(startWithZoneViewListener:)
-    public func objcStart(listener: AAZoneViewListenerObjC) {
-        let adapter = ZoneViewListenerAdapter(listener: listener as AnyObject & AAZoneViewListenerObjC)
+    public func objcStart(listener: ZoneViewListenerObjC) {
+        let adapter = ZoneViewListenerAdapter(listener: listener as AnyObject & ZoneViewListenerObjC)
         onStart(listener: adapter)
     }
 
     @objc(startWithZoneViewListener:adContentListener:)
-    public func objcStart(listener: AAZoneViewListenerObjC, adContentListener: AAAdContentListenerObjC) {
-        let zoneAdapter = ZoneViewListenerAdapter(listener: listener as AnyObject & AAZoneViewListenerObjC)
-        let contentAdapter = AdContentListenerAdapter(listener: adContentListener as AnyObject & AAAdContentListenerObjC)
+    public func objcStart(listener: ZoneViewListenerObjC, adContentListener: AdContentListenerObjC) {
+        let zoneAdapter = ZoneViewListenerAdapter(listener: listener as AnyObject & ZoneViewListenerObjC)
+        let contentAdapter = AdContentListenerAdapter(listener: adContentListener as AnyObject & AdContentListenerObjC)
         self.storedContentAdapter = contentAdapter
         onStart(listener: zoneAdapter, contentListener: contentAdapter)
     }
 
     @objc(startWithAdContentListener:)
-    public func objcStart(adContentListener: AAAdContentListenerObjC) {
-        let contentAdapter = AdContentListenerAdapter(listener: adContentListener as AnyObject & AAAdContentListenerObjC)
+    public func objcStart(adContentListener: AdContentListenerObjC) {
+        let contentAdapter = AdContentListenerAdapter(listener: adContentListener as AnyObject & AdContentListenerObjC)
         self.storedContentAdapter = contentAdapter
         onStart(contentListener: contentAdapter)
     }
@@ -50,7 +50,7 @@ extension AaZoneView {
     // MARK: - ObjC-compatible stop methods
 
     @objc(stopWithAdContentListener:)
-    public func objcStop(adContentListener: AAAdContentListenerObjC) {
+    public func objcStop(adContentListener: AdContentListenerObjC) {
         if let adapter = self.storedContentAdapter {
             onStop(listener: adapter)
             self.storedContentAdapter = nil

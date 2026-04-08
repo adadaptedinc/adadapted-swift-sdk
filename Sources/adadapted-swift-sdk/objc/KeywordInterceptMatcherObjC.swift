@@ -1,5 +1,5 @@
 //
-//  AAKeywordInterceptMatcherObjC.swift
+//  KeywordInterceptMatcherObjC.swift
 //  adadapted-swift-sdk
 //
 //  ObjC-compatible wrapper for KeywordInterceptMatcher
@@ -7,12 +7,12 @@
 
 import Foundation
 
-@objc(AAKeywordInterceptMatcher)
-public class AAKeywordInterceptMatcherObjC: NSObject {
+@objc(KeywordInterceptMatcher)
+public class KeywordInterceptMatcherObjC: NSObject {
 
-    @objc public static func match(_ constraint: String) -> [AASuggestionObjC] {
+    @objc public static func match(_ constraint: String) -> [SuggestionObjC] {
         let suggestions = KeywordInterceptMatcher.getInstance().match(constraint: constraint)
-        return AASuggestionObjC.wrap(suggestions)
+        return SuggestionObjC.wrap(suggestions)
     }
 
     @objc public static func suggestionWasSelected(_ suggestionName: String) {

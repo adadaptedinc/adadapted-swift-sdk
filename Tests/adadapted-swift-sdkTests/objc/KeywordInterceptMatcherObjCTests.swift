@@ -1,7 +1,7 @@
 import XCTest
 @testable import adadapted_swift_sdk
 
-class AAKeywordInterceptMatcherObjCTests: XCTestCase {
+class KeywordInterceptMatcherObjCTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
@@ -15,25 +15,25 @@ class AAKeywordInterceptMatcherObjCTests: XCTestCase {
         super.tearDown()
     }
 
-    func testMatchReturnsAASuggestionArray() {
+    func testMatchReturnsSuggestionArray() {
         // Without intercept data loaded, match returns an empty array
-        let results = AAKeywordInterceptMatcherObjC.match("milk")
+        let results = KeywordInterceptMatcherObjC.match("milk")
         XCTAssertNotNil(results)
         XCTAssertTrue(results.isEmpty)
     }
 
     func testMatchEmptyStringReturnsEmpty() {
-        let results = AAKeywordInterceptMatcherObjC.match("")
+        let results = KeywordInterceptMatcherObjC.match("")
         XCTAssertTrue(results.isEmpty)
     }
 
     func testSuggestionWasSelectedDoesNotCrash() {
         // Should not crash even when no suggestions have been matched
-        AAKeywordInterceptMatcherObjC.suggestionWasSelected("Whole Milk")
+        KeywordInterceptMatcherObjC.suggestionWasSelected("Whole Milk")
     }
 
     func testSuggestionWasSelectedEmptyStringDoesNotCrash() {
-        AAKeywordInterceptMatcherObjC.suggestionWasSelected("")
+        KeywordInterceptMatcherObjC.suggestionWasSelected("")
     }
 }
 

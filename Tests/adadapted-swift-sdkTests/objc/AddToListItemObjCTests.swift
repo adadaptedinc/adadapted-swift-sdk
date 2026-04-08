@@ -1,7 +1,7 @@
 import XCTest
 @testable import adadapted_swift_sdk
 
-class AAAddToListItemObjCTests: XCTestCase {
+class AddToListItemObjCTests: XCTestCase {
 
     private func makeItem() -> AddToListItem {
         return AddToListItem(
@@ -18,7 +18,7 @@ class AAAddToListItemObjCTests: XCTestCase {
 
     func testPropertiesMatchWrappedItem() {
         let item = makeItem()
-        let wrapper = AAAddToListItemObjC(item: item)
+        let wrapper = AddToListItemObjC(item: item)
 
         XCTAssertEqual(wrapper.trackingId, "track123")
         XCTAssertEqual(wrapper.title, "Whole Milk")
@@ -32,7 +32,7 @@ class AAAddToListItemObjCTests: XCTestCase {
 
     func testWrapCreatesCorrectCount() {
         let items = [makeItem(), makeItem()]
-        let wrapped = AAAddToListItemObjC.wrap(items)
+        let wrapped = AddToListItemObjC.wrap(items)
 
         XCTAssertEqual(wrapped.count, 2)
         XCTAssertEqual(wrapped[0].title, "Whole Milk")
@@ -40,13 +40,13 @@ class AAAddToListItemObjCTests: XCTestCase {
     }
 
     func testWrapEmptyArray() {
-        let wrapped = AAAddToListItemObjC.wrap([])
+        let wrapped = AddToListItemObjC.wrap([])
         XCTAssertTrue(wrapped.isEmpty)
     }
 
     func testInternalItemAccessible() {
         let item = makeItem()
-        let wrapper = AAAddToListItemObjC(item: item)
+        let wrapper = AddToListItemObjC(item: item)
 
         XCTAssertEqual(wrapper.item.trackingId, item.trackingId)
         XCTAssertEqual(wrapper.item.title, item.title)

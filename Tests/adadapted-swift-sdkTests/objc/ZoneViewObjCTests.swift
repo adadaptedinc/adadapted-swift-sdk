@@ -1,7 +1,7 @@
 import XCTest
 @testable import adadapted_swift_sdk
 
-class AAZoneViewObjCTests: XCTestCase {
+class ZoneViewObjCTests: XCTestCase {
 
     private var zoneView: AaZoneView!
 
@@ -115,14 +115,14 @@ class AAZoneViewObjCTests: XCTestCase {
 
 // MARK: - Mocks
 
-private class MockZoneViewObjCListener: NSObject, AAZoneViewListenerObjC {
+private class MockZoneViewObjCListener: NSObject, ZoneViewListenerObjC {
     func onZoneHasAds(_ hasAds: Bool) {}
     func onAdLoaded() {}
     func onAdLoadFailed() {}
 }
 
-private class MockAdContentObjCListener: NSObject, AAAdContentListenerObjC {
-    func onContentAvailableForZone(_ zoneId: String, content: AAAddToListContentObjC) {}
+private class MockAdContentObjCListener: NSObject, AdContentListenerObjC {
+    func onContentAvailableForZone(_ zoneId: String, content: AddToListContentObjC) {}
 }
 
 private class StubSessionAdapter: SessionAdapter {

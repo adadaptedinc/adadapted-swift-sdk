@@ -1,5 +1,5 @@
 //
-//  AAAddToListItemObjC.swift
+//  AddToListItemObjC.swift
 //  adadapted-swift-sdk
 //
 //  ObjC-compatible wrapper for AddToListItem
@@ -7,8 +7,8 @@
 
 import Foundation
 
-@objc(AAAddToListItem)
-public class AAAddToListItemObjC: NSObject {
+@objc(AddToListItem)
+public class AddToListItemObjC: NSObject {
     internal let item: AddToListItem
 
     @objc public var trackingId: String { item.trackingId }
@@ -25,7 +25,7 @@ public class AAAddToListItemObjC: NSObject {
         super.init()
     }
 
-    internal static func wrap(_ items: [AddToListItem]) -> [AAAddToListItemObjC] {
-        return items.map { AAAddToListItemObjC(item: $0) }
+    internal static func wrap(_ items: [AddToListItem]) -> [AddToListItemObjC] {
+        return items.map { AddToListItemObjC(item: $0) }
     }
 }

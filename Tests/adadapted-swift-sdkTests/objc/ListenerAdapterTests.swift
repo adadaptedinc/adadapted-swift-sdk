@@ -3,7 +3,7 @@ import XCTest
 
 // MARK: - Mock Listeners
 
-private class MockSessionListener: NSObject, AASessionListenerObjC {
+private class MockSessionListener: NSObject, SessionListenerObjC {
     var receivedHasAds: Bool?
     var receivedZoneIds: [String]?
 
@@ -13,7 +13,7 @@ private class MockSessionListener: NSObject, AASessionListenerObjC {
     }
 }
 
-private class MockEventListener: NSObject, AAEventListenerObjC {
+private class MockEventListener: NSObject, AaSdkEventListenerObjC {
     var receivedZoneId: String?
     var receivedEventType: String?
 
@@ -23,15 +23,15 @@ private class MockEventListener: NSObject, AAEventListenerObjC {
     }
 }
 
-private class MockAdditContentListener: NSObject, AAAdditContentListenerObjC {
-    var receivedContent: AAAddToListContentObjC?
+private class MockAdditContentListener: NSObject, AaSdkAdditContentListenerObjC {
+    var receivedContent: AddToListContentObjC?
 
-    func onContentAvailable(_ content: AAAddToListContentObjC) {
+    func onContentAvailable(_ content: AddToListContentObjC) {
         receivedContent = content
     }
 }
 
-private class MockZoneViewListener: NSObject, AAZoneViewListenerObjC {
+private class MockZoneViewListener: NSObject, ZoneViewListenerObjC {
     var receivedHasAds: Bool?
     var adLoadedCalled = false
     var adLoadFailedCalled = false
@@ -41,13 +41,13 @@ private class MockZoneViewListener: NSObject, AAZoneViewListenerObjC {
     func onAdLoadFailed() { adLoadFailedCalled = true }
 }
 
-private class MockObjCAdContentListener: NSObject, AAAdContentListenerObjC {
+private class MockObjCAdContentListener: NSObject, AdContentListenerObjC {
     var receivedZoneId: String?
-    var receivedContent: AAAddToListContentObjC?
+    var receivedContent: AddToListContentObjC?
     var receivedNonContentZoneId: String?
     var receivedNonContentAdId: String?
 
-    func onContentAvailableForZone(_ zoneId: String, content: AAAddToListContentObjC) {
+    func onContentAvailableForZone(_ zoneId: String, content: AddToListContentObjC) {
         receivedZoneId = zoneId
         receivedContent = content
     }
@@ -70,7 +70,7 @@ private class MockAddToListContent: AddToListContent {
 
 // MARK: - Tests
 
-class AAListenerAdapterTests: XCTestCase {
+class ListenerAdapterTests: XCTestCase {
 
     // MARK: - SessionListenerAdapter
 

@@ -1,5 +1,5 @@
 //
-//  AAAddToListContentObjC.swift
+//  AddToListContentObjC.swift
 //  adadapted-swift-sdk
 //
 //  ObjC-compatible wrapper for AddToListContent protocol
@@ -7,15 +7,15 @@
 
 import Foundation
 
-@objc(AAAddToListContent)
-public class AAAddToListContentObjC: NSObject {
+@objc(AddToListContent)
+public class AddToListContentObjC: NSObject {
     internal let content: AddToListContent
 
     @objc public var source: String { content.getSource() }
     @objc public var hasNoItems: Bool { content.hasNoItems() }
 
-    @objc public var items: [AAAddToListItemObjC] {
-        return AAAddToListItemObjC.wrap(content.getItems())
+    @objc public var items: [AddToListItemObjC] {
+        return AddToListItemObjC.wrap(content.getItems())
     }
 
     internal init(content: AddToListContent) {
@@ -27,7 +27,7 @@ public class AAAddToListContentObjC: NSObject {
         content.acknowledge()
     }
 
-    @objc public func itemAcknowledge(_ item: AAAddToListItemObjC) {
+    @objc public func itemAcknowledge(_ item: AddToListItemObjC) {
         content.itemAcknowledge(item: item.item)
     }
 
@@ -35,7 +35,7 @@ public class AAAddToListContentObjC: NSObject {
         content.failed(message: message)
     }
 
-    @objc public func itemFailed(_ item: AAAddToListItemObjC, message: String) {
+    @objc public func itemFailed(_ item: AddToListItemObjC, message: String) {
         content.itemFailed(item: item.item, message: message)
     }
 }

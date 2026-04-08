@@ -1,18 +1,18 @@
 import XCTest
 @testable import adadapted_swift_sdk
 
-class AALinkHandlerObjCTests: XCTestCase {
+class AdAdaptedLinkHandlerObjCTests: XCTestCase {
 
     func testParseUniversalLinkWithInvalidURL() {
         // Should not crash with invalid URL
-        AALinkHandlerObjC.parseUniversalLink("not-a-valid-url")
+        AdAdaptedLinkHandlerObjC.parseUniversalLink("not-a-valid-url")
     }
 
     func testParseUniversalLinkWithEmptyString() {
-        AALinkHandlerObjC.parseUniversalLink("")
+        AdAdaptedLinkHandlerObjC.parseUniversalLink("")
     }
 
     func testParseUniversalLinkWithMissingDataParam() {
-        AALinkHandlerObjC.parseUniversalLink("https://example.com/link?foo=bar")
+        AdAdaptedLinkHandlerObjC.parseUniversalLink("https://example.com/link?foo=bar")
     }
 }

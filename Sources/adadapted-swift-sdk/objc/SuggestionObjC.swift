@@ -1,5 +1,5 @@
 //
-//  AASuggestionObjC.swift
+//  SuggestionObjC.swift
 //  adadapted-swift-sdk
 //
 //  ObjC-compatible wrapper for Suggestion
@@ -7,8 +7,8 @@
 
 import Foundation
 
-@objc(AASuggestion)
-public class AASuggestionObjC: NSObject {
+@objc(Suggestion)
+public class SuggestionObjC: NSObject {
     internal var suggestion: Suggestion
 
     @objc public var searchId: String { suggestion.searchId }
@@ -32,7 +32,7 @@ public class AASuggestionObjC: NSObject {
         suggestion.wasSelected()
     }
 
-    internal static func wrap(_ suggestions: [Suggestion]) -> [AASuggestionObjC] {
-        return suggestions.map { AASuggestionObjC(suggestion: $0) }
+    internal static func wrap(_ suggestions: [Suggestion]) -> [SuggestionObjC] {
+        return suggestions.map { SuggestionObjC(suggestion: $0) }
     }
 }

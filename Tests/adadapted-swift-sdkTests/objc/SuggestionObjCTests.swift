@@ -1,7 +1,7 @@
 import XCTest
 @testable import adadapted_swift_sdk
 
-class AASuggestionObjCTests: XCTestCase {
+class SuggestionObjCTests: XCTestCase {
 
     private func makeTerm() -> Term {
         return Term(
@@ -20,7 +20,7 @@ class AASuggestionObjCTests: XCTestCase {
 
     func testPropertiesMatchWrappedSuggestion() {
         let suggestion = makeSuggestion()
-        let wrapper = AASuggestionObjC(suggestion: suggestion)
+        let wrapper = SuggestionObjC(suggestion: suggestion)
 
         XCTAssertEqual(wrapper.searchId, "search123")
         XCTAssertEqual(wrapper.termId, "term1")
@@ -33,14 +33,14 @@ class AASuggestionObjCTests: XCTestCase {
 
     func testWrapCreatesCorrectCount() {
         let suggestions = [makeSuggestion(), makeSuggestion()]
-        let wrapped = AASuggestionObjC.wrap(suggestions)
+        let wrapped = SuggestionObjC.wrap(suggestions)
 
         XCTAssertEqual(wrapped.count, 2)
         XCTAssertEqual(wrapped[0].name, "Whole Milk 1 Gallon")
     }
 
     func testWrapEmptyArray() {
-        let wrapped = AASuggestionObjC.wrap([])
+        let wrapped = SuggestionObjC.wrap([])
         XCTAssertTrue(wrapped.isEmpty)
     }
 }
