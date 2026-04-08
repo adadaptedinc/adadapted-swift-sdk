@@ -15,6 +15,8 @@ class AdContentPublisher {
     init(){}
     
     private var listeners: Array<AdContentListener> = []
+
+    var listenerCount: Int { listeners.count }
     
     func addListener(listener: AdContentListener) {
         if !listeners.contains(where: { $0.listenerId == listener.listenerId }) {
