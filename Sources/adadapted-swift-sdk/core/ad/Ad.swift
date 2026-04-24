@@ -9,18 +9,16 @@ struct Ad: Codable, Equatable {
     let impressionId: String
     let url: String
     let actionType: String
-    let actionPath: String
+    let actionPath: String?
     let payload: Payload
-    let refreshTime: Int
     
     enum CodingKeys: String, CodingKey {
-        case id = "ad_id"
+        case id
         case impressionId = "impression_id"
         case url = "creative_url"
         case actionType = "action_type"
         case actionPath = "action_path"
         case payload
-        case refreshTime = "refresh_time"
     }
     
     private var isImpressionTracked: Bool = false
@@ -31,8 +29,7 @@ struct Ad: Codable, Equatable {
         url: String = "",
         actionType: String = "",
         actionPath: String = "",
-        payload: Payload = Payload(),
-        refreshTime: Int = Config.DEFAULT_AD_REFRESH
+        payload: Payload = Payload()
     ) {
         self.id = id
         self.impressionId = impressionId
@@ -40,7 +37,6 @@ struct Ad: Codable, Equatable {
         self.actionType = actionType
         self.actionPath = actionPath
         self.payload = payload
-        self.refreshTime = refreshTime
     }
     
     func isEmpty() -> Bool {
@@ -51,12 +47,10 @@ struct Ad: Codable, Equatable {
         return AdContent.createAddToListContent(ad: self)
     }
     
-    mutating func resetImpressionTracking() {
-        isImpressionTracked = false
-    }
-    
-    mutating func setImpressionTracked() {
-        isImpressionTracked = true
+    func withImpressionTracked() -> Ad {
+        var copy = self
+        copy.isImpressionTracked = true
+        return copy
     }
     
     func impressionWasTracked() -> Bool {

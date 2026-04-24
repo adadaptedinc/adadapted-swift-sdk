@@ -4,11 +4,11 @@
 
 import Foundation
 
-public class KeywordInterceptMatcher : SessionListener, InterceptListener {
-    private var intercept: Intercept = Intercept()
+public class KeywordInterceptMatcher : InterceptListener {
+    private var intercept: InterceptData = InterceptData(searchId: "", terms: [])
     private var loaded = false
-    private var hasInstance = false
     private var currentSuggestions: Array<Suggestion> = []
+    private static let MIN_MATCH_LENGTH = 3
     
     static private var instance: KeywordInterceptMatcher = KeywordInterceptMatcher()
     
@@ -17,7 +17,7 @@ public class KeywordInterceptMatcher : SessionListener, InterceptListener {
     }
     
     init() {
-        SessionClient.getInstance().addListener(listener: self)
+        InterceptClient.getInstance().initialize(sessionId: SessionClient.getSessionId(), interceptListener: self)
     }
     
     private func matchKeyword(constraint: String) -> Array<Suggestion> {
@@ -27,9 +27,9 @@ public class KeywordInterceptMatcher : SessionListener, InterceptListener {
             return currentSuggestions
         }
         
-        for interceptTerm in intercept.getTerms() {
-            if interceptTerm.searchTerm.lowercased().starts(with: input.lowercased()) {
-                fileTerm(term: interceptTerm, input: input, suggestions: &currentSuggestions)
+        for interceptTerm in intercept.getSortedTerms() {
+            if interceptTerm.term.lowercased().starts(with: input.lowercased()) {
+                fileTerm(interceptTerm: interceptTerm, input: input, suggestions: &currentSuggestions)
             }
         }
         if currentSuggestions.isEmpty {
@@ -38,13 +38,13 @@ public class KeywordInterceptMatcher : SessionListener, InterceptListener {
         return currentSuggestions
     }
     
-    private func fileTerm(term: Term?, input: String, suggestions: inout Array<Suggestion>) {
-        if let term = term {
+    private func fileTerm(interceptTerm: InterceptTerm?, input: String, suggestions: inout Array<Suggestion>) {
+        if let term = interceptTerm {
             suggestions.insert(Suggestion(searchId: intercept.searchId, term: term), at: 0)
             SuggestionTracker.suggestionMatched(
                 searchId: intercept.searchId,
                 termId: term.termId,
-                term: term.searchTerm,
+                term: term.term,
                 replacement: term.replacement,
                 userInput: input
             )
@@ -52,40 +52,21 @@ public class KeywordInterceptMatcher : SessionListener, InterceptListener {
     }
     
     private func isReadyToMatch(input: String?) -> Bool {
-        return loaded && input != nil && input?.count ?? 0 >= intercept.minMatchLength
+        return loaded && input != nil && input?.count ?? 0 >= KeywordInterceptMatcher.MIN_MATCH_LENGTH
     }
     
-    private func createInstance() {
-        hasInstance = true
-    }
-    
-    func onKeywordInterceptInitialized(intercept: Intercept) {
+    func onKeywordInterceptInitialized(intercept: InterceptData) {
         self.intercept = intercept
         loaded = true
     }
     
     public func match(constraint: String) -> Array<Suggestion> {
-        if hasInstance {
-            return matchKeyword(constraint: constraint)
-        } else {
-            if SessionClient.getInstance().hasInstance() {
-                createInstance()
-                return matchKeyword(constraint: constraint)
-            } else {
-                return []
-            }
-        }
+        return matchKeyword(constraint: constraint)
     }
     
     public func suggestionWasSelected(suggestionName: String) {
         if var selectedSuggestion = currentSuggestions.first(where: { $0.name == suggestionName }) {
             selectedSuggestion.wasSelected()
-        }
-    }
-    
-    public func onSessionAvailable(session: Session) {
-        if (!session.id.isEmpty) {
-            InterceptClient.getInstance()?.initialize(session: session, interceptListener: self)
         }
     }
 }

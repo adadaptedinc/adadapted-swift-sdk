@@ -5,6 +5,6 @@
 import Foundation
 
 protocol InterceptAdapter {
-    func retrieve(session: Session, adapterListener: InterceptAdapterListener)
-    func sendEvents(session: Session, events: Set<InterceptEvent>)
+    func retrieve(sessionId: String, adapterListener: InterceptAdapterListener)
+    func sendEvents(sessionId: String, events: Set<InterceptEvent>)
 }

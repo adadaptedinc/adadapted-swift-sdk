@@ -14,8 +14,6 @@ public class SuggestionObjC: NSObject {
     @objc public var searchId: String { suggestion.searchId }
     @objc public var termId: String { suggestion.termId }
     @objc public var name: String { suggestion.name }
-    @objc public var icon: String { suggestion.icon }
-    @objc public var tagline: String { suggestion.tagline }
     @objc public var presented: Bool { suggestion.presented }
     @objc public var selected: Bool { suggestion.selected }
 
