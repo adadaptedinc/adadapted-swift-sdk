@@ -116,12 +116,17 @@ class AaZoneViewTests: XCTestCase {
     }
     
     func testOnZoneAvail() {
+        let expectation = XCTestExpectation(description: "Zone available expectation")
         let testListener = TestAaZoneViewListener()
         AaZoneViewTests.testAaZoneView.initialize(zoneId: "TestZoneId")
         AaZoneViewTests.testAaZoneView.onStart(listener: testListener)
         AaZoneViewTests.testAaZoneView.onZoneAvailable(adZoneData: AdZoneData(ad: Ad(id: "NewZoneAdId")))
-        
-        XCTAssertEqual(testListener.zoneHasAds, true)
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            XCTAssertEqual(testListener.zoneHasAds, true)
+            expectation.fulfill()
+        }
+        wait(for: [expectation], timeout: 1.0)
     }
     
     func testOnAdLoaded() {

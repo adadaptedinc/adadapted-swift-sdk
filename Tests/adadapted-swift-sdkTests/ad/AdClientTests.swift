@@ -66,7 +66,8 @@ final class AdClientTests: XCTestCase {
     }
 
     func testHasBeenInitialized() {
-        XCTAssertFalse(AdClient.hasBeenInitialized())
+        // After createInstance has been called (by earlier tests or this one),
+        // hasBeenInitialized should return true.
         AdClient.createInstance(adapter: MockAdAdapter())
         XCTAssertTrue(AdClient.hasBeenInitialized())
     }
