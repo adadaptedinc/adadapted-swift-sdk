@@ -92,7 +92,7 @@ public class AdAdapted {
         }
         
         if isKeywordInterceptEnabled {
-            KeywordInterceptMatcher.getInstance().match(constraint: "INIT") //init the matcher
+            KeywordInterceptMatcher.getInstance().initialize()
         }
         AALogger.logInfo(message: "AdAdapted SDK \(Config.LIBRARY_VERSION) initialized.")
     }

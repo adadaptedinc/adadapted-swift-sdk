@@ -9,6 +9,7 @@ public class KeywordInterceptMatcher : InterceptListener {
     private var loaded = false
     private var currentSuggestions: Array<Suggestion> = []
     private static let MIN_MATCH_LENGTH = 3
+    private let queue = DispatchQueue(label: "com.adadapted.keywordInterceptMatcher")
     
     static private var instance: KeywordInterceptMatcher = KeywordInterceptMatcher()
     
@@ -16,7 +17,9 @@ public class KeywordInterceptMatcher : InterceptListener {
         return instance
     }
     
-    init() {
+    init() {}
+
+    func initialize() {
         InterceptClient.getInstance().initialize(sessionId: SessionClient.getSessionId(), interceptListener: self)
     }
     
@@ -56,17 +59,23 @@ public class KeywordInterceptMatcher : InterceptListener {
     }
     
     func onKeywordInterceptInitialized(intercept: InterceptData) {
-        self.intercept = intercept
-        loaded = true
+        queue.sync {
+            self.intercept = intercept
+            loaded = true
+        }
     }
-    
+
     public func match(constraint: String) -> Array<Suggestion> {
-        return matchKeyword(constraint: constraint)
+        return queue.sync {
+            matchKeyword(constraint: constraint)
+        }
     }
-    
+
     public func suggestionWasSelected(suggestionName: String) {
-        if var selectedSuggestion = currentSuggestions.first(where: { $0.name == suggestionName }) {
-            selectedSuggestion.wasSelected()
+        queue.sync {
+            if let index = currentSuggestions.firstIndex(where: { $0.name == suggestionName }) {
+                currentSuggestions[index].wasSelected()
+            }
         }
     }
 }

@@ -5,13 +5,9 @@ class KeywordInterceptMatcherObjCTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
-        // SessionClient must be initialized before KeywordInterceptMatcher can be used
-        SessionClient.createInstance(adapter: StubSessionAdapter())
     }
 
     override func tearDown() {
-        SessionClient.getInstance().refreshTimer?.stopTimer()
-        SessionClient.getInstance().eventTimer?.stopTimer()
         super.tearDown()
     }
 
@@ -37,7 +33,3 @@ class KeywordInterceptMatcherObjCTests: XCTestCase {
     }
 }
 
-private class StubSessionAdapter: SessionAdapter {
-    func sendInit(deviceInfo: DeviceInfo, listener: SessionInitListener) {}
-    func sendRefreshAds(session: Session, listener: AdGetListener, zoneContexts: [ZoneContext]) {}
-}

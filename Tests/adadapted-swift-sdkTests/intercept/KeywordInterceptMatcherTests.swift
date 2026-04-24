@@ -22,7 +22,7 @@ class KeywordInterceptMatcherTests: XCTestCase {
         ])
         testInterceptAdapter.testIntercept = testIntercept
         InterceptClient.createInstance(adapter: testInterceptAdapter, isKeywordInterceptEnabled: true)
-        KeywordInterceptMatcher.getInstance().match(constraint: "INIT")
+        KeywordInterceptMatcher.getInstance().initialize()
         clearEvents()
     }
     

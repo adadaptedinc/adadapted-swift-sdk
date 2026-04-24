@@ -9,16 +9,12 @@ class ZoneViewObjCTests: XCTestCase {
         super.setUp()
         let deviceInfoExtractor = DeviceInfoExtractor()
         DeviceInfoClient.createInstance(appId: "apiKey", isProd: false, params: [:], customIdentifier: "", deviceInfoExtractor: deviceInfoExtractor)
-        SessionClient.createInstance(adapter: StubSessionAdapter())
         EventClient.createInstance(eventAdapter: TestEventAdapter.shared)
-        EventClient.getInstance().onSessionAvailable(session: MockData.session)
         zoneView = AaZoneView(frame: .zero)
     }
 
     override func tearDown() {
         zoneView = nil
-        SessionClient.getInstance().refreshTimer?.stopTimer()
-        SessionClient.getInstance().eventTimer?.stopTimer()
         super.tearDown()
     }
 
@@ -125,7 +121,3 @@ private class MockAdContentObjCListener: NSObject, AdContentListenerObjC {
     func onContentAvailableForZone(_ zoneId: String, content: AddToListContentObjC) {}
 }
 
-private class StubSessionAdapter: SessionAdapter {
-    func sendInit(deviceInfo: DeviceInfo, listener: SessionInitListener) {}
-    func sendRefreshAds(session: Session, listener: AdGetListener, zoneContexts: [ZoneContext]) {}
-}

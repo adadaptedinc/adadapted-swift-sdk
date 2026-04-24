@@ -23,7 +23,7 @@ class AdZonePresenterTests: XCTestCase {
     
     func testOnAdDisplayedButZoneNotVisible() {
         let expectation = XCTestExpectation(description: "Content available expectation")
-        AdZonePresenterTests.testAdZonePresenter.inititialize(zoneId: "testZoneId")
+        AdZonePresenterTests.testAdZonePresenter.initialize(zoneId: "testZoneId")
         let zones = ["testZoneId": AdZoneData(ad: Ad(id: "TestAdId"))]
         
         let testAdEventListener = TestAdEventClientListener()
@@ -44,7 +44,7 @@ class AdZonePresenterTests: XCTestCase {
     
     func testAdNotCompletedBecauseThereIsOnlyOne() {
         let expectation = XCTestExpectation(description: "Content available expectation")
-        AdZonePresenterTests.testAdZonePresenter.inititialize(zoneId: "testZoneId")
+        AdZonePresenterTests.testAdZonePresenter.initialize(zoneId: "testZoneId")
         var testAd = Ad(id: "TestAdId")
         let zones = ["testZoneId": AdZoneData(ad: Ad(id: "TestAdId"))]
         
@@ -73,7 +73,7 @@ class AdZonePresenterTests: XCTestCase {
     
     func testOnAdClickedContent() {
         let expectation = XCTestExpectation(description: "Content available expectation")
-        AdZonePresenterTests.testAdZonePresenter.inititialize(zoneId: "testZoneId")
+        AdZonePresenterTests.testAdZonePresenter.initialize(zoneId: "testZoneId")
         var testAd = Ad(id: "TestAdId", impressionId: "impressionId", url: "url", actionType: AdActionType.CONTENT)
         let zones = ["testZoneId": AdZoneData(ad: testAd)]
         
@@ -97,7 +97,7 @@ class AdZonePresenterTests: XCTestCase {
     func testOnAdClickedLink() {
         let expectation = XCTestExpectation(description: "Content available expectation")
         AdZonePresenterTests.testAdZonePresenter = AdZonePresenter(adViewHandler: AdViewHandler(), adClient: AdClient.getInstance())
-        AdZonePresenterTests.testAdZonePresenter.inititialize(zoneId: "testZoneId")
+        AdZonePresenterTests.testAdZonePresenter.initialize(zoneId: "testZoneId")
         var testAd = Ad(id: "TestAdId", impressionId: "impressionId", url: "url", actionType: AdActionType.LINK)
         let zones = ["testZoneId": AdZoneData(ad: testAd)]
         
@@ -122,7 +122,7 @@ class AdZonePresenterTests: XCTestCase {
     
     func testOnAdClickedPopup() {
         let expectation = XCTestExpectation(description: "Content available expectation")
-        AdZonePresenterTests.testAdZonePresenter.inititialize(zoneId: "testZoneId")
+        AdZonePresenterTests.testAdZonePresenter.initialize(zoneId: "testZoneId")
         var testAd = Ad(id: "TestAdId", impressionId: "impressionId", url: "url", actionType: AdActionType.POPUP)
         let zones = ["testZoneId": AdZoneData(ad: testAd)]
         
@@ -148,7 +148,7 @@ class AdZonePresenterTests: XCTestCase {
     
     func testOnAdClickedContentPopup() {
         let expectation = XCTestExpectation(description: "Content available expectation")
-        AdZonePresenterTests.testAdZonePresenter.inititialize(zoneId: "testZoneId")
+        AdZonePresenterTests.testAdZonePresenter.initialize(zoneId: "testZoneId")
         var testAd = Ad(id: "TestAdId", impressionId: "impressionId", url: "url", actionType: AdActionType.CONTENT_POPUP)
         let zones = ["testZoneId": AdZoneData(ad: testAd)]
         
@@ -170,7 +170,7 @@ class AdZonePresenterTests: XCTestCase {
     }
     
     func testNullListener() {
-        AdZonePresenterTests.testAdZonePresenter.inititialize(zoneId: "testZoneId")
+        AdZonePresenterTests.testAdZonePresenter.initialize(zoneId: "testZoneId")
         let zones = ["testZoneId": AdZoneData(ad: Ad(id: "TestAdId"))]
         
         AdZonePresenterTests.testAdZonePresenter.onAttach(adZonePresenterListener: nil)

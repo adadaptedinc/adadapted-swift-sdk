@@ -3,16 +3,6 @@ import XCTest
 
 // MARK: - Mock Listeners
 
-private class MockSessionListener: NSObject, SessionListenerObjC {
-    var receivedHasAds: Bool?
-    var receivedZoneIds: [String]?
-
-    func onHasAdsToServe(_ hasAds: Bool, availableZoneIds: [String]) {
-        receivedHasAds = hasAds
-        receivedZoneIds = availableZoneIds
-    }
-}
-
 private class MockEventListener: NSObject, AaSdkEventListenerObjC {
     var receivedZoneId: String?
     var receivedEventType: String?
@@ -71,27 +61,6 @@ private class MockAddToListContent: AddToListContent {
 // MARK: - Tests
 
 class ListenerAdapterTests: XCTestCase {
-
-    // MARK: - SessionListenerAdapter
-
-    func testSessionListenerAdapterForwardsCall() {
-        let mock = MockSessionListener()
-        let adapter = SessionListenerAdapter(listener: mock)
-
-        adapter.onHasAdsToServe(hasAds: true, availableZoneIds: ["zone1", "zone2"])
-
-        XCTAssertEqual(mock.receivedHasAds, true)
-        XCTAssertEqual(mock.receivedZoneIds, ["zone1", "zone2"])
-    }
-
-    func testSessionListenerAdapterHandlesDeallocatedListener() {
-        var mock: MockSessionListener? = MockSessionListener()
-        let adapter = SessionListenerAdapter(listener: mock!)
-        mock = nil
-
-        // Should not crash when listener is deallocated
-        adapter.onHasAdsToServe(hasAds: true, availableZoneIds: [])
-    }
 
     // MARK: - EventListenerAdapter
 

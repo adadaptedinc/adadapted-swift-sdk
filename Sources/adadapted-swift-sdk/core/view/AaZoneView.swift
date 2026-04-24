@@ -65,7 +65,7 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
     // MARK: - Public Methods
     
     @objc public func initialize(zoneId: String) {
-        presenter.inititialize(zoneId: zoneId)
+        presenter.initialize(zoneId: zoneId)
         presenter.setWebViewManager(webViewManager: webViewManager)
     }
     
@@ -119,20 +119,27 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
     // MARK: - AdZonePresenterListener
     
     func onZoneAvailable(adZoneData: AdZoneData) {
-        notifyClientZoneHasAds(hasAds: adZoneData.hasAd())
+        DispatchQueue.main.async { [weak self] in
+            self?.notifyClientZoneHasAds(hasAds: adZoneData.hasAd())
+        }
     }
-    
+
     func onAdAvailable(ad: Ad) {
-        loadWebViewAd(ad: ad)
+        DispatchQueue.main.async { [weak self] in
+            self?.loadWebViewAd(ad: ad)
+        }
     }
-    
+
     func onNoAdAvailable() {
-        webViewManager.loadBlank()
+        DispatchQueue.main.async { [weak self] in
+            self?.webViewManager.loadBlank()
+        }
     }
-    
+
     func onAdVisibilityChanged(ad: Ad) {
-        if !webViewLoaded {
-            loadWebViewAd(ad: ad)
+        DispatchQueue.main.async { [weak self] in
+            guard let self, !self.webViewLoaded else { return }
+            self.loadWebViewAd(ad: ad)
         }
     }
     

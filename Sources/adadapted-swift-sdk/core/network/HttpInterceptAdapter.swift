@@ -18,7 +18,7 @@ class HttpInterceptAdapter: InterceptAdapter {
 
         let keywordRequest = KeywordRequest(
             sdkId: deviceInfo.sdkVersion,
-            bundleId: "",
+            bundleId: deviceInfo.bundleId,
             userId: deviceInfo.udid,
             zoneId: "",
             sessionId: sessionId,

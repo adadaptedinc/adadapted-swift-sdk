@@ -42,7 +42,7 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
     // MARK: - Initialization Helper
     private func initializePresenter(with zoneId: String) {
         ZoneViewModelManager.shared.addViewModel(viewModel: self)
-        presenter.inititialize(zoneId: zoneId)
+        presenter.initialize(zoneId: zoneId)
         AdContentPublisher.getInstance().addListener(listener: adContentListener)
         
         if !$zoneContextId.wrappedValue.isEmpty {

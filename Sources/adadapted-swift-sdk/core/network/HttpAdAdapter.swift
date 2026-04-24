@@ -17,12 +17,12 @@ class HttpAdAdapter: AdAdapter {
         storeId: String = "",
         contextId: String = "",
         extra: String = ""
-    ) {
+    ) async {
         let deviceInfo = DeviceInfoClient.getCachedDeviceInfo()
 
         let zoneAdRequest = ZoneAdRequest(
             sdkId: deviceInfo.sdkVersion,
-            bundleId: "",
+            bundleId: deviceInfo.bundleId,
             userId: deviceInfo.udid,
             zoneId: zoneId,
             storeId: storeId,
@@ -45,33 +45,19 @@ class HttpAdAdapter: AdAdapter {
             return
         }
 
-        let task = URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
-                AALogger.logError(message: error.localizedDescription)
-                HttpErrorTracker.trackHttpError(
-                    errorCause: error.localizedDescription,
-                    errorMessage: response?.description ?? "Unknown response",
-                    errorEventCode: EventStrings.AD_GET_REQUEST_FAILED,
-                    url: self.zoneAdRequestUrl.absoluteString
-                )
-                listener.onAdLoadFailed()
-                return
-            }
-
-            guard let data = data else {
-                AALogger.logError(message: "No data received in ad request")
-                listener.onAdLoadFailed()
-                return
-            }
-            
-            do {
-                let adResponse = try JSONDecoder().decode(AdResponse.self, from: data)
-                listener.onAdLoaded(adResponse.data)
-            } catch {
-                AALogger.logError(message: "Failed to decode AdResponse: \(error)")
-                listener.onAdLoadFailed()
-            }
+        do {
+            let (data, _) = try await URLSession.shared.data(for: request)
+            let adResponse = try JSONDecoder().decode(AdResponse.self, from: data)
+            listener.onAdLoaded(adResponse.data)
+        } catch {
+            AALogger.logError(message: "Ad request failed: \(error)")
+            HttpErrorTracker.trackHttpError(
+                errorCause: error.localizedDescription,
+                errorMessage: error.localizedDescription,
+                errorEventCode: EventStrings.AD_GET_REQUEST_FAILED,
+                url: self.zoneAdRequestUrl.absoluteString
+            )
+            listener.onAdLoadFailed()
         }
-        task.resume()
     }
 }

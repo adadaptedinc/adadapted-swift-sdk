@@ -34,7 +34,7 @@ class AdZonePresenter: ZoneAdListener {
         self.randomAdStartPosition = Int(Date().timeIntervalSince1970) % 10
     }
     
-    func inititialize(zoneId: String) {
+    func initialize(zoneId: String) {
         if self.zoneId.isEmpty {
             self.zoneId = zoneId
         }
