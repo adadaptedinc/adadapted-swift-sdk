@@ -57,6 +57,16 @@ class ConfigTests: XCTestCase {
         XCTAssertEqual(sandboxUrl.absoluteString, Config.Sand.AD_SERVER_HOST + Config.AD_SERVER_VERSION + "sandboxPath")
     }
 
+    func testGetEventServerFormattedUrl() {
+        Config.initialize(useProd: true)
+        let url = Config.getEventServerFormattedUrl(path: "testPath")
+        XCTAssertEqual(url.absoluteString, Config.Prod.AD_SERVER_HOST + Config.EVENT_SERVER_VERSION + "testPath")
+
+        Config.initialize(useProd: false)
+        let sandboxUrl = Config.getEventServerFormattedUrl(path: "sandboxPath")
+        XCTAssertEqual(sandboxUrl.absoluteString, Config.Sand.AD_SERVER_HOST + Config.EVENT_SERVER_VERSION + "sandboxPath")
+    }
+
     func testGetTrackingServerFormattedUrl() {
         Config.initialize(useProd: true)
         let url = Config.getTrackingServerFormattedUrl(path: "testPath")
