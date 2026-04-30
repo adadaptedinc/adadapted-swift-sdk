@@ -18,7 +18,6 @@ public final class SessionClient: NSObject {
 
     public static func start() {
         observeLifecycle()
-        createOrResumeSession()
     }
 
     public static func getSessionId() -> String {
