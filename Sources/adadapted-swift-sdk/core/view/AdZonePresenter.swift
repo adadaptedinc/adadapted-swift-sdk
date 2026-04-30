@@ -254,7 +254,6 @@ class AdZonePresenter: ZoneAdListener {
     private func updateCurrentZone(adZoneData: AdZoneData) {
         zoneLoaded = true
         currentAdZoneData = adZoneData
-        restartTimer()
         getNextAd()
     }
     

@@ -44,7 +44,7 @@ class InterceptClient: InterceptAdapterListener {
         _ event: InterceptEvent,
         events: Set<InterceptEvent>
     ) -> Set<InterceptEvent> {
-        var resultingEvents: Set<InterceptEvent> = Set(self.events)
+        var resultingEvents: Set<InterceptEvent> = Set()
         
         // Creates a new Set of Events not superseded by the current Event
         for e in events {

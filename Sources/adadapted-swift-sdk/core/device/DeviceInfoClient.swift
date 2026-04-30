@@ -12,21 +12,26 @@ class DeviceInfoClient {
     private static var deviceInfoExtractor: DeviceInfoExtractor?
     private static var deviceInfo: DeviceInfo?
     private static var deviceCallbacks: Array<DeviceCallback> = []
+    private static let queue = DispatchQueue(label: "com.adadapted.deviceinfoclient")
 
     private static func performGetInfo(deviceCallback: DeviceCallback) {
-        if let info = deviceInfo {
-            deviceCallback.onDeviceInfoCollected(deviceInfo: info)
-        } else {
-            deviceCallbacks.insert(deviceCallback, at: 0)
+        queue.sync {
+            if let info = deviceInfo {
+                deviceCallback.onDeviceInfoCollected(deviceInfo: info)
+            } else {
+                deviceCallbacks.insert(deviceCallback, at: 0)
+            }
         }
     }
 
     private static func collectDeviceInfo() {
-        deviceInfo = deviceInfoExtractor?.extractDeviceInfo(appId: appId, isProd: isProd, customIdentifier: customIdentifier, params: params)
-        notifyCallbacks()
+        queue.sync {
+            deviceInfo = deviceInfoExtractor?.extractDeviceInfo(appId: appId, isProd: isProd, customIdentifier: customIdentifier, params: params)
+            notifyCallbacksLocked()
+        }
     }
 
-    private static func notifyCallbacks() {
+    private static func notifyCallbacksLocked() {
         let currentDeviceCallbacks: Array<DeviceCallback> = Array(deviceCallbacks)
         for (caller) in currentDeviceCallbacks {
             caller.onDeviceInfoCollected(deviceInfo: deviceInfo ?? DeviceInfo())
@@ -41,7 +46,7 @@ class DeviceInfoClient {
     }
 
     static func getCachedDeviceInfo() -> DeviceInfo {
-        return deviceInfo ?? DeviceInfo()
+        return queue.sync { deviceInfo ?? DeviceInfo() }
     }
 
     static func createInstance(

@@ -30,13 +30,13 @@ class PopupWebViewController: UIViewController, WKNavigationDelegate {
     
     init(ad: Ad) {
         super.init(nibName: nil, bundle: nil)
+        self.ad = ad
         guard let actionPath = ad.actionPath, let url = URL(string: actionPath) else {
             EventClient.trackSdkError(
                 code: EventStrings.POPUP_URL_MALFORMED,
                 message: "Incorrect Action Path URL supplied for Ad: " + ad.id)
             return
         }
-        self.ad = ad
         webView.navigationDelegate = self
         webView.load(URLRequest(url: url))
     }

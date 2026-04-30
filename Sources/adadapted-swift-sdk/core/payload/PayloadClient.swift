@@ -11,6 +11,7 @@ class PayloadClient {
     private static let TRACKING_ID = "tracking_id"
     private static let SOURCE = "source"
     private static let ITEM_NAME = "item_name"
+    private static let deeplinkQueue = DispatchQueue(label: "com.adadapted.payloadclient.deeplink")
     internal static var isDeeplinkInProgress = false
     
     private static func trackPayload(content: AdditContent, result: String) {
@@ -21,7 +22,8 @@ class PayloadClient {
     }
     
     static func pickupPayloads(callback: @escaping ([AdditContent]) -> Void) {
-        if isDeeplinkInProgress {
+        let inProgress = deeplinkQueue.sync { isDeeplinkInProgress }
+        if inProgress {
             return
         }
         DispatchQueue.global(qos: .background).async {
@@ -31,11 +33,11 @@ class PayloadClient {
     }
     
     static func deeplinkInProgress() {
-        isDeeplinkInProgress = true
+        deeplinkQueue.sync { isDeeplinkInProgress = true }
     }
-    
+
     static func deeplinkCompleted() {
-        isDeeplinkInProgress = false
+        deeplinkQueue.sync { isDeeplinkInProgress = false }
     }
     
     static func markContentAcknowledged(content: AdditContent) {

@@ -10,6 +10,7 @@ public final class SessionClient: NSObject {
     private static let prefix = "IOS"
     private static let thirtyMinutes: TimeInterval = 30 * 60
     private static let idCharacters = Array("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+    private static let queue = DispatchQueue(label: "com.adadapted.sessionclient")
     private static var sessionId: String = ""
     private static var backgroundTime: TimeInterval = Date().timeIntervalSince1970
 
@@ -21,7 +22,7 @@ public final class SessionClient: NSObject {
     }
 
     public static func getSessionId() -> String {
-        return sessionId
+        return queue.sync { sessionId }
     }
 
     private static func observeLifecycle() {
@@ -45,21 +46,25 @@ public final class SessionClient: NSObject {
     }
 
     private static func createOrResumeSession() {
-        let currentTime = Date().timeIntervalSince1970
-        let isNewSession = sessionId.isEmpty || (currentTime - backgroundTime) >= thirtyMinutes
+        queue.sync {
+            let currentTime = Date().timeIntervalSince1970
+            let isNewSession = sessionId.isEmpty || (currentTime - backgroundTime) >= thirtyMinutes
 
-        if isNewSession {
-            sessionId = generateId()
-        } else {
-            backgroundTime = currentTime
+            if isNewSession {
+                sessionId = generateId()
+            } else {
+                backgroundTime = currentTime
+            }
+
+            trackEvent(isNewSession ? EventStrings.SESSION_CREATED : EventStrings.SESSION_RESUMED)
         }
-
-        trackEvent(isNewSession ? EventStrings.SESSION_CREATED : EventStrings.SESSION_RESUMED)
     }
 
     private static func sessionBackgrounded() {
-        backgroundTime = Date().timeIntervalSince1970
-        trackEvent(EventStrings.SESSION_BACKGROUNDED)
+        queue.sync {
+            backgroundTime = Date().timeIntervalSince1970
+            trackEvent(EventStrings.SESSION_BACKGROUNDED)
+        }
     }
 
     private static func trackEvent(_ event: String) {
