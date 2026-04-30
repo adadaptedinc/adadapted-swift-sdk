@@ -12,8 +12,10 @@ final class SessionClientTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
-        // Restart SessionClient before each test
         SessionClient.start()
+        // Simulate the didActivateNotification that fires on app launch
+        NotificationCenter.default.post(name: UIScene.didActivateNotification, object: nil)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.1))
     }
 
     func testSessionIdIsCreatedOnStart() {
@@ -23,23 +25,17 @@ final class SessionClientTests: XCTestCase {
     }
 
     func testSessionIdStaysSameDuringQuickResume() {
-        SessionClient.start()
         let firstId = SessionClient.getSessionId()
 
-        // Call start again quickly (simulate app resume)
-        SessionClient.start()
+        // Simulate a quick foreground resume
+        NotificationCenter.default.post(name: UIScene.didActivateNotification, object: nil)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.1))
         let secondId = SessionClient.getSessionId()
 
         XCTAssertEqual(firstId, secondId, "Session ID should not change on quick resume")
     }
 
     func testSessionIdCanChangeOnNewSession() {
-        SessionClient.start()
-        let firstId = SessionClient.getSessionId()
-
-        // Simulate a "new session" by just forcing another start
-        // (we can't simulate 30 mins without altering SDK)
-        SessionClient.start()
         let secondId = SessionClient.getSessionId()
 
         // We can't reliably assert it's different, but we can assert it's valid

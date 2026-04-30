@@ -63,4 +63,10 @@ class AdClient {
     static func hasBeenInitialized() -> Bool {
         return hasInstance
     }
+
+    internal static func reset() {
+        adapter = nil
+        hasInstance = false
+        instance = nil
+    }
 }

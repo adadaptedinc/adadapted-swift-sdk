@@ -24,6 +24,11 @@ class MockAdAdapter: AdAdapter {
 
 final class AdClientTests: XCTestCase {
 
+    override func setUp() {
+        super.setUp()
+        AdClient.reset()
+    }
+
     func testRequestIsQueuedWhenNoAdapter() async {
         var called = false
 
