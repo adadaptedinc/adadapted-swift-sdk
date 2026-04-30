@@ -21,7 +21,7 @@ class AdContent: AddToListContent {
         if (ad.payload.detailedListItems.isEmpty) {
             EventClient.trackSdkError(
                 code: EventStrings.AD_PAYLOAD_IS_EMPTY,
-                message: "Ad ${ad.id} has empty payload"
+                message: "Ad \(ad.id) has empty payload"
             )
         }
     }

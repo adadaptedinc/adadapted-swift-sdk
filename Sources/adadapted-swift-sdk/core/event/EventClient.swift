@@ -114,8 +114,8 @@ class EventClient {
         eventTimer = Timer(
             repeatMillis: Config.DEFAULT_EVENT_POLLING,
             delayMillis: Config.DEFAULT_EVENT_POLLING,
-            timerAction: {
-                self.onPublishEvents()
+            timerAction: { [weak self] in
+                self?.onPublishEvents()
             }
         )
         eventTimer?.startTimer()

@@ -89,11 +89,11 @@ class AdZonePresenter: ZoneAdListener {
         AdClient.fetchNewAd(
             zoneId: zoneId,
             listener: ClosureZoneAdListener(
-                onAdLoaded: { adZoneData in
-                    self.handleAd(ad: adZoneData.ad)
+                onAdLoaded: { [weak self] adZoneData in
+                    self?.handleAd(ad: adZoneData.ad)
                 },
-                onAdLoadFailed: {
-                    self.handleAd(ad: Ad()) // Passes an empty Ad as a fallback
+                onAdLoadFailed: { [weak self] in
+                    self?.handleAd(ad: Ad())
                 }
             ),
             contextId: zoneContextId
@@ -203,8 +203,8 @@ class AdZonePresenter: ZoneAdListener {
         }
         let timerDelay = Config.DEFAULT_AD_REFRESH
         timerRunning = true
-        timer = Timer(repeatMillis: timerDelay, delayMillis: timerDelay, timerAction: {
-            self.getNextAd()
+        timer = Timer(repeatMillis: timerDelay, delayMillis: timerDelay, timerAction: { [weak self] in
+            self?.getNextAd()
         })
         timer?.startTimer()
     }

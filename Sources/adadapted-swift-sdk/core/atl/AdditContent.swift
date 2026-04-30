@@ -27,7 +27,7 @@ class AdditContent : AddToListContent {
         if (items.isEmpty) {
             EventClient.trackSdkError(
                 code: EventStrings.ADDIT_PAYLOAD_IS_EMPTY,
-                message: ("Payload %s has empty payload$payloadId")
+                message: "Payload \(payloadId) has empty payload"
             )
         }
     }

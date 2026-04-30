@@ -76,8 +76,8 @@ class InterceptClient: InterceptAdapterListener {
         eventTimer = Timer(
             repeatMillis: Config.DEFAULT_EVENT_POLLING,
             delayMillis: Config.DEFAULT_EVENT_POLLING,
-            timerAction: {
-                self.performPublishEvents()
+            timerAction: { [weak self] in
+                self?.performPublishEvents()
             }
         )
         eventTimer?.startTimer()
