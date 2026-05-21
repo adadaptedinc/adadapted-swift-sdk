@@ -4,23 +4,9 @@
 
 import Foundation
 
-actor PendingRequests {
-    private var requests: [() -> Void] = []
-
-    func add(_ request: @escaping () -> Void) {
-        requests.append(request)
-    }
-
-    func drain() -> [() -> Void] {
-        let all = requests
-        requests.removeAll()
-        return all
-    }
-}
-
 class AdClient {
     private static var adapter: AdAdapter? = nil
-    private static let pendingRequests = PendingRequests()
+    private static var pendingRequests: [() -> Void] = []
     private static var hasInstance = false
 
     static func fetchNewAd(
@@ -30,13 +16,13 @@ class AdClient {
         contextId: String = "",
         extra: String = ""
     ) {
-        Task {
-            guard let currentAdapter = adapter else {
-                await pendingRequests.add {
-                    fetchNewAd(zoneId: zoneId, listener: listener, storeId: storeId, contextId: contextId, extra: extra)
-                }
-                return
+        guard let currentAdapter = adapter else {
+            pendingRequests.append {
+                fetchNewAd(zoneId: zoneId, listener: listener, storeId: storeId, contextId: contextId, extra: extra)
             }
+            return
+        }
+        Task {
             await currentAdapter.requestAd(zoneId: zoneId, listener: listener, storeId: storeId, contextId: contextId, extra: extra)
         }
     }
@@ -46,11 +32,10 @@ class AdClient {
         self.adapter = adapter
         self.hasInstance = true
 
-        Task {
-            let queued = await pendingRequests.drain()
-            for request in queued {
-                request()
-            }
+        let queued = pendingRequests
+        pendingRequests.removeAll()
+        for request in queued {
+            request()
         }
     }
     
