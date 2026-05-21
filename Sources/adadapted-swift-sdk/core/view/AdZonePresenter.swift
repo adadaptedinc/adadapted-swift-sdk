@@ -58,7 +58,7 @@ class AdZonePresenter: ZoneAdListener {
             attached = true
             self.adZonePresenterListener = adZonePresenterListener
             if(currentAd.id.isEmpty) {
-                AdClient.fetchNewAd(zoneId: self.zoneId, listener: self)
+                AdClient.fetchNewAd(zoneId: self.zoneId, listener: self, contextId: zoneContextId)
             }
         }
     }
