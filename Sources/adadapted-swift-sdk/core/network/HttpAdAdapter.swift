@@ -46,7 +46,7 @@ class HttpAdAdapter: AdAdapter {
         }
 
         do {
-            let (data, _) = try await URLSession.shared.data(for: request)
+            let (data, _) = try await HttpConnector.data(for: request)
             let adResponse = try JSONDecoder().decode(AdResponse.self, from: data)
             listener.onAdLoaded(adResponse.data)
         } catch {

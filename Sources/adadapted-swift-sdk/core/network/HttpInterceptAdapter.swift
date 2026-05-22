@@ -38,7 +38,7 @@ class HttpInterceptAdapter: InterceptAdapter {
             return
         }
 
-        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+        HttpConnector.dataTask(with: request) { data, response, error in
             if let error = error {
                 AALogger.logError(message: error.localizedDescription)
                 HttpErrorTracker.trackHttpError(
@@ -64,7 +64,6 @@ class HttpInterceptAdapter: InterceptAdapter {
                 AALogger.logError(message: "Failed to decode KeywordResponse: \(error)")
             }
         }
-        task.resume()
     }
     
     func sendEvents(sessionId: String, events: Set<InterceptEvent>) {
@@ -91,7 +90,7 @@ class HttpInterceptAdapter: InterceptAdapter {
             return
         }
         
-        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+        HttpConnector.dataTask(with: request) { data, response, error in
             if let error = error {
                 AALogger.logError(message: error.localizedDescription)
                 HttpErrorTracker.trackHttpError(
@@ -103,6 +102,5 @@ class HttpInterceptAdapter: InterceptAdapter {
                 return
             }
         }
-        task.resume()
     }
 }

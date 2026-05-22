@@ -29,7 +29,7 @@ class HttpEventAdapter: EventAdapter {
             return
         }
         
-        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+        HttpConnector.dataTask(with: request) { data, response, error in
             if let error = error {
                 AALogger.logError(message: error.localizedDescription)
                 HttpErrorTracker.trackHttpError(
@@ -41,7 +41,6 @@ class HttpEventAdapter: EventAdapter {
                 return
             }
         }
-        task.resume()
     }
     
     func publishSdkEvents(sessionId: String, deviceInfo: DeviceInfo, events: Array<SdkEvent>) {
@@ -58,7 +57,7 @@ class HttpEventAdapter: EventAdapter {
             return
         }
         
-        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+        HttpConnector.dataTask(with: request) { data, response, error in
             if let error = error {
                 AALogger.logError(message: error.localizedDescription)
                 HttpErrorTracker.trackHttpError(
@@ -70,7 +69,6 @@ class HttpEventAdapter: EventAdapter {
                 return
             }
         }
-        task.resume()
     }
     
     func publishSdkErrors(sessionId: String, deviceInfo: DeviceInfo, errors: Array<SdkError>) {
@@ -87,12 +85,11 @@ class HttpEventAdapter: EventAdapter {
             return
         }
         
-        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+        HttpConnector.dataTask(with: request) { data, response, error in
             if let error = error {
                 AALogger.logError(message: "SDK Error Request Failed -> \(error.localizedDescription)")
                 return
             }
         }
-        task.resume()
     }
 }
