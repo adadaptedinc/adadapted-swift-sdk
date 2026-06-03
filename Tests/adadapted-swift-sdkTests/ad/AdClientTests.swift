@@ -7,7 +7,11 @@ import XCTest
 
 class MockAdAdapter: AdAdapter {
     var lastZoneId: String?
+    var lastStoreId: String?
+    var lastContextId: String?
+    var lastExtra: String?
     var requestCalled = false
+    var shouldSucceed = false
 
     func requestAd(
         zoneId: String,
@@ -18,7 +22,14 @@ class MockAdAdapter: AdAdapter {
     ) async {
         requestCalled = true
         lastZoneId = zoneId
-        listener.onAdLoadFailed()  // Trigger failure for verification
+        lastStoreId = storeId
+        lastContextId = contextId
+        lastExtra = extra
+        if shouldSucceed {
+            listener.onAdLoaded(AdZoneData(ad: Ad(id: "mockAdId")))
+        } else {
+            listener.onAdLoadFailed()
+        }
     }
 }
 
@@ -71,10 +82,79 @@ final class AdClientTests: XCTestCase {
     }
 
     func testHasBeenInitialized() {
-        // After createInstance has been called (by earlier tests or this one),
-        // hasBeenInitialized should return true.
         AdClient.createInstance(adapter: MockAdAdapter())
         XCTAssertTrue(AdClient.hasBeenInitialized())
+    }
+
+    func testHasNotBeenInitializedAfterReset() {
+        AdClient.createInstance(adapter: MockAdAdapter())
+        XCTAssertTrue(AdClient.hasBeenInitialized())
+        AdClient.reset()
+        XCTAssertFalse(AdClient.hasBeenInitialized())
+    }
+
+    func testFetchNewAdForwardsAllParameters() async {
+        let mockAdapter = MockAdAdapter()
+        AdClient.createInstance(adapter: mockAdapter)
+
+        AdClient.fetchNewAd(
+            zoneId: "zone99",
+            listener: TestZoneAdListener(
+                onAdLoadedHandler: { _ in },
+                onAdLoadFailedHandler: { }
+            ),
+            storeId: "store1",
+            contextId: "ctx1",
+            extra: "extraData"
+        )
+
+        try? await Task.sleep(nanoseconds: 50_000_000)
+        XCTAssertEqual(mockAdapter.lastZoneId, "zone99")
+        XCTAssertEqual(mockAdapter.lastStoreId, "store1")
+        XCTAssertEqual(mockAdapter.lastContextId, "ctx1")
+        XCTAssertEqual(mockAdapter.lastExtra, "extraData")
+    }
+
+    func testFetchNewAdCallsOnAdLoadedOnSuccess() async {
+        let mockAdapter = MockAdAdapter()
+        mockAdapter.shouldSucceed = true
+        AdClient.createInstance(adapter: mockAdapter)
+
+        let expectation = XCTestExpectation(description: "Ad loaded")
+        var loadedData: AdZoneData?
+
+        AdClient.fetchNewAd(
+            zoneId: "zoneSuccess",
+            listener: TestZoneAdListener(
+                onAdLoadedHandler: { data in
+                    loadedData = data
+                    expectation.fulfill()
+                },
+                onAdLoadFailedHandler: { }
+            )
+        )
+
+        await fulfillment(of: [expectation], timeout: 2)
+        XCTAssertNotNil(loadedData)
+        XCTAssertTrue(loadedData!.hasAd())
+    }
+
+    func testFetchNewAdDefaultParametersAreEmpty() async {
+        let mockAdapter = MockAdAdapter()
+        AdClient.createInstance(adapter: mockAdapter)
+
+        AdClient.fetchNewAd(
+            zoneId: "zoneDefault",
+            listener: TestZoneAdListener(
+                onAdLoadedHandler: { _ in },
+                onAdLoadFailedHandler: { }
+            )
+        )
+
+        try? await Task.sleep(nanoseconds: 50_000_000)
+        XCTAssertEqual(mockAdapter.lastStoreId, "")
+        XCTAssertEqual(mockAdapter.lastContextId, "")
+        XCTAssertEqual(mockAdapter.lastExtra, "")
     }
 }
 

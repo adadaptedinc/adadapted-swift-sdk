@@ -17,6 +17,7 @@ class AdAdaptedListManagerTest: XCTestCase {
 
     override func setUp() {
         super.setUp()
+        EventClient.getInstance().onPublishEvents()
         TestEventAdapter.shared.cleanupEvents()
     }
 
@@ -27,16 +28,16 @@ class AdAdaptedListManagerTest: XCTestCase {
 
     func testItemAddedToList() {
         let expectation = XCTestExpectation(description: "Content available expectation")
-        TestEventAdapter.shared.cleanupEvents()
         AdAdaptedListManager.itemAddedToList(item: "TestItem")
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             EventClient.getInstance().onPublishEvents()
         }
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            let matchingEvents = TestEventAdapter.shared.testSdkEvents.filter { $0.name == EventStrings.USER_ADDED_TO_LIST }
-            XCTAssertFalse(matchingEvents.isEmpty, "Expected a USER_ADDED_TO_LIST event")
-            XCTAssertEqual("TestItem", matchingEvents.first?.params["item_name"])
+            let matchingEvents = TestEventAdapter.shared.testSdkEvents.filter {
+                $0.name == EventStrings.USER_ADDED_TO_LIST && $0.params["item_name"] == "TestItem"
+            }
+            XCTAssertFalse(matchingEvents.isEmpty, "Expected a USER_ADDED_TO_LIST event with item_name 'TestItem'")
             expectation.fulfill()
         }
 
