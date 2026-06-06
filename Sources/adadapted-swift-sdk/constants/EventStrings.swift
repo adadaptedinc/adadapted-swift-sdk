@@ -7,7 +7,6 @@ import Foundation
 class EventStrings {
     static let EXPIRED_EVENT = "session_expired"
     static let EXCEPTION_MESSAGE = "exception_message"
-    static let GAID_UNAVAILABLE = "GAID_UNAVAILABLE"
     static let SDK_EVENT_REQUEST_FAILED = "APP_EVENT_REQUEST_FAILED"
     static let SDK_EVENT_TYPE = "sdk"
 

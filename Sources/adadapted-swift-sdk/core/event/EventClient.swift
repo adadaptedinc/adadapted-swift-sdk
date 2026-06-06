@@ -89,16 +89,6 @@ class EventClient {
         await listeners.removeFirst(where: { $0 === listener })
     }
     
-    private static func trackGAIDAvailability() {
-        guard DeviceInfoClient.getCachedDeviceInfo().isAllowRetargetingEnabled else {
-            return
-        }
-        trackSdkError(
-            code: EventStrings.GAID_UNAVAILABLE,
-            message: "GAID and/or tracking has been disabled for this device."
-        )
-    }
-    
     private static func notifyAdEventTracked(event: AdEvent) async {
         await listeners.forEach { listener in
             listener.onAdEventTracked(event: event)
@@ -187,6 +177,5 @@ class EventClient {
     
     init() {
         startPublishTimer()
-        EventClient.trackGAIDAvailability()
     }
 }
