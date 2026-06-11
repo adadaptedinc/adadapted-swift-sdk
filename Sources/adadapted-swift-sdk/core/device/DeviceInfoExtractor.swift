@@ -3,8 +3,6 @@
 //
 
 import Foundation
-import AppTrackingTransparency
-import AdSupport
 import CoreTelephony
 import UIKit
 
