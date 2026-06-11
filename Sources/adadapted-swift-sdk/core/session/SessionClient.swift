@@ -45,7 +45,7 @@ public final class SessionClient: NSObject {
     }
 
     private static func createOrResumeSession() {
-        queue.sync {
+        let eventName: String = queue.sync {
             let currentTime = Date().timeIntervalSince1970
             let isNewSession = sessionId.isEmpty || (currentTime - backgroundTime) >= thirtyMinutes
 
@@ -55,15 +55,16 @@ public final class SessionClient: NSObject {
                 backgroundTime = currentTime
             }
 
-            trackEvent(isNewSession ? EventStrings.SESSION_CREATED : EventStrings.SESSION_RESUMED)
+            return isNewSession ? EventStrings.SESSION_CREATED : EventStrings.SESSION_RESUMED
         }
+        trackEvent(eventName)
     }
 
     private static func sessionBackgrounded() {
         queue.sync {
             backgroundTime = Date().timeIntervalSince1970
-            trackEvent(EventStrings.SESSION_BACKGROUNDED)
         }
+        trackEvent(EventStrings.SESSION_BACKGROUNDED)
     }
 
     private static func trackEvent(_ event: String) {

@@ -16,8 +16,8 @@ public class AdAdapted {
     private static var customIdentifier: String = ""
     private static var isKeywordInterceptEnabled = false
     private static var isPayloadEnabled = false
-    private static var eventListener: AaSdkEventListener!
-    private static var contentListener: AaSdkAdditContentListener!
+    private static var eventListener: AaSdkEventListener?
+    private static var contentListener: AaSdkAdditContentListener?
     private static var params: Dictionary<String, String> = [:]
     
     public static func withAppId(key: String) -> AdAdapted.Type {
@@ -68,8 +68,9 @@ public class AdAdapted {
     public static func start() {
         if apiKey.isEmpty {
             AALogger.logError(message: "The AdAdapted Api Key is missing or NULL")
+            return
         }
-        
+
         if hasStarted {
             if !isProd {
                 AALogger.logError(message: "AdAdapted Advertising SDK has already been started.")
@@ -78,8 +79,12 @@ public class AdAdapted {
         
         hasStarted = true
         setupClients()
-        EventBroadcaster.getInstance().setListener(listener: eventListener)
-        AdditContentPublisher.getInstance().addListener(listener: contentListener)
+        if let eventListener = eventListener {
+            EventBroadcaster.getInstance().setListener(listener: eventListener)
+        }
+        if let contentListener = contentListener {
+            AdditContentPublisher.getInstance().addListener(listener: contentListener)
+        }
         
         if isPayloadEnabled {
             PayloadClient.pickupPayloads { payloads in

@@ -164,9 +164,9 @@ class EventClient {
         trackSdkEvent(name: EventStrings.RECIPE_CONTEXT, params: eventParams)
     }
     
-    static private var instance: EventClient!
-    
-    static func getInstance() -> EventClient {
+    static private var instance: EventClient?
+
+    static func getInstance() -> EventClient? {
         return instance
     }
     

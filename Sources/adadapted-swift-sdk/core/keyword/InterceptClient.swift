@@ -122,9 +122,9 @@ class InterceptClient: InterceptAdapterListener {
         }
     }
     
-    static private var instance: InterceptClient!
-    
-    static func getInstance() -> InterceptClient {
+    static private var instance: InterceptClient?
+
+    static func getInstance() -> InterceptClient? {
         return instance
     }
     

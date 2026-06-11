@@ -15,29 +15,28 @@ class DeviceInfoClient {
     private static let queue = DispatchQueue(label: "com.adadapted.deviceinfoclient")
 
     private static func performGetInfo(deviceCallback: DeviceCallback) {
-        queue.sync {
+        let cachedInfo: DeviceInfo? = queue.sync {
             if let info = deviceInfo {
-                deviceCallback.onDeviceInfoCollected(deviceInfo: info)
+                return info
             } else {
                 deviceCallbacks.insert(deviceCallback, at: 0)
+                return nil
             }
+        }
+        if let info = cachedInfo {
+            deviceCallback.onDeviceInfoCollected(deviceInfo: info)
         }
     }
 
     private static func collectDeviceInfo() {
-        queue.sync {
+        let callbacksToNotify: (Array<DeviceCallback>, DeviceInfo) = queue.sync {
             deviceInfo = deviceInfoExtractor?.extractDeviceInfo(appId: appId, isProd: isProd, customIdentifier: customIdentifier, params: params)
-            notifyCallbacksLocked()
+            let currentDeviceCallbacks = Array(deviceCallbacks)
+            deviceCallbacks.removeAll()
+            return (currentDeviceCallbacks, deviceInfo ?? DeviceInfo())
         }
-    }
-
-    private static func notifyCallbacksLocked() {
-        let currentDeviceCallbacks: Array<DeviceCallback> = Array(deviceCallbacks)
-        for (caller) in currentDeviceCallbacks {
-            caller.onDeviceInfoCollected(deviceInfo: deviceInfo ?? DeviceInfo())
-            if let index = deviceCallbacks.firstIndex(where: { $0 === caller }) {
-                deviceCallbacks.remove(at: index)
-            }
+        for caller in callbacksToNotify.0 {
+            caller.onDeviceInfoCollected(deviceInfo: callbacksToNotify.1)
         }
     }
 

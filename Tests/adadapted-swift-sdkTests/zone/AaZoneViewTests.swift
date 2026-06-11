@@ -179,7 +179,7 @@ class AaZoneViewTests: XCTestCase {
         AaZoneViewTests.testAaZoneView.onAdInWebViewClicked(ad: testAd)
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventClient.getInstance().onPublishEvents()
+            EventClient.getInstance()?.onPublishEvents()
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {

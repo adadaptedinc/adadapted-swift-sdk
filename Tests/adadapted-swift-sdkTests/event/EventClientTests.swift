@@ -27,7 +27,7 @@ class EventClientTests: XCTestCase {
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            EventClient.getInstance().onPublishEvents()
+            EventClient.getInstance()?.onPublishEvents()
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
@@ -47,7 +47,7 @@ class EventClientTests: XCTestCase {
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            EventClient.getInstance().onPublishEvents()
+            EventClient.getInstance()?.onPublishEvents()
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
@@ -67,7 +67,7 @@ class EventClientTests: XCTestCase {
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            EventClient.getInstance().onPublishEvents()
+            EventClient.getInstance()?.onPublishEvents()
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {

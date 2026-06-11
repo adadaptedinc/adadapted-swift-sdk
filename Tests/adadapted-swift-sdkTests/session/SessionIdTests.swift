@@ -65,7 +65,7 @@ class SessionIdTests: XCTestCase {
         RunLoop.current.run(until: Date().addingTimeInterval(0.1))
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventClient.getInstance().onPublishEvents()
+            EventClient.getInstance()?.onPublishEvents()
         }
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
@@ -90,7 +90,7 @@ class SessionIdTests: XCTestCase {
         RunLoop.current.run(until: Date().addingTimeInterval(0.1))
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventClient.getInstance().onPublishEvents()
+            EventClient.getInstance()?.onPublishEvents()
         }
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
@@ -117,7 +117,7 @@ class SessionIdTests: XCTestCase {
         RunLoop.current.run(until: Date().addingTimeInterval(0.1))
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventClient.getInstance().onPublishEvents()
+            EventClient.getInstance()?.onPublishEvents()
         }
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {

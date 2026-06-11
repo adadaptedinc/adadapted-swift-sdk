@@ -20,7 +20,7 @@ public class KeywordInterceptMatcher : InterceptListener {
     init() {}
 
     func initialize() {
-        InterceptClient.getInstance().initialize(sessionId: SessionClient.getSessionId(), interceptListener: self)
+        InterceptClient.getInstance()?.initialize(sessionId: SessionClient.getSessionId(), interceptListener: self)
     }
     
     private func matchKeyword(constraint: String) -> Array<Suggestion> {

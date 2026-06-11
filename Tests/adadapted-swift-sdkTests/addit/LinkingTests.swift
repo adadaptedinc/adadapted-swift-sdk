@@ -29,7 +29,7 @@ class LinkingTests: XCTestCase {
         AdAdaptedLinkHandler.parseUniversalLink(urlString)
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            EventClient.getInstance().onPublishEvents()
+            EventClient.getInstance()?.onPublishEvents()
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {

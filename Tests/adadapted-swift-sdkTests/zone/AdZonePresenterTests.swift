@@ -83,7 +83,7 @@ class AdZonePresenterTests: XCTestCase {
         AdZonePresenterTests.testAdZonePresenter.onAdClicked(ad: testAd)
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventClient.getInstance().onPublishEvents()
+            EventClient.getInstance()?.onPublishEvents()
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
@@ -158,7 +158,7 @@ class AdZonePresenterTests: XCTestCase {
         AdZonePresenterTests.testAdZonePresenter.onAdClicked(ad: testAd)
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventClient.getInstance().onPublishEvents()
+            EventClient.getInstance()?.onPublishEvents()
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {

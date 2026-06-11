@@ -45,7 +45,7 @@ class PopupContentTests: XCTestCase {
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            EventClient.getInstance().onPublishEvents()
+            EventClient.getInstance()?.onPublishEvents()
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
@@ -66,7 +66,7 @@ class PopupContentTests: XCTestCase {
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-            EventClient.getInstance().onPublishEvents()
+            EventClient.getInstance()?.onPublishEvents()
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 8) {
@@ -88,7 +88,7 @@ class PopupContentTests: XCTestCase {
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            EventClient.getInstance().onPublishEvents()
+            EventClient.getInstance()?.onPublishEvents()
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
@@ -109,7 +109,7 @@ class PopupContentTests: XCTestCase {
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            EventClient.getInstance().onPublishEvents()
+            EventClient.getInstance()?.onPublishEvents()
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 4) {

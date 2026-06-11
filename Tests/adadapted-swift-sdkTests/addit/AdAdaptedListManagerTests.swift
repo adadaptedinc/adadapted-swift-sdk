@@ -17,7 +17,7 @@ class AdAdaptedListManagerTest: XCTestCase {
 
     override func setUp() {
         super.setUp()
-        EventClient.getInstance().onPublishEvents()
+        EventClient.getInstance()?.onPublishEvents()
         TestEventAdapter.shared.cleanupEvents()
     }
 
@@ -30,7 +30,7 @@ class AdAdaptedListManagerTest: XCTestCase {
         let expectation = XCTestExpectation(description: "Content available expectation")
         AdAdaptedListManager.itemAddedToList(item: "TestItem")
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventClient.getInstance().onPublishEvents()
+            EventClient.getInstance()?.onPublishEvents()
         }
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
@@ -48,7 +48,7 @@ class AdAdaptedListManagerTest: XCTestCase {
         let expectation = XCTestExpectation(description: "Content available expectation")
         AdAdaptedListManager.itemAddedToList(list: "TestList", item: "TestItem")
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventClient.getInstance().onPublishEvents()
+            EventClient.getInstance()?.onPublishEvents()
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
@@ -65,7 +65,7 @@ class AdAdaptedListManagerTest: XCTestCase {
         let expectation = XCTestExpectation(description: "Content available expectation")
         AdAdaptedListManager.itemCrossedOffList(item: "TestItem")
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventClient.getInstance().onPublishEvents()
+            EventClient.getInstance()?.onPublishEvents()
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
@@ -81,7 +81,7 @@ class AdAdaptedListManagerTest: XCTestCase {
         let expectation = XCTestExpectation(description: "Content available expectation")
         AdAdaptedListManager.itemCrossedOffList(list: "TestList", item: "TestItem")
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventClient.getInstance().onPublishEvents()
+            EventClient.getInstance()?.onPublishEvents()
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
@@ -98,7 +98,7 @@ class AdAdaptedListManagerTest: XCTestCase {
         let expectation = XCTestExpectation(description: "Content available expectation")
         AdAdaptedListManager.itemDeletedFromList(item: "TestItem")
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventClient.getInstance().onPublishEvents()
+            EventClient.getInstance()?.onPublishEvents()
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
@@ -114,7 +114,7 @@ class AdAdaptedListManagerTest: XCTestCase {
         let expectation = XCTestExpectation(description: "Content available expectation")
         AdAdaptedListManager.itemDeletedFromList(list: "TestList", item: "TestItem")
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventClient.getInstance().onPublishEvents()
+            EventClient.getInstance()?.onPublishEvents()
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {

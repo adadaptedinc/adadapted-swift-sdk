@@ -42,7 +42,7 @@ class AdContentTests: XCTestCase {
         testAdContent.acknowledge()
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventClient.getInstance().onPublishEvents()
+            EventClient.getInstance()?.onPublishEvents()
         }
         
         
@@ -65,7 +65,7 @@ class AdContentTests: XCTestCase {
         testAdContent.itemAcknowledge(item: testAdContent.getItems().first!)
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventClient.getInstance().onPublishEvents()
+            EventClient.getInstance()?.onPublishEvents()
         }
         
         
@@ -89,7 +89,7 @@ class AdContentTests: XCTestCase {
         testAdContent.failed(message: "adContentFail")
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventClient.getInstance().onPublishEvents()
+            EventClient.getInstance()?.onPublishEvents()
         }
         
         
@@ -111,7 +111,7 @@ class AdContentTests: XCTestCase {
         testAdContent.itemFailed(item: testAddTolistItems.first!, message: "adContentFail")
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventClient.getInstance().onPublishEvents()
+            EventClient.getInstance()?.onPublishEvents()
         }
         
         

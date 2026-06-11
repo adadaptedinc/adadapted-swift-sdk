@@ -23,12 +23,12 @@ class AdZonePresenter: ZoneAdListener {
     private var adCompleted = false
     private var timerRunning = false
     private var timer: Timer?
-    private let adClient: AdClient
-    private let eventClient: EventClient = EventClient.getInstance()
+    private let adClient: AdClient?
+    private let eventClient: EventClient? = EventClient.getInstance()
     private var webViewManager: AdWebViewManager?
     private var swiftUIWebView: WKWebView?
     
-    init(adViewHandler: AdViewHandler, adClient: AdClient) {
+    init(adViewHandler: AdViewHandler, adClient: AdClient?) {
         self.adViewHandler = adViewHandler
         self.adClient = adClient
         self.randomAdStartPosition = Int(Date().timeIntervalSince1970) % 10

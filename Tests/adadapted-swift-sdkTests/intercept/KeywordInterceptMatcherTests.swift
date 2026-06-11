@@ -39,7 +39,7 @@ class KeywordInterceptMatcherTests: XCTestCase {
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            InterceptClient.getInstance().onPublishEvents()
+            InterceptClient.getInstance()?.onPublishEvents()
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
@@ -58,7 +58,7 @@ class KeywordInterceptMatcherTests: XCTestCase {
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            InterceptClient.getInstance().onPublishEvents()
+            InterceptClient.getInstance()?.onPublishEvents()
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
@@ -77,11 +77,11 @@ class KeywordInterceptMatcherTests: XCTestCase {
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            InterceptClient.getInstance().onPublishEvents()
+            InterceptClient.getInstance()?.onPublishEvents()
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
-            EventClient.getInstance().onPublishEvents()
+            EventClient.getInstance()?.onPublishEvents()
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
@@ -100,11 +100,11 @@ class KeywordInterceptMatcherTests: XCTestCase {
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            InterceptClient.getInstance().onPublishEvents()
+            InterceptClient.getInstance()?.onPublishEvents()
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
-            EventClient.getInstance().onPublishEvents()
+            EventClient.getInstance()?.onPublishEvents()
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 5) {

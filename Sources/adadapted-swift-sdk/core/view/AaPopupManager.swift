@@ -26,11 +26,11 @@ class PopupWebViewController: UIViewController, WKNavigationDelegate {
     
     private let webView = WKWebView()
     private var backButton: UIBarButtonItem!
-    private var ad: Ad!
-    
+    private var ad: Ad
+
     init(ad: Ad) {
-        super.init(nibName: nil, bundle: nil)
         self.ad = ad
+        super.init(nibName: nil, bundle: nil)
         guard let actionPath = ad.actionPath, let url = URL(string: actionPath) else {
             EventClient.trackSdkError(
                 code: EventStrings.POPUP_URL_MALFORMED,
