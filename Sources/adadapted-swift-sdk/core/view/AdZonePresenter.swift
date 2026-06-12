@@ -16,9 +16,7 @@ class AdZonePresenter: ZoneAdListener {
     private var isZoneVisible = true
     private var adZonePresenterListener: AdZonePresenterListener?
     private var attached = false
-    private var sessionId: String?
     private var zoneLoaded = false
-    private var randomAdStartPosition: Int
     private var adStarted = false
     private var adCompleted = false
     private var timerRunning = false
@@ -31,7 +29,6 @@ class AdZonePresenter: ZoneAdListener {
     init(adViewHandler: AdViewHandler, adClient: AdClient?) {
         self.adViewHandler = adViewHandler
         self.adClient = adClient
-        self.randomAdStartPosition = Int(Date().timeIntervalSince1970) % 10
     }
     
     func initialize(zoneId: String) {

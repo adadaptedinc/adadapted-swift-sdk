@@ -62,6 +62,7 @@ class AdClient {
             adapter = nil
             hasInstance = false
             instance = nil
+            pendingRequests.removeAll()
         }
     }
 }

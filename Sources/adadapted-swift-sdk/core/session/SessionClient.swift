@@ -13,10 +13,13 @@ public final class SessionClient: NSObject {
     private static let queue = DispatchQueue(label: "com.adadapted.sessionclient")
     private static var sessionId: String = ""
     private static var backgroundTime: TimeInterval = Date().timeIntervalSince1970
+    private static var isObserving = false
 
     private override init() {}
 
     public static func start() {
+        guard !isObserving else { return }
+        isObserving = true
         observeLifecycle()
     }
 
@@ -51,9 +54,9 @@ public final class SessionClient: NSObject {
 
             if isNewSession {
                 sessionId = generateId()
-            } else {
-                backgroundTime = currentTime
             }
+
+            backgroundTime = currentTime
 
             return isNewSession ? EventStrings.SESSION_CREATED : EventStrings.SESSION_RESUMED
         }
@@ -68,7 +71,8 @@ public final class SessionClient: NSObject {
     }
 
     private static func trackEvent(_ event: String) {
-        EventClient.trackSdkEvent(name: event, params: ["sessionId": sessionId])
+        let currentSessionId = queue.sync { sessionId }
+        EventClient.trackSdkEvent(name: event, params: ["sessionId": currentSessionId])
     }
 
     private static func generateId() -> String {
