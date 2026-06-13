@@ -19,5 +19,7 @@ extension AdAdapter {
         storeId: String = "",
         contextId: String = "",
         extra: String = ""
-    ) async {}
+    ) async {
+        listener.onAdLoadFailed()
+    }
 }

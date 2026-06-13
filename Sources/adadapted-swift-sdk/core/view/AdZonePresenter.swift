@@ -22,7 +22,6 @@ class AdZonePresenter: ZoneAdListener {
     private var timerRunning = false
     private var timer: Timer?
     private let adClient: AdClient?
-    private let eventClient: EventClient? = EventClient.getInstance()
     private var webViewManager: AdWebViewManager?
     private var swiftUIWebView: WKWebView?
     
