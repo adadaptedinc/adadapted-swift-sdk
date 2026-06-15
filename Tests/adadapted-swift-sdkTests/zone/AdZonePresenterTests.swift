@@ -47,27 +47,27 @@ class AdZonePresenterTests: XCTestCase {
         AdZonePresenterTests.testAdZonePresenter.initialize(zoneId: "testZoneId")
         var testAd = Ad(id: "TestAdId")
         let zones = ["testZoneId": AdZoneData(ad: Ad(id: "TestAdId"))]
-        
+
         let testAdEventListener = TestAdEventClientListener()
         EventClient.addListener(listener: testAdEventListener)
-        
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             AdZonePresenterTests.testAdZonePresenter.onAdDisplayed(ad: &testAd, isAdVisible: false)
         }
-        
+
         let testListener = TestAdZonePresenterListener()
         AdZonePresenterTests.testAdZonePresenter.onAttach(adZonePresenterListener: testListener)
-        
-        
+
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
             AdZonePresenterTests.testAdZonePresenter.onAdClicked(ad: testAd)
         }
-        
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
-            XCTAssertNil(testAdEventListener.testAdEvent)
+            XCTAssertEqual(AdEventTypes.INVISIBLE_IMPRESSION, testAdEventListener.testAdEvent?.eventType)
             expectation.fulfill()
         }
-        
+
         wait(for: [expectation], timeout: 8)
     }
     
