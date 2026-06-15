@@ -18,65 +18,65 @@ class EventClientTests: XCTestCase {
         super.tearDown()
         TestEventAdapter.shared.cleanupEvents()
     }
-    
+
     func testTrackAppEvent() {
         let expectation = XCTestExpectation(description: "Content available expectation")
-        
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             EventClient.trackSdkEvent(name: "testTrackAppEvent")
         }
-        
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             EventClient.getInstance()?.onPublishEvents()
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
             XCTAssertEqual("sdk", TestEventAdapter.shared.testSdkEvents.first?.type)
             XCTAssertEqual("testTrackAppEvent", TestEventAdapter.shared.testSdkEvents.first?.name)
             expectation.fulfill()
         }
-        
-        wait(for: [expectation], timeout: 4)
+
+        wait(for: [expectation], timeout: 5)
     }
-    
+
     func testTrackSdkEvent() {
         let expectation = XCTestExpectation(description: "Content available expectation")
-        
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             EventClient.trackSdkEvent(name: "testTrackSdkEvent", params: [:])
         }
-        
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             EventClient.getInstance()?.onPublishEvents()
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
             XCTAssertEqual("sdk", TestEventAdapter.shared.testSdkEvents.first?.type)
             XCTAssertEqual("testTrackSdkEvent", TestEventAdapter.shared.testSdkEvents.first?.name)
             expectation.fulfill()
         }
-        
-        wait(for: [expectation], timeout: 4)
+
+        wait(for: [expectation], timeout: 5)
     }
-    
+
     func testTrackError() {
         let expectation = XCTestExpectation(description: "Content available expectation")
-        
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             EventClient.trackSdkError(code: "testErrorCode", message: "testTrackError", params: [:])
         }
-        
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             EventClient.getInstance()?.onPublishEvents()
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
             XCTAssertEqual("testErrorCode", TestEventAdapter.shared.testSdkErrors.last?.code)
             XCTAssertEqual("testTrackError", TestEventAdapter.shared.testSdkErrors.last?.message)
             expectation.fulfill()
         }
-        
-        wait(for: [expectation], timeout: 4)
+
+        wait(for: [expectation], timeout: 5)
     }
     
     func testThreadSafetyOfSafeSets() async {

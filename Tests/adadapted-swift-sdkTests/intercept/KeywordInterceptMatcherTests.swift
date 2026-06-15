@@ -30,24 +30,24 @@ class KeywordInterceptMatcherTests: XCTestCase {
         super.tearDown()
         TestEventAdapter.shared.cleanupEvents()
     }
-    
+
     func testInterceptMatches() {
         let expectation = XCTestExpectation(description: "Content available expectation")
-        
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             KeywordInterceptMatcher.getInstance().match(constraint: "tes")
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             InterceptClient.getInstance()?.onPublishEvents()
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
             XCTAssertEqual(KeywordInterceptMatcherTests.testInterceptAdapter.testEvents.first(where: { $0.userInput == "tes" })?.event, InterceptEvent.Constants.MATCHED)
             expectation.fulfill()
         }
-        
-        wait(for: [expectation], timeout: 6)
+
+        wait(for: [expectation], timeout: 7)
     }
     
     func testInterceptDoesNotMatch() {

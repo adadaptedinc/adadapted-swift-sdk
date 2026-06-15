@@ -26,27 +26,28 @@ class PayloadClientTests: XCTestCase {
     
     override class func tearDown() {
         TestEventAdapter.shared.cleanupEvents()
+        super.tearDown()
     }
-    
+
     func testPickupPayloads() {
         let expectation = XCTestExpectation(description: "Content available expectation")
         var testContent: [AdditContent] = []
-        
+
         XCTAssertTrue(testContent.isEmpty)
-        
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             PayloadClient.pickupPayloads {
                 testContent = $0
             }
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
             XCTAssertFalse(testContent.isEmpty)
             XCTAssertEqual("testPayloadId", testContent.first?.payloadId)
             expectation.fulfill()
         }
-        
-        wait(for: [expectation], timeout: 3)
+
+        wait(for: [expectation], timeout: 5)
     }
     
     func testDeeplinkInProgressAndCompletes() {

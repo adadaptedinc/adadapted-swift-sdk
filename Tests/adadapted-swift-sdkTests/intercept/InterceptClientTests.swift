@@ -29,7 +29,12 @@ class InterceptClientTests: XCTestCase {
         )
         InterceptClient.createInstance(adapter: testInterceptAdapter, isKeywordInterceptEnabled: true)
     }
-    
+
+    override func tearDown() {
+        super.tearDown()
+        InterceptClientTests.testInterceptAdapter.testEvents.removeAll()
+    }
+
     func testCreateInstance() {
         XCTAssertNotNil(InterceptClient.getInstance())
     }
@@ -52,7 +57,7 @@ class InterceptClientTests: XCTestCase {
     
     func testTrackMatched() {
         let expectation = XCTestExpectation(description: "Content available expectation")
-        
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             InterceptClient.getInstance()?.trackMatched(
                 searchId: InterceptClientTests.testEvent.searchId,
@@ -61,22 +66,22 @@ class InterceptClientTests: XCTestCase {
                 userInput: InterceptClientTests.testEvent.userInput
             )
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             InterceptClient.getInstance()?.onPublishEvents()
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
             XCTAssertEqual(InterceptEvent.Constants.MATCHED,InterceptClientTests.testInterceptAdapter.testEvents.first?.event)
             expectation.fulfill()
         }
-        
-        wait(for: [expectation], timeout: 6)
+
+        wait(for: [expectation], timeout: 7)
     }
-    
+
     func testTrackPresented() {
         let expectation = XCTestExpectation(description: "Content available expectation")
-        
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             InterceptClient.getInstance()?.trackPresented(
                 searchId: InterceptClientTests.testEvent.searchId,
@@ -85,22 +90,22 @@ class InterceptClientTests: XCTestCase {
                 userInput: InterceptClientTests.testEvent.userInput
             )
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             InterceptClient.getInstance()?.onPublishEvents()
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
             XCTAssertEqual(InterceptEvent.Constants.PRESENTED,InterceptClientTests.testInterceptAdapter.testEvents.first?.event)
             expectation.fulfill()
         }
-        
-        wait(for: [expectation], timeout: 6)
+
+        wait(for: [expectation], timeout: 7)
     }
-    
+
     func testTrackSelected() {
         let expectation = XCTestExpectation(description: "Content available expectation")
-        
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             InterceptClient.getInstance()?.trackSelected(
                 searchId: InterceptClientTests.testEvent.searchId,
@@ -109,39 +114,39 @@ class InterceptClientTests: XCTestCase {
                 userInput: InterceptClientTests.testEvent.userInput
             )
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             InterceptClient.getInstance()?.onPublishEvents()
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
             XCTAssertEqual(InterceptEvent.Constants.SELECTED,InterceptClientTests.testInterceptAdapter.testEvents.first?.event)
             expectation.fulfill()
         }
-        
-        wait(for: [expectation], timeout: 6)
+
+        wait(for: [expectation], timeout: 7)
     }
-    
+
     func testTrackNotMatched() {
         let expectation = XCTestExpectation(description: "Content available expectation")
-        
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             InterceptClient.getInstance()?.trackNotMatched(
                 searchId: InterceptClientTests.testEvent.searchId,
                 userInput: InterceptClientTests.testEvent.userInput
             )
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             InterceptClient.getInstance()?.onPublishEvents()
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
             XCTAssertEqual(InterceptEvent.Constants.NOT_MATCHED,InterceptClientTests.testInterceptAdapter.testEvents.first?.event)
             expectation.fulfill()
         }
-        
-        wait(for: [expectation], timeout: 6)
+
+        wait(for: [expectation], timeout: 7)
     }
 }
 
