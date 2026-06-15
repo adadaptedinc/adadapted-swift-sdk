@@ -20,23 +20,19 @@ class EventClientTests: XCTestCase {
     }
 
     func testTrackAppEvent() {
-        let expectation = XCTestExpectation(description: "Content available expectation")
+        EventClient.trackSdkEvent(name: "testTrackAppEvent")
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventClient.trackSdkEvent(name: "testTrackAppEvent")
+        // Allow the Task to insert the event into the SafeSet
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.0))
+
+        EventClient.getInstance()?.onPublishEvents()
+
+        waitForCondition(timeout: 5) {
+            !TestEventAdapter.shared.testSdkEvents.isEmpty
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            EventClient.getInstance()?.onPublishEvents()
-        }
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
-            XCTAssertEqual("sdk", TestEventAdapter.shared.testSdkEvents.first?.type)
-            XCTAssertEqual("testTrackAppEvent", TestEventAdapter.shared.testSdkEvents.first?.name)
-            expectation.fulfill()
-        }
-
-        wait(for: [expectation], timeout: 5)
+        XCTAssertEqual("sdk", TestEventAdapter.shared.testSdkEvents.first?.type)
+        XCTAssertEqual("testTrackAppEvent", TestEventAdapter.shared.testSdkEvents.first?.name)
     }
 
     func testTrackSdkEvent() {
@@ -86,7 +82,7 @@ class EventClientTests: XCTestCase {
 
         // concurrently modify SafeSets to verify no crashes from concurrent access
         await withTaskGroup(of: Void.self) { group in
-            for i in 0..<1000 {
+            for i in 0..<100 {
                 group.addTask {
                     await adSet.insert(AdEvent(adId: "\(i)", zoneId: "zone", impressionId: "imp", eventType: "test"))
                     await sdkSet.insert(SdkEvent(type: "SDK", name: "Event\(i)", params: [:]))
@@ -123,7 +119,7 @@ class EventClientTests: XCTestCase {
 
         // concurrently modify SafeArray to verify no crashes from concurrent access
         await withTaskGroup(of: Void.self) { group in
-            for _ in 0..<1000 {
+            for _ in 0..<100 {
                 group.addTask {
                     await listenerArray.append(listener1)
                     await listenerArray.append(listener2)

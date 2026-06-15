@@ -21,6 +21,8 @@ class PayloadClientTests: XCTestCase {
 
     override func tearDown() {
         super.tearDown()
+        // Allow pending async work to settle before cleanup
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.5))
         TestEventAdapter.shared.cleanupEvents()
     }
 
@@ -77,41 +79,46 @@ class PayloadClientTests: XCTestCase {
     }
 
     func testMarkContentAcknowledged() {
+        let expectation = XCTestExpectation(description: "content acknowledged event")
         let content = Self.getTestAdditPayloadContent()
         TestEventAdapter.shared.cleanupEvents()
 
-        runOnMainAndWait {
-            PayloadClient.markContentAcknowledged(content: content)
-        }
+        PayloadClient.markContentAcknowledged(content: content)
 
-        runOnMainAndWait {
+        // Allow global.background dispatch + Task to settle, then publish
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             EventClient.getInstance()?.onPublishEvents()
         }
 
-        waitForCondition(timeout: 5) {
-            TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.ADDIT_ADDED_TO_LIST }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+            if TestEventAdapter.shared.testSdkEvents.contains(where: { $0.name == EventStrings.ADDIT_ADDED_TO_LIST }) {
+                expectation.fulfill()
+            }
         }
 
+        wait(for: [expectation], timeout: 10)
         XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.ADDIT_ADDED_TO_LIST })
         XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.first { $0.name == EventStrings.ADDIT_ADDED_TO_LIST }?.params["payload_id"] == "testPayloadId")
         XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.first { $0.name == EventStrings.ADDIT_ADDED_TO_LIST }?.params["source"] == ContentSources.PAYLOAD)
     }
 
     func testMarkContentItemAcknowledged() {
+        let expectation = XCTestExpectation(description: "content item acknowledged event")
         let content = Self.getTestAdditPayloadContent()
 
-        runOnMainAndWait {
-            PayloadClient.markContentItemAcknowledged(content: content, item: Self.getTestAddToListItem())
-        }
+        PayloadClient.markContentItemAcknowledged(content: content, item: Self.getTestAddToListItem())
 
-        runOnMainAndWait {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             EventClient.getInstance()?.onPublishEvents()
         }
 
-        waitForCondition(timeout: 5) {
-            TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.ADDIT_ITEM_ADDED_TO_LIST }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+            if TestEventAdapter.shared.testSdkEvents.contains(where: { $0.name == EventStrings.ADDIT_ITEM_ADDED_TO_LIST }) {
+                expectation.fulfill()
+            }
         }
 
+        wait(for: [expectation], timeout: 10)
         XCTAssertEqual(EventStrings.ADDIT_ITEM_ADDED_TO_LIST, TestEventAdapter.shared.testSdkEvents.first?.name)
         XCTAssertEqual("testPayloadId", TestEventAdapter.shared.testSdkEvents.first?.params["payload_id"])
         XCTAssertEqual("testTitle", TestEventAdapter.shared.testSdkEvents.first?.params["item_name"])
@@ -119,103 +126,113 @@ class PayloadClientTests: XCTestCase {
     }
 
     func testMarkContentDuplicate() {
+        let expectation = XCTestExpectation(description: "content duplicate event")
         let content = Self.getTestAdditPayloadContent()
         TestEventAdapter.shared.testSdkEvents = []
 
-        runOnMainAndWait {
-            PayloadClient.markContentDuplicate(content: content)
-        }
+        PayloadClient.markContentDuplicate(content: content)
 
-        runOnMainAndWait {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             EventClient.getInstance()?.onPublishEvents()
         }
 
-        waitForCondition(timeout: 5) {
-            TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.ADDIT_DUPLICATE_PAYLOAD }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+            if TestEventAdapter.shared.testSdkEvents.contains(where: { $0.name == EventStrings.ADDIT_DUPLICATE_PAYLOAD }) {
+                expectation.fulfill()
+            }
         }
 
+        wait(for: [expectation], timeout: 10)
         XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.ADDIT_DUPLICATE_PAYLOAD })
         XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.first { $0.name == EventStrings.ADDIT_DUPLICATE_PAYLOAD }?.params["payload_id"] == "testPayloadId")
         XCTAssertEqual("duplicate", PayloadClientTests.testPayloadAdapter.publishedEvent.status)
     }
 
     func testMarkNonPayloadContentDuplicate() {
+        let expectation = XCTestExpectation(description: "non-payload duplicate event")
         let content = PayloadClientTests.getTestAdditPayloadContent(isPayloadSource: false)
         TestEventAdapter.shared.testSdkEvents = []
 
-        runOnMainAndWait {
-            PayloadClient.markContentDuplicate(content: content)
-        }
+        PayloadClient.markContentDuplicate(content: content)
 
-        runOnMainAndWait {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             EventClient.getInstance()?.onPublishEvents()
         }
 
-        waitForCondition(timeout: 5) {
-            TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.ADDIT_DUPLICATE_PAYLOAD }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+            if TestEventAdapter.shared.testSdkEvents.contains(where: { $0.name == EventStrings.ADDIT_DUPLICATE_PAYLOAD }) {
+                expectation.fulfill()
+            }
         }
 
+        wait(for: [expectation], timeout: 10)
         XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.ADDIT_DUPLICATE_PAYLOAD })
         XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.first { $0.name == EventStrings.ADDIT_DUPLICATE_PAYLOAD }?.params["payload_id"] == "testPayloadId")
     }
 
     func testMarkContentFailed() {
+        let expectation = XCTestExpectation(description: "content failed error")
         let content = Self.getTestAdditPayloadContent()
         TestEventAdapter.shared.testSdkErrors = []
 
-        runOnMainAndWait {
-            PayloadClient.markContentFailed(content: content, message: "testFail")
-        }
+        PayloadClient.markContentFailed(content: content, message: "testFail")
 
-        runOnMainAndWait {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             EventClient.getInstance()?.onPublishEvents()
         }
 
-        waitForCondition(timeout: 5) {
-            TestEventAdapter.shared.testSdkErrors.contains { $0.code == EventStrings.ADDIT_CONTENT_FAILED }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+            if TestEventAdapter.shared.testSdkErrors.contains(where: { $0.code == EventStrings.ADDIT_CONTENT_FAILED }) {
+                expectation.fulfill()
+            }
         }
 
+        wait(for: [expectation], timeout: 10)
         XCTAssertTrue(TestEventAdapter.shared.testSdkErrors.contains { $0.code == EventStrings.ADDIT_CONTENT_FAILED })
         XCTAssertTrue(TestEventAdapter.shared.testSdkErrors.contains { $0.message == "testFail" })
         XCTAssertEqual("rejected", PayloadClientTests.testPayloadAdapter.publishedEvent.status)
     }
 
     func testMarkNonPayloadContentFailed() {
+        let expectation = XCTestExpectation(description: "non-payload failed error")
         let content = PayloadClientTests.getTestAdditPayloadContent(isPayloadSource: false)
         TestEventAdapter.shared.testSdkErrors = []
 
-        runOnMainAndWait {
-            PayloadClient.markContentFailed(content: content, message: "testFail")
-        }
+        PayloadClient.markContentFailed(content: content, message: "testFail")
 
-        runOnMainAndWait {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             EventClient.getInstance()?.onPublishEvents()
         }
 
-        waitForCondition(timeout: 5) {
-            TestEventAdapter.shared.testSdkErrors.contains { $0.code == EventStrings.ADDIT_CONTENT_FAILED }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+            if TestEventAdapter.shared.testSdkErrors.contains(where: { $0.code == EventStrings.ADDIT_CONTENT_FAILED }) {
+                expectation.fulfill()
+            }
         }
 
+        wait(for: [expectation], timeout: 10)
         XCTAssertTrue(TestEventAdapter.shared.testSdkErrors.contains { $0.code == EventStrings.ADDIT_CONTENT_FAILED })
         XCTAssertTrue(TestEventAdapter.shared.testSdkErrors.contains { $0.message == "testFail" })
     }
 
     func testMarkContentItemFailed() {
+        let expectation = XCTestExpectation(description: "content item failed error")
         let content = Self.getTestAdditPayloadContent()
         TestEventAdapter.shared.testSdkErrors = []
 
-        runOnMainAndWait {
-            PayloadClient.markContentItemFailed(content: content, item: Self.getTestAddToListItem(), message: "testItemFail")
-        }
+        PayloadClient.markContentItemFailed(content: content, item: Self.getTestAddToListItem(), message: "testItemFail")
 
-        runOnMainAndWait {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             EventClient.getInstance()?.onPublishEvents()
         }
 
-        waitForCondition(timeout: 5) {
-            TestEventAdapter.shared.testSdkErrors.contains { $0.code == EventStrings.ADDIT_CONTENT_ITEM_FAILED }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+            if TestEventAdapter.shared.testSdkErrors.contains(where: { $0.code == EventStrings.ADDIT_CONTENT_ITEM_FAILED }) {
+                expectation.fulfill()
+            }
         }
 
+        wait(for: [expectation], timeout: 10)
         XCTAssertTrue(TestEventAdapter.shared.testSdkErrors.contains { $0.code == EventStrings.ADDIT_CONTENT_ITEM_FAILED })
         XCTAssertTrue(TestEventAdapter.shared.testSdkErrors.contains { $0.message == "testItemFail" })
     }
