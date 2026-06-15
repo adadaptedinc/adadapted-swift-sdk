@@ -7,13 +7,13 @@ import XCTest
 
 class KeywordInterceptMatcherTests: XCTestCase {
     static var testInterceptAdapter = TestInterceptAdapter()
-    
+
     override class func setUp() {
         super.setUp()
         let deviceInfoExtractor = DeviceInfoExtractor()
         DeviceInfoClient.createInstance(appId: "apiKey", isProd: false, params: [:], customIdentifier: "", deviceInfoExtractor: deviceInfoExtractor)
         EventClient.createInstance(eventAdapter: TestEventAdapter.shared)
-        
+
         let testIntercept = InterceptData(searchId: "test_searchId", terms: [
             InterceptTerm(termId: "testTermId", term: "testTerm", replacement: "replacementTerm", priority: 1),
             InterceptTerm(termId: "twoTermId", term: "twoTestTerm", replacement: "replacementTerm", priority: 1),
@@ -25,96 +25,84 @@ class KeywordInterceptMatcherTests: XCTestCase {
         KeywordInterceptMatcher.getInstance().initialize()
         clearEvents()
     }
-    
+
     override func tearDown() {
         super.tearDown()
         TestEventAdapter.shared.cleanupEvents()
     }
 
     func testInterceptMatches() {
-        let expectation = XCTestExpectation(description: "Content available expectation")
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        runOnMainAndWait {
             KeywordInterceptMatcher.getInstance().match(constraint: "tes")
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+        runOnMainAndWait {
             InterceptClient.getInstance()?.onPublishEvents()
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
-            XCTAssertEqual(KeywordInterceptMatcherTests.testInterceptAdapter.testEvents.first(where: { $0.userInput == "tes" })?.event, InterceptEvent.Constants.MATCHED)
-            expectation.fulfill()
+        waitForCondition(timeout: 5) {
+            KeywordInterceptMatcherTests.testInterceptAdapter.testEvents.first(where: { $0.userInput == "tes" })?.event == InterceptEvent.Constants.MATCHED
         }
 
-        wait(for: [expectation], timeout: 7)
+        XCTAssertEqual(KeywordInterceptMatcherTests.testInterceptAdapter.testEvents.first(where: { $0.userInput == "tes" })?.event, InterceptEvent.Constants.MATCHED)
     }
-    
+
     func testInterceptDoesNotMatch() {
-        let expectation = XCTestExpectation(description: "Content available expectation")
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        runOnMainAndWait {
             KeywordInterceptMatcher.getInstance().match(constraint: "oxo")
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+
+        runOnMainAndWait {
             InterceptClient.getInstance()?.onPublishEvents()
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
-            XCTAssertEqual(KeywordInterceptMatcherTests.testInterceptAdapter.testEvents.first(where: { $0.userInput == "oxo" })?.event, InterceptEvent.Constants.NOT_MATCHED)
-            expectation.fulfill()
+
+        waitForCondition(timeout: 5) {
+            KeywordInterceptMatcherTests.testInterceptAdapter.testEvents.first(where: { $0.userInput == "oxo" })?.event == InterceptEvent.Constants.NOT_MATCHED
         }
-        
-        wait(for: [expectation], timeout: 6)
+
+        XCTAssertEqual(KeywordInterceptMatcherTests.testInterceptAdapter.testEvents.first(where: { $0.userInput == "oxo" })?.event, InterceptEvent.Constants.NOT_MATCHED)
     }
-    
+
     func testSessionIsNotAvailable() {
-        let expectation = XCTestExpectation(description: "Content available expectation")
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        runOnMainAndWait {
             KeywordInterceptMatcher.getInstance().match(constraint: "two")
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+
+        runOnMainAndWait {
             InterceptClient.getInstance()?.onPublishEvents()
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+
+        runOnMainAndWait {
             EventClient.getInstance()?.onPublishEvents()
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
-            XCTAssertEqual(KeywordInterceptMatcherTests.testInterceptAdapter.testEvents.first(where: { $0.userInput == "two" })?.event, InterceptEvent.Constants.MATCHED)
-            expectation.fulfill()
+
+        waitForCondition(timeout: 5) {
+            KeywordInterceptMatcherTests.testInterceptAdapter.testEvents.first(where: { $0.userInput == "two" })?.event == InterceptEvent.Constants.MATCHED
         }
-        
-        wait(for: [expectation], timeout: 7)
+
+        XCTAssertEqual(KeywordInterceptMatcherTests.testInterceptAdapter.testEvents.first(where: { $0.userInput == "two" })?.event, InterceptEvent.Constants.MATCHED)
     }
-    
+
     func testAdIsAvailable() {
-        let expectation = XCTestExpectation(description: "Content available expectation")
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        runOnMainAndWait {
             KeywordInterceptMatcher.getInstance().match(constraint: "thr")
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+
+        runOnMainAndWait {
             InterceptClient.getInstance()?.onPublishEvents()
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+
+        runOnMainAndWait {
             EventClient.getInstance()?.onPublishEvents()
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
-            XCTAssertEqual(KeywordInterceptMatcherTests.testInterceptAdapter.testEvents.first(where: { $0.userInput == "thr" })?.event, InterceptEvent.Constants.MATCHED)
-            expectation.fulfill()
+
+        waitForCondition(timeout: 5) {
+            KeywordInterceptMatcherTests.testInterceptAdapter.testEvents.first(where: { $0.userInput == "thr" })?.event == InterceptEvent.Constants.MATCHED
         }
-        
-        wait(for: [expectation], timeout: 7)
+
+        XCTAssertEqual(KeywordInterceptMatcherTests.testInterceptAdapter.testEvents.first(where: { $0.userInput == "thr" })?.event, InterceptEvent.Constants.MATCHED)
     }
-    
+
     internal static func clearEvents() {
         testInterceptAdapter.testEvents.removeAll()
     }

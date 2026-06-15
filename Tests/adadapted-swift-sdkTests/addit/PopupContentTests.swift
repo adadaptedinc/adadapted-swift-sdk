@@ -6,7 +6,7 @@ import XCTest
 @testable import adadapted_swift_sdk
 
 class PopupContentTests: XCTestCase {
-    
+
     var testAddToListItems = [AddToListItem(trackingId: "testTrackingId",
                                             title: "title",
                                             brand: "brand",
@@ -15,112 +15,106 @@ class PopupContentTests: XCTestCase {
                                             retailerSku: "sku",
                                             retailerID: "discount",
                                             productImage: "image")]
-    
+
     override class func setUp() {
         super.setUp()
-        
+
         let deviceInfoExtractor = DeviceInfoExtractor()
         DeviceInfoClient.createInstance(appId: "apiKey", isProd: false, params: [:], customIdentifier: "", deviceInfoExtractor: deviceInfoExtractor)
         EventClient.createInstance(eventAdapter: TestEventAdapter.shared)
         TestEventAdapter.shared.cleanupEvents()
     }
-    
+
     override func tearDown() {
         super.tearDown()
         TestEventAdapter.shared.cleanupEvents()
     }
-    
+
     func testCreatePopupContent() {
         let testPopupContent = PopupContent(payloadId: "testPayloadId", items: testAddToListItems)
         XCTAssertEqual("testPayloadId", testPopupContent.payloadId)
     }
-    
+
     func testAcknowledge() {
-        let expectation = XCTestExpectation(description: "Content available expectation")
         let testPopupContent = PopupContent(payloadId: "testPayloadId", items: testAddToListItems)
         TestEventAdapter.shared.testSdkEvents = []
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+
+        runOnMainAndWait {
             testPopupContent.acknowledge()
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+
+        runOnMainAndWait {
             EventClient.getInstance()?.onPublishEvents()
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
-            XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.POPUP_ADDED_TO_LIST })
-            expectation.fulfill()
+
+        waitForCondition(timeout: 5) {
+            TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.POPUP_ADDED_TO_LIST }
         }
-        
-        wait(for: [expectation], timeout: 7)
+
+        XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.POPUP_ADDED_TO_LIST })
     }
-    
+
     func testItemAcknowledge() {
-        let expectation = XCTestExpectation(description: "Content available expectation")
         let testPopupContent = PopupContent(payloadId: "testPayloadId", items: testAddToListItems)
         TestEventAdapter.shared.testSdkEvents = []
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+
+        runOnMainAndWait {
             testPopupContent.itemAcknowledge(item: testPopupContent.getItems().first!)
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+
+        runOnMainAndWait {
             EventClient.getInstance()?.onPublishEvents()
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 8) {
-            XCTAssertEqual(2, TestEventAdapter.shared.testSdkEvents.count)
-            XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.POPUP_ADDED_TO_LIST })
-            XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.POPUP_ITEM_ADDED_TO_LIST })
-            expectation.fulfill()
+
+        waitForCondition(timeout: 10) {
+            TestEventAdapter.shared.testSdkEvents.count >= 2
         }
-        
-        wait(for: [expectation], timeout: 15)
+
+        XCTAssertEqual(2, TestEventAdapter.shared.testSdkEvents.count)
+        XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.POPUP_ADDED_TO_LIST })
+        XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.POPUP_ITEM_ADDED_TO_LIST })
     }
-    
+
     func testFailed() {
-        let expectation = XCTestExpectation(description: "Content available expectation")
         let testPopupContent = PopupContent(payloadId: "testPayloadId", items: testAddToListItems)
         TestEventAdapter.shared.testSdkErrors = []
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+
+        runOnMainAndWait {
             testPopupContent.failed(message: "popupFail")
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+
+        runOnMainAndWait {
             EventClient.getInstance()?.onPublishEvents()
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
-            XCTAssertEqual(EventStrings.POPUP_CONTENT_FAILED, TestEventAdapter.shared.testSdkErrors.first?.code)
-            XCTAssertEqual("popupFail", TestEventAdapter.shared.testSdkErrors.first?.message)
-            expectation.fulfill()
+
+        waitForCondition(timeout: 5) {
+            TestEventAdapter.shared.testSdkErrors.contains { $0.code == EventStrings.POPUP_CONTENT_FAILED }
         }
-        
-        wait(for: [expectation], timeout: 4.5)
+
+        XCTAssertEqual(EventStrings.POPUP_CONTENT_FAILED, TestEventAdapter.shared.testSdkErrors.first?.code)
+        XCTAssertEqual("popupFail", TestEventAdapter.shared.testSdkErrors.first?.message)
     }
-    
+
     func testItemFailed() {
-        let expectation = XCTestExpectation(description: "Content available expectation")
         let testPopupContent = PopupContent(payloadId: "testPayloadId", items: testAddToListItems)
         TestEventAdapter.shared.testSdkErrors = []
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+
+        runOnMainAndWait {
             testPopupContent.itemFailed(item: self.testAddToListItems.first!, message: "popupItemFail")
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+
+        runOnMainAndWait {
             EventClient.getInstance()?.onPublishEvents()
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
-            XCTAssertEqual(EventStrings.POPUP_CONTENT_ITEM_FAILED, TestEventAdapter.shared.testSdkErrors.first?.code)
-            XCTAssertEqual("popupItemFail", TestEventAdapter.shared.testSdkErrors.first?.message)
-            expectation.fulfill()
+
+        waitForCondition(timeout: 5) {
+            TestEventAdapter.shared.testSdkErrors.contains { $0.code == EventStrings.POPUP_CONTENT_ITEM_FAILED }
         }
-        
-        wait(for: [expectation], timeout: 4.5)
+
+        XCTAssertEqual(EventStrings.POPUP_CONTENT_ITEM_FAILED, TestEventAdapter.shared.testSdkErrors.first?.code)
+        XCTAssertEqual("popupItemFail", TestEventAdapter.shared.testSdkErrors.first?.message)
     }
-    
+
     func testPopupContentGetSourceIsCorrect() {
         let testPopupContent = PopupContent(payloadId: "testPayloadId", items: testAddToListItems)
         XCTAssertEqual(testPopupContent.getSource(), "in_app")
