@@ -24,7 +24,7 @@ class KeywordInterceptMatcherMinLengthTests: XCTestCase {
 
     override func tearDown() {
         super.tearDown()
-        KeywordInterceptMatcherMinLengthTests.testInterceptAdapter.testEvents.removeAll()
+        KeywordInterceptMatcherMinLengthTests.testInterceptAdapter.testEvents = Set()
     }
 
     func testMatchIgnoresInputShorterThan3Characters() {

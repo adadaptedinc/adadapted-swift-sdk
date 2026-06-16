@@ -92,6 +92,6 @@ class KeywordInterceptMatcherTests: XCTestCase {
     }
 
     internal static func clearEvents() {
-        testInterceptAdapter.testEvents.removeAll()
+        testInterceptAdapter.testEvents = Set()
     }
 }

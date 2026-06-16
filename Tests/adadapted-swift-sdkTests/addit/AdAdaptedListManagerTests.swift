@@ -18,7 +18,7 @@ class AdAdaptedListManagerTest: XCTestCase {
     override func setUp() {
         super.setUp()
         EventClient.getInstance()?.onPublishEvents()
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.1))
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.5))
         TestEventAdapter.shared.cleanupEvents()
     }
 
@@ -40,10 +40,10 @@ class AdAdaptedListManagerTest: XCTestCase {
             }
         }
 
-        let matchingEvents = TestEventAdapter.shared.testSdkEvents.filter {
+        let event = TestEventAdapter.shared.testSdkEvents.first {
             $0.name == EventStrings.USER_ADDED_TO_LIST && $0.params["item_name"] == "TestItem"
         }
-        XCTAssertFalse(matchingEvents.isEmpty, "Expected a USER_ADDED_TO_LIST event with item_name 'TestItem'")
+        XCTAssertNotNil(event)
     }
 
     func testItemAddedToListWithList() {
@@ -54,12 +54,16 @@ class AdAdaptedListManagerTest: XCTestCase {
         EventClient.getInstance()?.onPublishEvents()
 
         waitForCondition(timeout: 5) {
-            !TestEventAdapter.shared.testSdkEvents.isEmpty
+            TestEventAdapter.shared.testSdkEvents.contains {
+                $0.name == EventStrings.USER_ADDED_TO_LIST && $0.params["item_name"] == "TestItem"
+            }
         }
 
-        XCTAssertEqual(EventStrings.USER_ADDED_TO_LIST, TestEventAdapter.shared.testSdkEvents.first?.name)
-        XCTAssertEqual("TestList", TestEventAdapter.shared.testSdkEvents.first?.params["list_name"])
-        XCTAssertEqual("TestItem", TestEventAdapter.shared.testSdkEvents.first?.params["item_name"])
+        let event = TestEventAdapter.shared.testSdkEvents.first {
+            $0.name == EventStrings.USER_ADDED_TO_LIST && $0.params["item_name"] == "TestItem"
+        }
+        XCTAssertNotNil(event)
+        XCTAssertEqual("TestList", event?.params["list_name"])
     }
 
     func testItemCrossedOffList() {
@@ -70,11 +74,15 @@ class AdAdaptedListManagerTest: XCTestCase {
         EventClient.getInstance()?.onPublishEvents()
 
         waitForCondition(timeout: 5) {
-            !TestEventAdapter.shared.testSdkEvents.isEmpty
+            TestEventAdapter.shared.testSdkEvents.contains {
+                $0.name == EventStrings.USER_CROSSED_OFF_LIST && $0.params["item_name"] == "TestItem"
+            }
         }
 
-        XCTAssertEqual(EventStrings.USER_CROSSED_OFF_LIST, TestEventAdapter.shared.testSdkEvents.first?.name)
-        XCTAssertEqual("TestItem", TestEventAdapter.shared.testSdkEvents.first?.params["item_name"])
+        let event = TestEventAdapter.shared.testSdkEvents.first {
+            $0.name == EventStrings.USER_CROSSED_OFF_LIST && $0.params["item_name"] == "TestItem"
+        }
+        XCTAssertNotNil(event)
     }
 
     func testItemCrossedOffListWithList() {
@@ -85,12 +93,16 @@ class AdAdaptedListManagerTest: XCTestCase {
         EventClient.getInstance()?.onPublishEvents()
 
         waitForCondition(timeout: 5) {
-            !TestEventAdapter.shared.testSdkEvents.isEmpty
+            TestEventAdapter.shared.testSdkEvents.contains {
+                $0.name == EventStrings.USER_CROSSED_OFF_LIST && $0.params["item_name"] == "TestItem"
+            }
         }
 
-        XCTAssertEqual(EventStrings.USER_CROSSED_OFF_LIST, TestEventAdapter.shared.testSdkEvents.first?.name)
-        XCTAssertEqual("TestList", TestEventAdapter.shared.testSdkEvents.first?.params["list_name"])
-        XCTAssertEqual("TestItem", TestEventAdapter.shared.testSdkEvents.first?.params["item_name"])
+        let event = TestEventAdapter.shared.testSdkEvents.first {
+            $0.name == EventStrings.USER_CROSSED_OFF_LIST && $0.params["item_name"] == "TestItem"
+        }
+        XCTAssertNotNil(event)
+        XCTAssertEqual("TestList", event?.params["list_name"])
     }
 
     func testItemDeletedFromList() {
@@ -101,11 +113,15 @@ class AdAdaptedListManagerTest: XCTestCase {
         EventClient.getInstance()?.onPublishEvents()
 
         waitForCondition(timeout: 5) {
-            !TestEventAdapter.shared.testSdkEvents.isEmpty
+            TestEventAdapter.shared.testSdkEvents.contains {
+                $0.name == EventStrings.USER_DELETED_FROM_LIST && $0.params["item_name"] == "TestItem"
+            }
         }
 
-        XCTAssertEqual(EventStrings.USER_DELETED_FROM_LIST, TestEventAdapter.shared.testSdkEvents.first?.name)
-        XCTAssertEqual("TestItem", TestEventAdapter.shared.testSdkEvents.first?.params["item_name"])
+        let event = TestEventAdapter.shared.testSdkEvents.first {
+            $0.name == EventStrings.USER_DELETED_FROM_LIST && $0.params["item_name"] == "TestItem"
+        }
+        XCTAssertNotNil(event)
     }
 
     func testItemDeletedFromListWithList() {
@@ -116,11 +132,15 @@ class AdAdaptedListManagerTest: XCTestCase {
         EventClient.getInstance()?.onPublishEvents()
 
         waitForCondition(timeout: 5) {
-            !TestEventAdapter.shared.testSdkEvents.isEmpty
+            TestEventAdapter.shared.testSdkEvents.contains {
+                $0.name == EventStrings.USER_DELETED_FROM_LIST && $0.params["item_name"] == "TestItem"
+            }
         }
 
-        XCTAssertEqual(EventStrings.USER_DELETED_FROM_LIST, TestEventAdapter.shared.testSdkEvents.first?.name)
-        XCTAssertEqual("TestList", TestEventAdapter.shared.testSdkEvents.first?.params["list_name"])
-        XCTAssertEqual("TestItem", TestEventAdapter.shared.testSdkEvents.first?.params["item_name"])
+        let event = TestEventAdapter.shared.testSdkEvents.first {
+            $0.name == EventStrings.USER_DELETED_FROM_LIST && $0.params["item_name"] == "TestItem"
+        }
+        XCTAssertNotNil(event)
+        XCTAssertEqual("TestList", event?.params["list_name"])
     }
 }

@@ -34,7 +34,7 @@ class InterceptClientTests: XCTestCase {
         super.tearDown()
         // Allow any pending backSerialQueue work to complete before clearing
         RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.5))
-        InterceptClientTests.testInterceptAdapter.testEvents.removeAll()
+        InterceptClientTests.testInterceptAdapter.testEvents = Set()
     }
 
     func testCreateInstance() {

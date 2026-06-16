@@ -12,14 +12,14 @@ class SuggestionTrackerTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
-        testInterceptAdapter.testEvents.removeAll()
+        testInterceptAdapter.testEvents = Set()
         testInterceptClient.createInstance(adapter: testInterceptAdapter, isKeywordInterceptEnabled: true)
     }
 
     override func tearDown() {
         // Allow pending backSerialQueue work to complete before cleanup
         RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.5))
-        testInterceptAdapter.testEvents.removeAll()
+        testInterceptAdapter.testEvents = Set()
         super.tearDown()
     }
 
