@@ -25,6 +25,13 @@ class PopupContentTests: XCTestCase {
         TestEventAdapter.shared.cleanupEvents()
     }
 
+    override func setUp() {
+        super.setUp()
+        EventClient.getInstance()?.onPublishEvents()
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.1))
+        TestEventAdapter.shared.cleanupEvents()
+    }
+
     override func tearDown() {
         super.tearDown()
         TestEventAdapter.shared.cleanupEvents()

@@ -22,53 +22,38 @@ class EventBroadcasterTests: XCTestCase {
     }
     
     func testAddListenerAndPublishAdEventTracked() {
-        let expectation = XCTestExpectation(description: "Content available expectation")
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventBroadcaster.getInstance().onAdEventTracked(event: AdEvent(adId: "adId", zoneId: "adZoneId", impressionId: "impressionId", eventType: AdEventTypes.IMPRESSION))
+        EventBroadcaster.getInstance().onAdEventTracked(event: AdEvent(adId: "adId", zoneId: "adZoneId", impressionId: "impressionId", eventType: AdEventTypes.IMPRESSION))
+
+        waitForCondition(timeout: 5) {
+            EventBroadcasterTests.testListener.resultEventType == "impression"
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            XCTAssertEqual("impression", EventBroadcasterTests.testListener.resultEventType)
-            XCTAssertEqual("adZoneId", EventBroadcasterTests.testListener.resultZoneId)
-            expectation.fulfill()
-        }
-        
-        wait(for: [expectation], timeout: 2.5)
+
+        XCTAssertEqual("impression", EventBroadcasterTests.testListener.resultEventType)
+        XCTAssertEqual("adZoneId", EventBroadcasterTests.testListener.resultZoneId)
     }
-    
+
     func testAddListenerAndPublishAdEventInteractionTracked() {
-        let expectation = XCTestExpectation(description: "Content available expectation")
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventBroadcaster.getInstance().onAdEventTracked(event: AdEvent(adId: "adId", zoneId: "adZoneId", impressionId: "impressionId", eventType: AdEventTypes.INTERACTION))
+        EventBroadcaster.getInstance().onAdEventTracked(event: AdEvent(adId: "adId", zoneId: "adZoneId", impressionId: "impressionId", eventType: AdEventTypes.INTERACTION))
+
+        waitForCondition(timeout: 5) {
+            EventBroadcasterTests.testListener.resultEventType == "interaction"
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            XCTAssertEqual("interaction", EventBroadcasterTests.testListener.resultEventType)
-            XCTAssertEqual("adZoneId", EventBroadcasterTests.testListener.resultZoneId)
-            expectation.fulfill()
-        }
-        
-        wait(for: [expectation], timeout: 2.5)
+
+        XCTAssertEqual("interaction", EventBroadcasterTests.testListener.resultEventType)
+        XCTAssertEqual("adZoneId", EventBroadcasterTests.testListener.resultZoneId)
     }
-    
+
     func testAddListenerAndPublishAdEventNullNotTracked() {
-        let expectation = XCTestExpectation(description: "Content available expectation")
         EventBroadcasterTests.testListener.resultEventType = ""
         EventBroadcasterTests.testListener.resultZoneId = ""
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventBroadcaster.getInstance().onAdEventTracked(event: nil)
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            XCTAssertEqual("", EventBroadcasterTests.testListener.resultEventType)
-            XCTAssertEqual("", EventBroadcasterTests.testListener.resultZoneId)
-            expectation.fulfill()
-        }
-        
-        wait(for: [expectation], timeout: 2.5)
+
+        EventBroadcaster.getInstance().onAdEventTracked(event: nil)
+
+        // Null event should not change the listener state. Wait to confirm nothing changes.
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.0))
+
+        XCTAssertEqual("", EventBroadcasterTests.testListener.resultEventType)
+        XCTAssertEqual("", EventBroadcasterTests.testListener.resultZoneId)
     }
 }
     

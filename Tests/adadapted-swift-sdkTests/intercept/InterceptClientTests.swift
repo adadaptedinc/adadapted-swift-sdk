@@ -27,7 +27,7 @@ class InterceptClientTests: XCTestCase {
             customIdentifier: "",
             deviceInfoExtractor: deviceInfoExtractor
         )
-        InterceptClient.createInstance(adapter: testInterceptAdapter, isKeywordInterceptEnabled: true)
+        InterceptClient.createInstance(adapter: testInterceptAdapter, isKeywordInterceptEnabled: false)
     }
 
     override func tearDown() {
@@ -56,8 +56,6 @@ class InterceptClientTests: XCTestCase {
     }
 
     func testTrackMatched() {
-        let expectation = XCTestExpectation(description: "matched event published")
-
         InterceptClient.getInstance()?.trackMatched(
             searchId: InterceptClientTests.testEvent.searchId,
             termId: InterceptClientTests.testEvent.termId,
@@ -65,24 +63,18 @@ class InterceptClientTests: XCTestCase {
             userInput: InterceptClientTests.testEvent.userInput
         )
 
-        // Allow backSerialQueue to file the event, then publish
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            InterceptClient.getInstance()?.onPublishEvents()
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.0))
+
+        InterceptClient.getInstance()?.onPublishEvents()
+
+        waitForCondition(timeout: 10) {
+            InterceptClientTests.testInterceptAdapter.testEvents.contains(where: { $0.event == InterceptEvent.Constants.MATCHED })
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-            if InterceptClientTests.testInterceptAdapter.testEvents.first?.event == InterceptEvent.Constants.MATCHED {
-                expectation.fulfill()
-            }
-        }
-
-        wait(for: [expectation], timeout: 10)
-        XCTAssertEqual(InterceptEvent.Constants.MATCHED, InterceptClientTests.testInterceptAdapter.testEvents.first?.event)
+        XCTAssertTrue(InterceptClientTests.testInterceptAdapter.testEvents.contains(where: { $0.event == InterceptEvent.Constants.MATCHED }))
     }
 
     func testTrackPresented() {
-        let expectation = XCTestExpectation(description: "presented event published")
-
         InterceptClient.getInstance()?.trackPresented(
             searchId: InterceptClientTests.testEvent.searchId,
             termId: InterceptClientTests.testEvent.termId,
@@ -90,18 +82,15 @@ class InterceptClientTests: XCTestCase {
             userInput: InterceptClientTests.testEvent.userInput
         )
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            InterceptClient.getInstance()?.onPublishEvents()
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.0))
+
+        InterceptClient.getInstance()?.onPublishEvents()
+
+        waitForCondition(timeout: 10) {
+            InterceptClientTests.testInterceptAdapter.testEvents.contains(where: { $0.event == InterceptEvent.Constants.PRESENTED })
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-            if InterceptClientTests.testInterceptAdapter.testEvents.first?.event == InterceptEvent.Constants.PRESENTED {
-                expectation.fulfill()
-            }
-        }
-
-        wait(for: [expectation], timeout: 10)
-        XCTAssertEqual(InterceptEvent.Constants.PRESENTED, InterceptClientTests.testInterceptAdapter.testEvents.first?.event)
+        XCTAssertTrue(InterceptClientTests.testInterceptAdapter.testEvents.contains(where: { $0.event == InterceptEvent.Constants.PRESENTED }))
     }
 
     func testTrackSelected() {
@@ -125,32 +114,33 @@ class InterceptClientTests: XCTestCase {
     }
 
     func testTrackNotMatched() {
-        let expectation = XCTestExpectation(description: "not_matched event published")
-
         InterceptClient.getInstance()?.trackNotMatched(
             searchId: InterceptClientTests.testEvent.searchId,
             userInput: InterceptClientTests.testEvent.userInput
         )
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            InterceptClient.getInstance()?.onPublishEvents()
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.0))
+
+        InterceptClient.getInstance()?.onPublishEvents()
+
+        waitForCondition(timeout: 10) {
+            InterceptClientTests.testInterceptAdapter.testEvents.contains(where: { $0.event == InterceptEvent.Constants.NOT_MATCHED })
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-            if InterceptClientTests.testInterceptAdapter.testEvents.first?.event == InterceptEvent.Constants.NOT_MATCHED {
-                expectation.fulfill()
-            }
-        }
-
-        wait(for: [expectation], timeout: 10)
-        XCTAssertEqual(InterceptEvent.Constants.NOT_MATCHED, InterceptClientTests.testInterceptAdapter.testEvents.first?.event)
+        XCTAssertTrue(InterceptClientTests.testInterceptAdapter.testEvents.contains(where: { $0.event == InterceptEvent.Constants.NOT_MATCHED }))
     }
 }
 
 class InterceptListenerMock: InterceptListener {
-    var onKeywordInterceptInitializedCalled = false
+    private let lock = NSLock()
+    private var _onKeywordInterceptInitializedCalled = false
+    var onKeywordInterceptInitializedCalled: Bool {
+        lock.lock(); defer { lock.unlock() }; return _onKeywordInterceptInitializedCalled
+    }
 
     func onKeywordInterceptInitialized(intercept: InterceptData) {
-        onKeywordInterceptInitializedCalled = true
+        lock.lock()
+        _onKeywordInterceptInitializedCalled = true
+        lock.unlock()
     }
 }

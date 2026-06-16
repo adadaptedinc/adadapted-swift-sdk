@@ -17,6 +17,13 @@ class AdZonePresenterTests: XCTestCase {
         testAdZonePresenter = AdZonePresenter(adViewHandler: AdViewHandler(), adClient: AdClient.getInstance())
     }
 
+    override func setUp() {
+        super.setUp()
+        EventClient.getInstance()?.onPublishEvents()
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.1))
+        TestEventAdapter.shared.cleanupEvents()
+    }
+
     override func tearDown() {
         AdZonePresenterTests.testAdZonePresenter.onDetach()
         TestEventAdapter.shared.cleanupEvents()
@@ -76,36 +83,29 @@ class AdZonePresenterTests: XCTestCase {
     }
 
     func testOnAdClickedContent() {
-        let expectation = XCTestExpectation(description: "atl ad clicked event")
         AdZonePresenterTests.testAdZonePresenter.initialize(zoneId: "testZoneId")
         var testAd = Ad(id: "TestAdId", impressionId: "impressionId", url: "url", actionType: AdActionType.CONTENT)
 
         let testAdEventListener = TestAdEventClientListener()
         EventClient.addListener(listener: testAdEventListener)
 
-        // Allow addListener Task to complete
         RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.5))
 
         AdZonePresenterTests.testAdZonePresenter.onAdDisplayed(ad: &testAd, isAdVisible: true)
         AdZonePresenterTests.testAdZonePresenter.onAdClicked(ad: testAd)
 
-        // Allow async event tracking to settle, then publish
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            EventClient.getInstance()?.onPublishEvents()
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.0))
+
+        EventClient.getInstance()?.onPublishEvents()
+
+        waitForCondition(timeout: 10) {
+            TestEventAdapter.shared.testSdkEvents.contains(where: { $0.name == EventStrings.ATL_AD_CLICKED })
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-            if TestEventAdapter.shared.testSdkEvents.contains(where: { $0.name == EventStrings.ATL_AD_CLICKED }) {
-                expectation.fulfill()
-            }
-        }
-
-        wait(for: [expectation], timeout: 10)
         XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.ATL_AD_CLICKED })
     }
 
     func testOnAdClickedLink() {
-        let expectation = XCTestExpectation(description: "interaction event")
         AdZonePresenterTests.testAdZonePresenter = AdZonePresenter(adViewHandler: AdViewHandler(), adClient: AdClient.getInstance())
         AdZonePresenterTests.testAdZonePresenter.initialize(zoneId: "testZoneId")
         var testAd = Ad(id: "TestAdId", impressionId: "impressionId", url: "url", actionType: AdActionType.LINK)
@@ -113,7 +113,6 @@ class AdZonePresenterTests: XCTestCase {
         let testAdEventListener = TestAdEventClientListener()
         EventClient.addListener(listener: testAdEventListener)
 
-        // Allow addListener Task to complete
         RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.5))
 
         runOnMainAndWait {
@@ -124,26 +123,20 @@ class AdZonePresenterTests: XCTestCase {
             AdZonePresenterTests.testAdZonePresenter.onAdClicked(ad: testAd)
         }
 
-        // Allow async event tracking Tasks to complete
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            if testAdEventListener.testAdEvent?.eventType == AdEventTypes.INTERACTION {
-                expectation.fulfill()
-            }
+        waitForCondition(timeout: 10) {
+            testAdEventListener.testAdEvent?.eventType == AdEventTypes.INTERACTION
         }
 
-        wait(for: [expectation], timeout: 10)
         XCTAssertEqual(AdEventTypes.INTERACTION, testAdEventListener.testAdEvent?.eventType)
     }
 
     func testOnAdClickedPopup() {
-        let expectation = XCTestExpectation(description: "interaction event")
         AdZonePresenterTests.testAdZonePresenter.initialize(zoneId: "testZoneId")
         var testAd = Ad(id: "TestAdId", impressionId: "impressionId", url: "url", actionType: AdActionType.POPUP)
 
         let testAdEventListener = TestAdEventClientListener()
         EventClient.addListener(listener: testAdEventListener)
 
-        // Allow addListener Task to complete
         RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.5))
 
         runOnMainAndWait {
@@ -154,43 +147,33 @@ class AdZonePresenterTests: XCTestCase {
             AdZonePresenterTests.testAdZonePresenter.onAdClicked(ad: testAd)
         }
 
-        // Allow async event tracking Tasks to complete
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            if testAdEventListener.testAdEvent?.eventType == AdEventTypes.INTERACTION {
-                expectation.fulfill()
-            }
+        waitForCondition(timeout: 10) {
+            testAdEventListener.testAdEvent?.eventType == AdEventTypes.INTERACTION
         }
 
-        wait(for: [expectation], timeout: 10)
         XCTAssertEqual(AdEventTypes.INTERACTION, testAdEventListener.testAdEvent?.eventType)
     }
 
     func testOnAdClickedContentPopup() {
-        let expectation = XCTestExpectation(description: "popup ad clicked event")
         AdZonePresenterTests.testAdZonePresenter.initialize(zoneId: "testZoneId")
         var testAd = Ad(id: "TestAdId", impressionId: "impressionId", url: "url", actionType: AdActionType.CONTENT_POPUP)
 
         let testAdEventListener = TestAdEventClientListener()
         EventClient.addListener(listener: testAdEventListener)
 
-        // Allow addListener Task to complete
         RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.5))
 
         AdZonePresenterTests.testAdZonePresenter.onAdDisplayed(ad: &testAd, isAdVisible: true)
         AdZonePresenterTests.testAdZonePresenter.onAdClicked(ad: testAd)
 
-        // Allow async event tracking to settle, then publish
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            EventClient.getInstance()?.onPublishEvents()
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.0))
+
+        EventClient.getInstance()?.onPublishEvents()
+
+        waitForCondition(timeout: 10) {
+            TestEventAdapter.shared.testSdkEvents.contains(where: { $0.name == EventStrings.POPUP_AD_CLICKED })
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-            if TestEventAdapter.shared.testSdkEvents.contains(where: { $0.name == EventStrings.POPUP_AD_CLICKED }) {
-                expectation.fulfill()
-            }
-        }
-
-        wait(for: [expectation], timeout: 10)
         XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.POPUP_AD_CLICKED })
     }
 
@@ -202,30 +185,44 @@ class AdZonePresenterTests: XCTestCase {
 }
 
 class TestAdZonePresenterListener: AdZonePresenterListener {
-    var testZone = AdZoneData()
-    var testAd = Ad()
+    private let lock = NSLock()
+    private var _testZone = AdZoneData()
+    private var _testAd = Ad()
+
+    var testZone: AdZoneData {
+        lock.lock(); defer { lock.unlock() }; return _testZone
+    }
+    var testAd: Ad {
+        lock.lock(); defer { lock.unlock() }; return _testAd
+    }
 
     func onZoneAvailable(adZoneData: AdZoneData) {
-        testZone = adZoneData
+        lock.lock(); _testZone = adZoneData; lock.unlock()
     }
 
     func onAdAvailable(ad: Ad) {
-        testAd = ad
+        lock.lock(); _testAd = ad; lock.unlock()
     }
 
     func onNoAdAvailable() {
-        testAd = Ad(id: "NoAdAvail")
+        lock.lock(); _testAd = Ad(id: "NoAdAvail"); lock.unlock()
     }
 
     func onAdVisibilityChanged(ad: Ad) {
-        testAd = ad
+        lock.lock(); _testAd = ad; lock.unlock()
     }
 }
 
 class TestAdEventClientListener: EventClientListener {
-    var testAdEvent: AdEvent?
+    private let lock = NSLock()
+    private var _testAdEvent: AdEvent?
+    var testAdEvent: AdEvent? {
+        lock.lock(); defer { lock.unlock() }; return _testAdEvent
+    }
 
     func onAdEventTracked(event: AdEvent?) {
-        testAdEvent = event
+        lock.lock()
+        _testAdEvent = event
+        lock.unlock()
     }
 }

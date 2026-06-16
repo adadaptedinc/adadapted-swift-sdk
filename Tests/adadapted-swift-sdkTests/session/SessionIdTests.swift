@@ -54,81 +54,74 @@ class SessionIdTests: XCTestCase {
     }
 
     func testSessionCreatedEventIsTracked() {
-        let expectation = XCTestExpectation(description: "Event tracking check")
         let deviceInfoExtractor = DeviceInfoExtractor()
         DeviceInfoClient.createInstance(appId: "apiKey", isProd: false, params: [:], customIdentifier: "", deviceInfoExtractor: deviceInfoExtractor)
         EventClient.createInstance(eventAdapter: TestEventAdapter.shared)
         TestEventAdapter.shared.cleanupEvents()
 
-        // Trigger a new activation
         NotificationCenter.default.post(name: UIScene.didActivateNotification, object: nil)
-        RunLoop.current.run(until: Date().addingTimeInterval(0.1))
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventClient.getInstance()?.onPublishEvents()
-        }
+        EventClient.getInstance()?.onPublishEvents()
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            let hasSessionEvent = TestEventAdapter.shared.testSdkEvents.contains {
+        waitForCondition(timeout: 5) {
+            TestEventAdapter.shared.testSdkEvents.contains {
                 $0.name == EventStrings.SESSION_CREATED || $0.name == EventStrings.SESSION_RESUMED
             }
-            XCTAssertTrue(hasSessionEvent, "Should track SESSION_CREATED or SESSION_RESUMED")
-            expectation.fulfill()
         }
 
-        wait(for: [expectation], timeout: 3)
+        let hasSessionEvent = TestEventAdapter.shared.testSdkEvents.contains {
+            $0.name == EventStrings.SESSION_CREATED || $0.name == EventStrings.SESSION_RESUMED
+        }
+        XCTAssertTrue(hasSessionEvent, "Should track SESSION_CREATED or SESSION_RESUMED")
     }
 
     func testSessionEventIncludesSessionIdParam() {
-        let expectation = XCTestExpectation(description: "SessionId param check")
         let deviceInfoExtractor = DeviceInfoExtractor()
         DeviceInfoClient.createInstance(appId: "apiKey", isProd: false, params: [:], customIdentifier: "", deviceInfoExtractor: deviceInfoExtractor)
         EventClient.createInstance(eventAdapter: TestEventAdapter.shared)
         TestEventAdapter.shared.cleanupEvents()
 
         NotificationCenter.default.post(name: UIScene.didActivateNotification, object: nil)
-        RunLoop.current.run(until: Date().addingTimeInterval(0.1))
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventClient.getInstance()?.onPublishEvents()
-        }
+        EventClient.getInstance()?.onPublishEvents()
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            let sessionEvent = TestEventAdapter.shared.testSdkEvents.first {
+        waitForCondition(timeout: 5) {
+            TestEventAdapter.shared.testSdkEvents.contains {
                 $0.name == EventStrings.SESSION_CREATED || $0.name == EventStrings.SESSION_RESUMED
             }
-            XCTAssertNotNil(sessionEvent, "Should have a session event")
-            XCTAssertNotNil(sessionEvent?.params["sessionId"], "Event should include sessionId param")
-            XCTAssertEqual(sessionEvent?.params["sessionId"], SessionClient.getSessionId())
-            expectation.fulfill()
         }
 
-        wait(for: [expectation], timeout: 3)
+        let sessionEvent = TestEventAdapter.shared.testSdkEvents.first {
+            $0.name == EventStrings.SESSION_CREATED || $0.name == EventStrings.SESSION_RESUMED
+        }
+        XCTAssertNotNil(sessionEvent, "Should have a session event")
+        XCTAssertNotNil(sessionEvent?.params["sessionId"], "Event should include sessionId param")
+        XCTAssertEqual(sessionEvent?.params["sessionId"], SessionClient.getSessionId())
     }
 
     func testBackgroundEventIsTracked() {
-        let expectation = XCTestExpectation(description: "Background event check")
         let deviceInfoExtractor = DeviceInfoExtractor()
         DeviceInfoClient.createInstance(appId: "apiKey", isProd: false, params: [:], customIdentifier: "", deviceInfoExtractor: deviceInfoExtractor)
         EventClient.createInstance(eventAdapter: TestEventAdapter.shared)
         TestEventAdapter.shared.cleanupEvents()
 
         NotificationCenter.default.post(name: UIScene.willDeactivateNotification, object: nil)
-        RunLoop.current.run(until: Date().addingTimeInterval(0.1))
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventClient.getInstance()?.onPublishEvents()
-        }
+        EventClient.getInstance()?.onPublishEvents()
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            let hasBackgroundEvent = TestEventAdapter.shared.testSdkEvents.contains {
+        waitForCondition(timeout: 5) {
+            TestEventAdapter.shared.testSdkEvents.contains {
                 $0.name == EventStrings.SESSION_BACKGROUNDED
             }
-            XCTAssertTrue(hasBackgroundEvent, "Should track SESSION_BACKGROUNDED")
-            expectation.fulfill()
         }
 
-        wait(for: [expectation], timeout: 3)
+        let hasBackgroundEvent = TestEventAdapter.shared.testSdkEvents.contains {
+            $0.name == EventStrings.SESSION_BACKGROUNDED
+        }
+        XCTAssertTrue(hasBackgroundEvent, "Should track SESSION_BACKGROUNDED")
     }
 
     func testMultipleStartStopCyclesMaintainSameSession() {

@@ -18,6 +18,7 @@ class AdAdaptedListManagerTest: XCTestCase {
     override func setUp() {
         super.setUp()
         EventClient.getInstance()?.onPublishEvents()
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.1))
         TestEventAdapter.shared.cleanupEvents()
     }
 
@@ -27,103 +28,99 @@ class AdAdaptedListManagerTest: XCTestCase {
     }
 
     func testItemAddedToList() {
-        let expectation = XCTestExpectation(description: "Content available expectation")
         AdAdaptedListManager.itemAddedToList(item: "TestItem")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventClient.getInstance()?.onPublishEvents()
-        }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            let matchingEvents = TestEventAdapter.shared.testSdkEvents.filter {
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.0))
+
+        EventClient.getInstance()?.onPublishEvents()
+
+        waitForCondition(timeout: 5) {
+            TestEventAdapter.shared.testSdkEvents.contains {
                 $0.name == EventStrings.USER_ADDED_TO_LIST && $0.params["item_name"] == "TestItem"
             }
-            XCTAssertFalse(matchingEvents.isEmpty, "Expected a USER_ADDED_TO_LIST event with item_name 'TestItem'")
-            expectation.fulfill()
         }
 
-        wait(for: [expectation], timeout: 2.5)
+        let matchingEvents = TestEventAdapter.shared.testSdkEvents.filter {
+            $0.name == EventStrings.USER_ADDED_TO_LIST && $0.params["item_name"] == "TestItem"
+        }
+        XCTAssertFalse(matchingEvents.isEmpty, "Expected a USER_ADDED_TO_LIST event with item_name 'TestItem'")
     }
 
     func testItemAddedToListWithList() {
-        let expectation = XCTestExpectation(description: "Content available expectation")
         AdAdaptedListManager.itemAddedToList(list: "TestList", item: "TestItem")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventClient.getInstance()?.onPublishEvents()
+
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.0))
+
+        EventClient.getInstance()?.onPublishEvents()
+
+        waitForCondition(timeout: 5) {
+            !TestEventAdapter.shared.testSdkEvents.isEmpty
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            XCTAssertEqual(EventStrings.USER_ADDED_TO_LIST, TestEventAdapter.shared.testSdkEvents.first?.name)
-            XCTAssertEqual("TestList", TestEventAdapter.shared.testSdkEvents.first?.params["list_name"])
-            XCTAssertEqual("TestItem", TestEventAdapter.shared.testSdkEvents.first?.params["item_name"])
-            expectation.fulfill()
-        }
-        
-        wait(for: [expectation], timeout: 2.5)
+
+        XCTAssertEqual(EventStrings.USER_ADDED_TO_LIST, TestEventAdapter.shared.testSdkEvents.first?.name)
+        XCTAssertEqual("TestList", TestEventAdapter.shared.testSdkEvents.first?.params["list_name"])
+        XCTAssertEqual("TestItem", TestEventAdapter.shared.testSdkEvents.first?.params["item_name"])
     }
 
     func testItemCrossedOffList() {
-        let expectation = XCTestExpectation(description: "Content available expectation")
         AdAdaptedListManager.itemCrossedOffList(item: "TestItem")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventClient.getInstance()?.onPublishEvents()
+
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.0))
+
+        EventClient.getInstance()?.onPublishEvents()
+
+        waitForCondition(timeout: 5) {
+            !TestEventAdapter.shared.testSdkEvents.isEmpty
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            XCTAssertEqual(EventStrings.USER_CROSSED_OFF_LIST, TestEventAdapter.shared.testSdkEvents.first?.name)
-            XCTAssertEqual("TestItem", TestEventAdapter.shared.testSdkEvents.first?.params["item_name"])
-            expectation.fulfill()
-        }
-        
-        wait(for: [expectation], timeout: 2.5)
+
+        XCTAssertEqual(EventStrings.USER_CROSSED_OFF_LIST, TestEventAdapter.shared.testSdkEvents.first?.name)
+        XCTAssertEqual("TestItem", TestEventAdapter.shared.testSdkEvents.first?.params["item_name"])
     }
 
     func testItemCrossedOffListWithList() {
-        let expectation = XCTestExpectation(description: "Content available expectation")
         AdAdaptedListManager.itemCrossedOffList(list: "TestList", item: "TestItem")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventClient.getInstance()?.onPublishEvents()
+
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.0))
+
+        EventClient.getInstance()?.onPublishEvents()
+
+        waitForCondition(timeout: 5) {
+            !TestEventAdapter.shared.testSdkEvents.isEmpty
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            XCTAssertEqual(EventStrings.USER_CROSSED_OFF_LIST, TestEventAdapter.shared.testSdkEvents.first?.name)
-            XCTAssertEqual("TestList", TestEventAdapter.shared.testSdkEvents.first?.params["list_name"])
-            XCTAssertEqual("TestItem", TestEventAdapter.shared.testSdkEvents.first?.params["item_name"])
-            expectation.fulfill()
-        }
-        
-        wait(for: [expectation], timeout: 2.5)
+
+        XCTAssertEqual(EventStrings.USER_CROSSED_OFF_LIST, TestEventAdapter.shared.testSdkEvents.first?.name)
+        XCTAssertEqual("TestList", TestEventAdapter.shared.testSdkEvents.first?.params["list_name"])
+        XCTAssertEqual("TestItem", TestEventAdapter.shared.testSdkEvents.first?.params["item_name"])
     }
 
     func testItemDeletedFromList() {
-        let expectation = XCTestExpectation(description: "Content available expectation")
         AdAdaptedListManager.itemDeletedFromList(item: "TestItem")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventClient.getInstance()?.onPublishEvents()
+
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.0))
+
+        EventClient.getInstance()?.onPublishEvents()
+
+        waitForCondition(timeout: 5) {
+            !TestEventAdapter.shared.testSdkEvents.isEmpty
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            XCTAssertEqual(EventStrings.USER_DELETED_FROM_LIST, TestEventAdapter.shared.testSdkEvents.first?.name)
-            XCTAssertEqual("TestItem", TestEventAdapter.shared.testSdkEvents.first?.params["item_name"])
-            expectation.fulfill()
-        }
-        
-        wait(for: [expectation], timeout: 2.5)
+
+        XCTAssertEqual(EventStrings.USER_DELETED_FROM_LIST, TestEventAdapter.shared.testSdkEvents.first?.name)
+        XCTAssertEqual("TestItem", TestEventAdapter.shared.testSdkEvents.first?.params["item_name"])
     }
 
     func testItemDeletedFromListWithList() {
-        let expectation = XCTestExpectation(description: "Content available expectation")
         AdAdaptedListManager.itemDeletedFromList(list: "TestList", item: "TestItem")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventClient.getInstance()?.onPublishEvents()
+
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.0))
+
+        EventClient.getInstance()?.onPublishEvents()
+
+        waitForCondition(timeout: 5) {
+            !TestEventAdapter.shared.testSdkEvents.isEmpty
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            XCTAssertEqual(EventStrings.USER_DELETED_FROM_LIST, TestEventAdapter.shared.testSdkEvents.first?.name)
-            XCTAssertEqual("TestList", TestEventAdapter.shared.testSdkEvents.first?.params["list_name"])
-            XCTAssertEqual("TestItem", TestEventAdapter.shared.testSdkEvents.first?.params["item_name"])
-            expectation.fulfill()
-        }
-        
-        wait(for: [expectation], timeout: 2.5)
+
+        XCTAssertEqual(EventStrings.USER_DELETED_FROM_LIST, TestEventAdapter.shared.testSdkEvents.first?.name)
+        XCTAssertEqual("TestList", TestEventAdapter.shared.testSdkEvents.first?.params["list_name"])
+        XCTAssertEqual("TestItem", TestEventAdapter.shared.testSdkEvents.first?.params["item_name"])
     }
 }

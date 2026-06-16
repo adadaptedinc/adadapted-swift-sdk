@@ -25,90 +25,91 @@ class AdEventClientTests: XCTestCase {
     }
     
     func testAddListenerAndTrackEventImpression() {
-        let expectation = XCTestExpectation(description: "Content available expectation")
         let mockListener = TestEventClientListener()
         EventClient.addListener(listener: mockListener)
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventClient.trackImpression(ad: self.testAd)
+
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.5))
+
+        EventClient.trackImpression(ad: self.testAd)
+
+        waitForCondition(timeout: 5) {
+            mockListener.trackedEvent != nil
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-            XCTAssertNotNil(mockListener.trackedEvent)
-            expectation.fulfill()
-        }
-        
-        wait(for: [expectation], timeout: 3.5)
+
+        XCTAssertNotNil(mockListener.trackedEvent)
     }
-    
+
     func testRemoveListener() {
-        let expectation = XCTestExpectation(description: "Content available expectation")
-        let expectationTwo = XCTestExpectation(description: "Content available expectation")
         let mockListener = TestEventClientListener()
         EventClient.addListener(listener: mockListener)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventClient.trackImpression(ad: self.testAd)
+
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.5))
+
+        EventClient.trackImpression(ad: self.testAd)
+
+        waitForCondition(timeout: 5) {
+            mockListener.trackedEvent != nil
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-            XCTAssertNotNil(mockListener.trackedEvent)
-            expectation.fulfill()
-        }
-        wait(for: [expectation], timeout: 3.5)
-        
+
+        XCTAssertNotNil(mockListener.trackedEvent)
+
         EventClient.removeListener(listener: mockListener)
+
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.5))
+
         mockListener.trackedEvent = nil
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventClient.trackImpression(ad: self.testAd)
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-            XCTAssertNil(mockListener.trackedEvent)
-            expectationTwo.fulfill()
-        }
-        wait(for: [expectationTwo], timeout: 3.5)
+
+        EventClient.trackImpression(ad: self.testAd)
+
+        // After removing, the listener should NOT receive events.
+        // Wait a reasonable time to confirm no event arrives.
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 2.0))
+
+        XCTAssertNil(mockListener.trackedEvent)
     }
-    
+
     func testTrackInteraction() {
-        let expectation = XCTestExpectation(description: "Content available expectation")
         let mockListener = TestEventClientListener()
         EventClient.addListener(listener: mockListener)
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventClient.trackInteraction(ad: self.testAd)
+
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.5))
+
+        EventClient.trackInteraction(ad: self.testAd)
+
+        waitForCondition(timeout: 5) {
+            mockListener.trackedEvent?.eventType == AdEventTypes.INTERACTION
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-            XCTAssertEqual(mockListener.trackedEvent?.eventType, AdEventTypes.INTERACTION)
-            expectation.fulfill()
-        }
-        
-        wait(for: [expectation], timeout: 3.5)
+
+        XCTAssertEqual(mockListener.trackedEvent?.eventType, AdEventTypes.INTERACTION)
     }
-    
+
     func testTrackPopupBegin() {
-        let expectation = XCTestExpectation(description: "Content available expectation")
         let mockListener = TestEventClientListener()
         EventClient.addListener(listener: mockListener)
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventClient.trackPopupBegin(ad: self.testAd)
+
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.5))
+
+        EventClient.trackPopupBegin(ad: self.testAd)
+
+        waitForCondition(timeout: 5) {
+            mockListener.trackedEvent?.eventType == AdEventTypes.POPUP_BEGIN
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-            XCTAssertEqual(mockListener.trackedEvent?.eventType, AdEventTypes.POPUP_BEGIN)
-            expectation.fulfill()
-        }
-        
-        wait(for: [expectation], timeout: 3.5)
+
+        XCTAssertEqual(mockListener.trackedEvent?.eventType, AdEventTypes.POPUP_BEGIN)
     }
 }
 
 class TestEventClientListener: EventClientListener {
-    var trackedEvent: AdEvent?
-    
+    private let lock = NSLock()
+    private var _trackedEvent: AdEvent?
+    var trackedEvent: AdEvent? {
+        get { lock.lock(); defer { lock.unlock() }; return _trackedEvent }
+        set { lock.lock(); _trackedEvent = newValue; lock.unlock() }
+    }
+
     func onAdEventTracked(event: AdEvent?) {
-        trackedEvent = event
+        lock.lock()
+        _trackedEvent = event
+        lock.unlock()
     }
 }

@@ -28,53 +28,34 @@ class KeywordInterceptMatcherMinLengthTests: XCTestCase {
     }
 
     func testMatchIgnoresInputShorterThan3Characters() {
-        let expectation = XCTestExpectation(description: "Short input check")
+        // Allow class setUp's initialize to complete
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.5))
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            let oneChar = KeywordInterceptMatcher.getInstance().match(constraint: "t")
-            let twoChar = KeywordInterceptMatcher.getInstance().match(constraint: "te")
-            XCTAssertTrue(oneChar.isEmpty, "1-char input should not match")
-            XCTAssertTrue(twoChar.isEmpty, "2-char input should not match")
-            expectation.fulfill()
-        }
-
-        wait(for: [expectation], timeout: 2)
+        let oneChar = KeywordInterceptMatcher.getInstance().match(constraint: "t")
+        let twoChar = KeywordInterceptMatcher.getInstance().match(constraint: "te")
+        XCTAssertTrue(oneChar.isEmpty, "1-char input should not match")
+        XCTAssertTrue(twoChar.isEmpty, "2-char input should not match")
     }
 
     func testMatchReturnsResultsForExactly3Characters() {
-        let expectation = XCTestExpectation(description: "3-char input check")
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.5))
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            let results = KeywordInterceptMatcher.getInstance().match(constraint: "tes")
-            XCTAssertFalse(results.isEmpty, "3-char input should match 'testTerm'")
-            expectation.fulfill()
-        }
-
-        wait(for: [expectation], timeout: 2)
+        let results = KeywordInterceptMatcher.getInstance().match(constraint: "tes")
+        XCTAssertFalse(results.isEmpty, "3-char input should match 'testTerm'")
     }
 
     func testMatchReturnsEmptyForNonMatchingInput() {
-        let expectation = XCTestExpectation(description: "No match check")
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.5))
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            let results = KeywordInterceptMatcher.getInstance().match(constraint: "xyz")
-            XCTAssertTrue(results.isEmpty)
-            expectation.fulfill()
-        }
-
-        wait(for: [expectation], timeout: 2)
+        let results = KeywordInterceptMatcher.getInstance().match(constraint: "xyz")
+        XCTAssertTrue(results.isEmpty)
     }
 
     func testMatchIsCaseInsensitive() {
-        let expectation = XCTestExpectation(description: "Case insensitivity check")
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.5))
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            let lower = KeywordInterceptMatcher.getInstance().match(constraint: "tes")
-            let upper = KeywordInterceptMatcher.getInstance().match(constraint: "TES")
-            XCTAssertEqual(lower.count, upper.count, "Match should be case insensitive")
-            expectation.fulfill()
-        }
-
-        wait(for: [expectation], timeout: 2)
+        let lower = KeywordInterceptMatcher.getInstance().match(constraint: "tes")
+        let upper = KeywordInterceptMatcher.getInstance().match(constraint: "TES")
+        XCTAssertEqual(lower.count, upper.count, "Match should be case insensitive")
     }
 }
