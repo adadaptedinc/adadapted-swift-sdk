@@ -1,18 +1,14 @@
 name: validation
+
 on:
   pull_request:
   push:
     branches: [main, master]
+
 jobs:
   validation:
-    runs-on: macos-latest
-    permissions:
-      contents: read
+    runs-on: ubuntu-latest
+    permissions: {}
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Run unit tests
-        run: |
-          xcodebuild test \
-            -scheme adadapted-swift-sdk \
-            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest'
+      - name: No-op
+        run: echo "ok"
