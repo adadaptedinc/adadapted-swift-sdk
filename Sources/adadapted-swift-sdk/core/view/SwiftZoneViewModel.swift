@@ -25,7 +25,7 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
     
     // MARK: - Initializer
     public init(zoneId: String, adContentListener: AdContentListener, zoneViewListener: ZoneViewListener, isZoneVisible: Binding<Bool>, zoneContextId: Binding<String>) {
-        self.presenter = AdZonePresenter(adViewHandler: AdViewHandler(), adClient: AdClient.getInstance())
+        self.presenter = AdZonePresenter(adViewHandler: AdViewHandler())
         self.adContentListener = adContentListener
         self.zoneViewListener = zoneViewListener
         self._isZoneVisible = isZoneVisible

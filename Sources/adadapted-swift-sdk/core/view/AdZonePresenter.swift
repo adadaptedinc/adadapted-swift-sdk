@@ -21,13 +21,11 @@ class AdZonePresenter: ZoneAdListener {
     private var adCompleted = false
     private var timerRunning = false
     private var timer: Timer?
-    private let adClient: AdClient?
     private var webViewManager: AdWebViewManager?
     private var swiftUIWebView: WKWebView?
     
-    init(adViewHandler: AdViewHandler, adClient: AdClient?) {
+    init(adViewHandler: AdViewHandler) {
         self.adViewHandler = adViewHandler
-        self.adClient = adClient
     }
     
     func initialize(zoneId: String) {

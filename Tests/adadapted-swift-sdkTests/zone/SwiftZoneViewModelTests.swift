@@ -102,7 +102,7 @@ final class SwiftZoneViewModelTests: XCTestCase {
 class TestableSwiftZoneViewModel: SwiftZoneViewModel {
     var mockPresenter: MockAdZonePresenter!
     override init(zoneId: String, adContentListener: AdContentListener, zoneViewListener: ZoneViewListener, isZoneVisible: Binding<Bool>, zoneContextId: Binding<String>) {
-        mockPresenter = MockAdZonePresenter(adViewHandler: AdViewHandler(), adClient: AdClient.getInstance())
+        mockPresenter = MockAdZonePresenter(adViewHandler: AdViewHandler())
         super.init(zoneId: zoneId, adContentListener: adContentListener, zoneViewListener: zoneViewListener, isZoneVisible: isZoneVisible, zoneContextId: zoneContextId)
         
         self.presenter = mockPresenter

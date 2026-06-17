@@ -20,6 +20,7 @@ public final class SessionClient: NSObject {
     public static func start() {
         guard !isObserving else { return }
         isObserving = true
+        createOrResumeSession()
         observeLifecycle()
     }
 

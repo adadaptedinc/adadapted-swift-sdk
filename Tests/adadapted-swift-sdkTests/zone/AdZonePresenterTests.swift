@@ -14,7 +14,7 @@ class AdZonePresenterTests: XCTestCase {
         DeviceInfoClient.createInstance(appId: "apiKey", isProd: false, params: [:], customIdentifier: "", deviceInfoExtractor: deviceInfoExtractor)
         EventClient.createInstance(eventAdapter: TestEventAdapter.shared)
         AdClient.createInstance(adapter: TestAdAdapter())
-        testAdZonePresenter = AdZonePresenter(adViewHandler: AdViewHandler(), adClient: AdClient.getInstance())
+        testAdZonePresenter = AdZonePresenter(adViewHandler: AdViewHandler())
     }
 
     override func setUp() {
@@ -106,7 +106,7 @@ class AdZonePresenterTests: XCTestCase {
     }
 
     func testOnAdClickedLink() {
-        AdZonePresenterTests.testAdZonePresenter = AdZonePresenter(adViewHandler: AdViewHandler(), adClient: AdClient.getInstance())
+        AdZonePresenterTests.testAdZonePresenter = AdZonePresenter(adViewHandler: AdViewHandler())
         AdZonePresenterTests.testAdZonePresenter.initialize(zoneId: "testZoneId")
         var testAd = Ad(id: "TestAdId", impressionId: "impressionId", url: "url", actionType: AdActionType.LINK)
 

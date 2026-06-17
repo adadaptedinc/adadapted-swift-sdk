@@ -10,7 +10,7 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
     // MARK: - Properties
     private var webViewManager: AdWebViewManager!
     private var reportButton: UIButton!
-    private var presenter: AdZonePresenter = AdZonePresenter(adViewHandler: AdViewHandler(), adClient: AdClient.getInstance())
+    private var presenter: AdZonePresenter = AdZonePresenter(adViewHandler: AdViewHandler())
     internal var zoneViewListener: ZoneViewListener?
     internal var isVisible = true
     private var isAdVisible = true
