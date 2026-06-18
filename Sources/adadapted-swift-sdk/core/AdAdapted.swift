@@ -75,6 +75,7 @@ public class AdAdapted {
             if !isProd {
                 AALogger.logError(message: "AdAdapted Advertising SDK has already been started.")
             }
+            return
         }
         
         hasStarted = true

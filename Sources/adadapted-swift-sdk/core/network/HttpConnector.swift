@@ -7,6 +7,7 @@ import Foundation
 class HttpConnector {
     private static let maxRetries = 3
     private static let initialDelaySeconds: TimeInterval = 1.0
+    static var session: URLSession = .shared
 
     private init() {}
 
@@ -18,7 +19,7 @@ class HttpConnector {
                 try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
             }
             do {
-                let (data, response) = try await URLSession.shared.data(for: request)
+                let (data, response) = try await session.data(for: request)
                 if let httpResponse = response as? HTTPURLResponse,
                    (500...599).contains(httpResponse.statusCode) {
                     lastError = URLError(.badServerResponse)
@@ -38,7 +39,7 @@ class HttpConnector {
     }
 
     private static func performWithRetry(request: URLRequest, attempt: Int, completion: @escaping (Data?, URLResponse?, Error?) -> Void) {
-        URLSession.shared.dataTask(with: request) { data, response, error in
+        session.dataTask(with: request) { data, response, error in
             if error != nil, attempt < maxRetries - 1 {
                 let delay = initialDelaySeconds * pow(2.0, Double(attempt))
                 DispatchQueue.global().asyncAfter(deadline: .now() + delay) {

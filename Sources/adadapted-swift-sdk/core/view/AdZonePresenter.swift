@@ -253,15 +253,21 @@ class AdZonePresenter: ZoneAdListener {
     }
     
     func onAdLoaded(_ adZoneData: AdZoneData) {
-        if zoneId.isEmpty {
-            AALogger.logError(message: "AdZoneId is empty. Was onStop() called outside the host view's overriding function?")
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            if zoneId.isEmpty {
+                AALogger.logError(message: "AdZoneId is empty. Was onStop() called outside the host view's overriding function?")
+            }
+            updateCurrentZone(adZoneData: adZoneData)
+            notifyZoneAvailable()
         }
-        updateCurrentZone(adZoneData: adZoneData)
-        notifyZoneAvailable()
     }
-    
+
     func onAdLoadFailed() {
-        updateCurrentZone(adZoneData: AdZoneData())
-        notifyNoAdAvailable()
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            updateCurrentZone(adZoneData: AdZoneData())
+            notifyNoAdAvailable()
+        }
     }
 }
