@@ -48,7 +48,12 @@ class HttpAdAdapter: AdAdapter {
         do {
             let (data, _) = try await HttpConnector.data(for: request)
             let adResponse = try JSONDecoder().decode(AdResponse.self, from: data)
-            listener.onAdLoaded(adResponse.data)
+            if adResponse.success {
+                listener.onAdLoaded(adResponse.data)
+            } else {
+                AALogger.logError(message: "Ad request returned success: false")
+                listener.onAdLoadFailed()
+            }
         } catch {
             AALogger.logError(message: "Ad request failed: \(error)")
             HttpErrorTracker.trackHttpError(

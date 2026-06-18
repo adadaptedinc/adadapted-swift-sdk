@@ -84,10 +84,14 @@ class AdZonePresenter: ZoneAdListener {
             zoneId: zoneId,
             listener: ClosureZoneAdListener(
                 onAdLoaded: { [weak self] adZoneData in
-                    self?.handleAd(ad: adZoneData.ad)
+                    DispatchQueue.main.async {
+                        self?.handleAd(ad: adZoneData.ad)
+                    }
                 },
                 onAdLoadFailed: { [weak self] in
-                    self?.handleAd(ad: Ad())
+                    DispatchQueue.main.async {
+                        self?.handleAd(ad: Ad())
+                    }
                 }
             ),
             contextId: zoneContextId
