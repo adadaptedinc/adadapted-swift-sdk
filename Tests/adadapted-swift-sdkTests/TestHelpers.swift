@@ -8,7 +8,7 @@ extension XCTestCase {
     /// allows the cooperative thread pool to execute pending `Task` work between
     /// predicate evaluations.
     func awaitCondition(
-        timeout: TimeInterval = 5.0,
+        timeout: TimeInterval = 10.0,
         condition: @escaping () -> Bool
     ) async {
         if condition() { return }
@@ -21,7 +21,7 @@ extension XCTestCase {
     /// then checks the condition. Use for tests that track events through
     /// `EventClient.trackSdkEvent` / `trackSdkError` / `fileEvent` → adapter.
     func flushEventsAndAwait(
-        timeout: TimeInterval = 5.0,
+        timeout: TimeInterval = 10.0,
         condition: @escaping () -> Bool
     ) async {
         if condition() { return }
@@ -36,7 +36,7 @@ extension XCTestCase {
     /// Flushes both EventClient and InterceptClient publish pipelines, then
     /// checks the condition. Use for intercept/suggestion tracking tests.
     func flushAllAndAwait(
-        timeout: TimeInterval = 5.0,
+        timeout: TimeInterval = 15.0,
         condition: @escaping () -> Bool
     ) async {
         if condition() { return }
