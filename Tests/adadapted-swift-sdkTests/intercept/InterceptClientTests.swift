@@ -30,10 +30,9 @@ class InterceptClientTests: XCTestCase {
         InterceptClient.createInstance(adapter: testInterceptAdapter, isKeywordInterceptEnabled: false)
     }
 
-    override func tearDown() {
-        super.tearDown()
-        // Allow any pending backSerialQueue work to complete before clearing
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.5))
+    override func tearDown() async throws {
+        try await super.tearDown()
+        try? await Task.sleep(nanoseconds: 200_000_000)
         InterceptClientTests.testInterceptAdapter.testEvents = Set()
     }
 
@@ -41,21 +40,19 @@ class InterceptClientTests: XCTestCase {
         XCTAssertNotNil(InterceptClient.getInstance())
     }
 
-    func testInitialize() {
+    func testInitialize() async {
         let mockListener = InterceptListenerMock()
 
-        runOnMainAndWait {
-            InterceptClient.getInstance()?.initialize(sessionId: "123", interceptListener: mockListener)
-        }
+        InterceptClient.getInstance()?.initialize(sessionId: "123", interceptListener: mockListener)
 
-        waitForCondition(timeout: 5) {
+        await awaitCondition {
             mockListener.onKeywordInterceptInitializedCalled
         }
 
         XCTAssertTrue(mockListener.onKeywordInterceptInitializedCalled)
     }
 
-    func testTrackMatched() {
+    func testTrackMatched() async {
         InterceptClient.getInstance()?.trackMatched(
             searchId: InterceptClientTests.testEvent.searchId,
             termId: InterceptClientTests.testEvent.termId,
@@ -63,18 +60,14 @@ class InterceptClientTests: XCTestCase {
             userInput: InterceptClientTests.testEvent.userInput
         )
 
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.0))
-
-        InterceptClient.getInstance()?.onPublishEvents()
-
-        waitForCondition(timeout: 10) {
+        await flushAllAndAwait {
             InterceptClientTests.testInterceptAdapter.testEvents.contains(where: { $0.event == InterceptEvent.Constants.MATCHED })
         }
 
         XCTAssertTrue(InterceptClientTests.testInterceptAdapter.testEvents.contains(where: { $0.event == InterceptEvent.Constants.MATCHED }))
     }
 
-    func testTrackPresented() {
+    func testTrackPresented() async {
         InterceptClient.getInstance()?.trackPresented(
             searchId: InterceptClientTests.testEvent.searchId,
             termId: InterceptClientTests.testEvent.termId,
@@ -82,18 +75,14 @@ class InterceptClientTests: XCTestCase {
             userInput: InterceptClientTests.testEvent.userInput
         )
 
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.0))
-
-        InterceptClient.getInstance()?.onPublishEvents()
-
-        waitForCondition(timeout: 10) {
+        await flushAllAndAwait {
             InterceptClientTests.testInterceptAdapter.testEvents.contains(where: { $0.event == InterceptEvent.Constants.PRESENTED })
         }
 
         XCTAssertTrue(InterceptClientTests.testInterceptAdapter.testEvents.contains(where: { $0.event == InterceptEvent.Constants.PRESENTED }))
     }
 
-    func testTrackSelected() {
+    func testTrackSelected() async {
         InterceptClient.getInstance()?.trackSelected(
             searchId: InterceptClientTests.testEvent.searchId,
             termId: InterceptClientTests.testEvent.termId,
@@ -101,29 +90,20 @@ class InterceptClientTests: XCTestCase {
             userInput: InterceptClientTests.testEvent.userInput
         )
 
-        // Allow backSerialQueue to file the event
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.0))
-
-        InterceptClient.getInstance()?.onPublishEvents()
-
-        waitForCondition(timeout: 10) {
+        await flushAllAndAwait {
             InterceptClientTests.testInterceptAdapter.testEvents.contains(where: { $0.event == InterceptEvent.Constants.SELECTED })
         }
 
         XCTAssertTrue(InterceptClientTests.testInterceptAdapter.testEvents.contains(where: { $0.event == InterceptEvent.Constants.SELECTED }))
     }
 
-    func testTrackNotMatched() {
+    func testTrackNotMatched() async {
         InterceptClient.getInstance()?.trackNotMatched(
             searchId: InterceptClientTests.testEvent.searchId,
             userInput: InterceptClientTests.testEvent.userInput
         )
 
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.0))
-
-        InterceptClient.getInstance()?.onPublishEvents()
-
-        waitForCondition(timeout: 10) {
+        await flushAllAndAwait {
             InterceptClientTests.testInterceptAdapter.testEvents.contains(where: { $0.event == InterceptEvent.Constants.NOT_MATCHED })
         }
 

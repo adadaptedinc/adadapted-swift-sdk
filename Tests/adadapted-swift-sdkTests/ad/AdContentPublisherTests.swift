@@ -7,8 +7,8 @@ import XCTest
 @testable import adadapted_swift_sdk
 
 class AdContentPublisherTests: XCTestCase {
-    
-    func testPublishContentWithItems() {
+
+    func testPublishContentWithItems() async {
         let publisher = AdContentPublisher.getInstance()
         let mockListener = MockAdContentListener()
         publisher.addListener(listener: mockListener)
@@ -18,7 +18,7 @@ class AdContentPublisherTests: XCTestCase {
 
         publisher.publishContent(zoneId: zoneId, content: adContent)
 
-        waitForCondition(timeout: 5) {
+        await awaitCondition {
             mockListener.onContentAvailableCalled
         }
 
@@ -26,7 +26,7 @@ class AdContentPublisherTests: XCTestCase {
         XCTAssertEqual(mockListener.receivedZoneId, zoneId)
     }
 
-    func testPublishContentWithNoItems() {
+    func testPublishContentWithNoItems() async {
         let publisher = AdContentPublisher.getInstance()
         let mockListener = MockAdContentListener()
         publisher.addListener(listener: mockListener)
@@ -36,7 +36,7 @@ class AdContentPublisherTests: XCTestCase {
 
         publisher.publishNonContentNotification(zoneId: zoneId, adId: adId)
 
-        waitForCondition(timeout: 5) {
+        await awaitCondition {
             mockListener.onNonContentNotificationCalled
         }
 
@@ -54,13 +54,13 @@ class MockAdContentListener: AdContentListener {
     var notifiedAdId: String?
     var receivedZoneId: String?
     var receivedContent: AddToListContent?
-    
+
     func onContentAvailable(zoneId: String, content: AddToListContent) {
         onContentAvailableCalled = true
         receivedZoneId = zoneId
         receivedContent = content
     }
-    
+
     func onNonContentAction(zoneId: String, adId: String) {
         onNonContentNotificationCalled = true
         notifiedZoneId = zoneId

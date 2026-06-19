@@ -6,19 +6,18 @@ import XCTest
 @testable import adadapted_swift_sdk
 
 class EventClientTests: XCTestCase {
-    
+
     override class func setUp() {
         super.setUp()
         let deviceInfoExtractor = DeviceInfoExtractor()
         DeviceInfoClient.createInstance(appId: "apiKey", isProd: false, params: [:], customIdentifier: "", deviceInfoExtractor: deviceInfoExtractor)
         EventClient.createInstance(eventAdapter: TestEventAdapter.shared)
     }
-    
-    override func setUp() {
-        super.setUp()
-        // Drain any stale events from previous test classes' timers
+
+    override func setUp() async throws {
+        try await super.setUp()
         EventClient.getInstance()?.onPublishEvents()
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.1))
+        try? await Task.sleep(nanoseconds: 100_000_000)
         TestEventAdapter.shared.cleanupEvents()
     }
 
@@ -27,15 +26,10 @@ class EventClientTests: XCTestCase {
         TestEventAdapter.shared.cleanupEvents()
     }
 
-    func testTrackAppEvent() {
+    func testTrackAppEvent() async {
         EventClient.trackSdkEvent(name: "testTrackAppEvent")
 
-        // Allow the Task to insert the event into the SafeSet
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.0))
-
-        EventClient.getInstance()?.onPublishEvents()
-
-        waitForCondition(timeout: 5) {
+        await flushEventsAndAwait {
             TestEventAdapter.shared.testSdkEvents.contains { $0.name == "testTrackAppEvent" }
         }
 
@@ -44,14 +38,10 @@ class EventClientTests: XCTestCase {
         XCTAssertEqual("sdk", event?.type)
     }
 
-    func testTrackSdkEvent() {
+    func testTrackSdkEvent() async {
         EventClient.trackSdkEvent(name: "testTrackSdkEvent", params: [:])
 
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.0))
-
-        EventClient.getInstance()?.onPublishEvents()
-
-        waitForCondition(timeout: 5) {
+        await flushEventsAndAwait {
             TestEventAdapter.shared.testSdkEvents.contains { $0.name == "testTrackSdkEvent" }
         }
 
@@ -60,14 +50,10 @@ class EventClientTests: XCTestCase {
         XCTAssertEqual("sdk", event?.type)
     }
 
-    func testTrackError() {
+    func testTrackError() async {
         EventClient.trackSdkError(code: "testErrorCode", message: "testTrackError", params: [:])
 
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.0))
-
-        EventClient.getInstance()?.onPublishEvents()
-
-        waitForCondition(timeout: 5) {
+        await flushEventsAndAwait {
             TestEventAdapter.shared.testSdkErrors.contains { $0.code == "testErrorCode" }
         }
 
@@ -75,13 +61,12 @@ class EventClientTests: XCTestCase {
         XCTAssertNotNil(error)
         XCTAssertEqual("testTrackError", error?.message)
     }
-    
+
     func testThreadSafetyOfSafeSets() async {
         let adSet = SafeSet<AdEvent>()
         let sdkSet = SafeSet<SdkEvent>()
         let sdkErrorSet = SafeSet<SdkError>()
 
-        // concurrently modify SafeSets to verify no crashes from concurrent access
         await withTaskGroup(of: Void.self) { group in
             for i in 0..<100 {
                 group.addTask {
@@ -98,12 +83,10 @@ class EventClientTests: XCTestCase {
             }
         }
 
-        // After all concurrent operations, verify the actor is still functional
-        let remainingAdEvents = await adSet.copyAndClear()
-        let remainingSdkEvents = await sdkSet.copyAndClear()
-        let remainingSdkErrors = await sdkErrorSet.copyAndClear()
+        let _ = await adSet.copyAndClear()
+        let _ = await sdkSet.copyAndClear()
+        let _ = await sdkErrorSet.copyAndClear()
 
-        // Sets should now be empty after the final copyAndClear
         let adEmpty = await adSet.isEmpty()
         let sdkEmpty = await sdkSet.isEmpty()
         let errorsEmpty = await sdkErrorSet.isEmpty()
@@ -112,13 +95,12 @@ class EventClientTests: XCTestCase {
         XCTAssertTrue(sdkEmpty)
         XCTAssertTrue(errorsEmpty)
     }
-    
+
     func testThreadSafetyOfSafeArray() async {
         let listenerArray = SafeArray<EventClientListener>()
         let listener1 = TestEventClientListener()
         let listener2 = TestEventClientListener()
 
-        // concurrently modify SafeArray to verify no crashes from concurrent access
         await withTaskGroup(of: Void.self) { group in
             for _ in 0..<100 {
                 group.addTask {
@@ -133,7 +115,6 @@ class EventClientTests: XCTestCase {
             }
         }
 
-        // After all concurrent operations, do a final cleanup and verify actor is functional
         await listenerArray.removeAll(where: { _ in true })
         let remainingListeners = await listenerArray.isEmpty()
 

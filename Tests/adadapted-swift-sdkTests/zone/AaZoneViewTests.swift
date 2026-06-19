@@ -37,7 +37,7 @@ class AaZoneViewTests: XCTestCase {
         XCTAssertTrue(testListener.adLoaded)
     }
 
-    func testStartContentListener() {
+    func testStartContentListener() async {
         let testAdContentListener = MockAdContentListener()
         var testAd = Ad(id:"NewAdId")
         testAaZoneView.initialize(zoneId: "TestZoneId")
@@ -45,29 +45,27 @@ class AaZoneViewTests: XCTestCase {
         testAaZoneView.onAdAvailable(ad: testAd)
         testAaZoneView.onAdLoadedInWebView(ad: &testAd)
 
-        runOnMainAndWait {
-            AdContentPublisher.getInstance().publishContent(
-                zoneId: "TestZoneId",
-                content: AdContent.createAddToListContent(
-                    ad: Ad(
-                        payload: Payload(
-                            detailedListItems: [AddToListItem(
-                                trackingId: "trackId",
-                                title: "title",
-                                brand: "brand",
-                                category: "cat",
-                                productUpc: "upc",
-                                retailerSku: "sku",
-                                retailerID: "disc",
-                                productImage: "image"
-                            )]
-                        )
+        AdContentPublisher.getInstance().publishContent(
+            zoneId: "TestZoneId",
+            content: AdContent.createAddToListContent(
+                ad: Ad(
+                    payload: Payload(
+                        detailedListItems: [AddToListItem(
+                            trackingId: "trackId",
+                            title: "title",
+                            brand: "brand",
+                            category: "cat",
+                            productUpc: "upc",
+                            retailerSku: "sku",
+                            retailerID: "disc",
+                            productImage: "image"
+                        )]
                     )
                 )
             )
-        }
+        )
 
-        waitForCondition(timeout: 5) {
+        await awaitCondition {
             testAdContentListener.receivedZoneId == "TestZoneId"
         }
 
@@ -124,13 +122,13 @@ class AaZoneViewTests: XCTestCase {
         XCTAssertEqual(testListener.adLoaded, false)
     }
 
-    func testOnZoneAvail() {
+    func testOnZoneAvail() async {
         let testListener = TestAaZoneViewListener()
         testAaZoneView.initialize(zoneId: "TestZoneId")
         testAaZoneView.onStart(listener: testListener)
         testAaZoneView.onZoneAvailable(adZoneData: AdZoneData(ad: Ad(id: "NewZoneAdId")))
 
-        waitForCondition(timeout: 5) {
+        await awaitCondition {
             testListener.zoneHasAds == true
         }
 
@@ -177,7 +175,7 @@ class AaZoneViewTests: XCTestCase {
         XCTAssertEqual(testListener.adLoaded, true)
     }
 
-    func testOnAdClicked() {
+    func testOnAdClicked() async {
         let testListener = TestAaZoneViewListener()
         var testAd = Ad(id: "NewAdId", actionType: "c")
         testAaZoneView.initialize(zoneId: "TestZoneId")
@@ -185,11 +183,7 @@ class AaZoneViewTests: XCTestCase {
         testAaZoneView.onAdLoadedInWebView(ad: &testAd)
         testAaZoneView.onAdInWebViewClicked(ad: testAd)
 
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.0))
-
-        EventClient.getInstance()?.onPublishEvents()
-
-        waitForCondition(timeout: 5) {
+        await flushEventsAndAwait {
             TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.ATL_AD_CLICKED }
         }
 

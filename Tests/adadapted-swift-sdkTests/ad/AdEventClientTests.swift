@@ -7,47 +7,44 @@ import XCTest
 
 class AdEventClientTests: XCTestCase {
     var testAd = Ad(id: "adId", impressionId: "zoneId", url: "impId")
-    
+
     override class func setUp() {
         super.setUp()
-        
+
         let deviceInfoExtractor = DeviceInfoExtractor()
         DeviceInfoClient.createInstance(appId: "apiKey", isProd: false, params: [:], customIdentifier: "", deviceInfoExtractor: deviceInfoExtractor)
         EventClient.createInstance(eventAdapter: TestEventAdapter.shared)
     }
-    
-    override func tearDown() {
-        super.tearDown()
-    }
-    
+
     func testCreateInstance() {
         XCTAssertNotNil(TestEventAdapter.shared)
     }
-    
-    func testAddListenerAndTrackEventImpression() {
+
+    func testAddListenerAndTrackEventImpression() async {
         let mockListener = TestEventClientListener()
         EventClient.addListener(listener: mockListener)
 
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.5))
+        // Let addListener Task complete before tracking
+        try? await Task.sleep(nanoseconds: 200_000_000)
 
         EventClient.trackImpression(ad: self.testAd)
 
-        waitForCondition(timeout: 5) {
+        await awaitCondition {
             mockListener.trackedEvent != nil
         }
 
         XCTAssertNotNil(mockListener.trackedEvent)
     }
 
-    func testRemoveListener() {
+    func testRemoveListener() async {
         let mockListener = TestEventClientListener()
         EventClient.addListener(listener: mockListener)
 
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.5))
+        try? await Task.sleep(nanoseconds: 200_000_000)
 
         EventClient.trackImpression(ad: self.testAd)
 
-        waitForCondition(timeout: 5) {
+        await awaitCondition {
             mockListener.trackedEvent != nil
         }
 
@@ -55,43 +52,43 @@ class AdEventClientTests: XCTestCase {
 
         EventClient.removeListener(listener: mockListener)
 
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.5))
+        // Let removeListener Task complete
+        try? await Task.sleep(nanoseconds: 200_000_000)
 
         mockListener.trackedEvent = nil
 
         EventClient.trackImpression(ad: self.testAd)
 
         // After removing, the listener should NOT receive events.
-        // Wait a reasonable time to confirm no event arrives.
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 2.0))
+        try? await Task.sleep(nanoseconds: 500_000_000)
 
         XCTAssertNil(mockListener.trackedEvent)
     }
 
-    func testTrackInteraction() {
+    func testTrackInteraction() async {
         let mockListener = TestEventClientListener()
         EventClient.addListener(listener: mockListener)
 
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.5))
+        try? await Task.sleep(nanoseconds: 200_000_000)
 
         EventClient.trackInteraction(ad: self.testAd)
 
-        waitForCondition(timeout: 5) {
+        await awaitCondition {
             mockListener.trackedEvent?.eventType == AdEventTypes.INTERACTION
         }
 
         XCTAssertEqual(mockListener.trackedEvent?.eventType, AdEventTypes.INTERACTION)
     }
 
-    func testTrackPopupBegin() {
+    func testTrackPopupBegin() async {
         let mockListener = TestEventClientListener()
         EventClient.addListener(listener: mockListener)
 
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.5))
+        try? await Task.sleep(nanoseconds: 200_000_000)
 
         EventClient.trackPopupBegin(ad: self.testAd)
 
-        waitForCondition(timeout: 5) {
+        await awaitCondition {
             mockListener.trackedEvent?.eventType == AdEventTypes.POPUP_BEGIN
         }
 
