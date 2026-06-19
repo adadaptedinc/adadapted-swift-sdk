@@ -50,7 +50,7 @@ class AdContentTests: XCTestCase {
         let testAdContent = AdContent.createAddToListContent(ad: Ad(id: "adContentId", impressionId: "testZoneId"))
         testAdContent.acknowledge()
 
-        await flushEventsAndAwait {
+        await awaitAdapterEvent {
             !TestEventAdapter.shared.testAdEvents.isEmpty
         }
 
@@ -63,7 +63,7 @@ class AdContentTests: XCTestCase {
         let testAdContent = AdContent.createAddToListContent(ad: Ad(id: "adContentId", impressionId: "testZoneId", payload: Payload(detailedListItems: testAddTolistItems)))
         testAdContent.itemAcknowledge(item: testAdContent.getItems().first!)
 
-        await flushEventsAndAwait {
+        await awaitAdapterEvent {
             TestEventAdapter.shared.testAdEvents.contains { $0.eventType == AdEventTypes.INTERACTION }
                 && TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.ATL_ITEM_ADDED_TO_LIST }
         }
@@ -78,7 +78,7 @@ class AdContentTests: XCTestCase {
         let testAdContent = AdContent.createAddToListContent(ad: Ad(id: "adContentId", impressionId: "testZoneId", payload: Payload(detailedListItems: testAddTolistItems)))
         testAdContent.failed(message: "adContentFail")
 
-        await flushEventsAndAwait {
+        await awaitAdapterEvent {
             !TestEventAdapter.shared.testSdkErrors.isEmpty
         }
 
@@ -90,7 +90,7 @@ class AdContentTests: XCTestCase {
         let testAdContent = AdContent.createAddToListContent(ad: Ad(id: "adContentId", impressionId: "testZoneId", payload: Payload(detailedListItems: testAddTolistItems)))
         testAdContent.itemFailed(item: testAddTolistItems.first!, message: "adContentFail")
 
-        await flushEventsAndAwait {
+        await awaitAdapterEvent {
             !TestEventAdapter.shared.testSdkErrors.isEmpty
         }
 
@@ -106,6 +106,12 @@ class TestEventAdapter: EventAdapter {
     private var _testAdEvents = [AdEvent]()
     private var _testSdkEvents = [SdkEvent]()
     private var _testSdkErrors = [SdkError]()
+
+    /// Callbacks fired the instant events arrive — tests set these to
+    /// fulfill expectations without polling.
+    var onAdEventPublished: (() -> Void)?
+    var onSdkEventPublished: (() -> Void)?
+    var onSdkErrorPublished: (() -> Void)?
 
     var testAdEvents: [AdEvent] {
         get { lock.lock(); defer { lock.unlock() }; return _testAdEvents }
@@ -126,18 +132,21 @@ class TestEventAdapter: EventAdapter {
         lock.lock()
         _testAdEvents.append(contentsOf: adEvents)
         lock.unlock()
+        onAdEventPublished?()
     }
 
     func publishSdkEvents(sessionId: String, deviceInfo:DeviceInfo, events: [SdkEvent]) {
         lock.lock()
         _testSdkEvents.append(contentsOf: events)
         lock.unlock()
+        onSdkEventPublished?()
     }
 
     func publishSdkErrors(sessionId: String, deviceInfo:DeviceInfo, errors: [SdkError]) {
         lock.lock()
         _testSdkErrors.append(contentsOf: errors)
         lock.unlock()
+        onSdkErrorPublished?()
     }
 
     func cleanupEvents() {

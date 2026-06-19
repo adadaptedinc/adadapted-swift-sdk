@@ -60,7 +60,7 @@ class InterceptClientTests: XCTestCase {
             userInput: InterceptClientTests.testEvent.userInput
         )
 
-        await flushAllAndAwait {
+        await awaitInterceptEvent(adapter: InterceptClientTests.testInterceptAdapter) {
             InterceptClientTests.testInterceptAdapter.testEvents.contains(where: { $0.event == InterceptEvent.Constants.MATCHED })
         }
 
@@ -75,7 +75,7 @@ class InterceptClientTests: XCTestCase {
             userInput: InterceptClientTests.testEvent.userInput
         )
 
-        await flushAllAndAwait {
+        await awaitInterceptEvent(adapter: InterceptClientTests.testInterceptAdapter) {
             InterceptClientTests.testInterceptAdapter.testEvents.contains(where: { $0.event == InterceptEvent.Constants.PRESENTED })
         }
 
@@ -90,7 +90,7 @@ class InterceptClientTests: XCTestCase {
             userInput: InterceptClientTests.testEvent.userInput
         )
 
-        await flushAllAndAwait {
+        await awaitInterceptEvent(adapter: InterceptClientTests.testInterceptAdapter) {
             InterceptClientTests.testInterceptAdapter.testEvents.contains(where: { $0.event == InterceptEvent.Constants.SELECTED })
         }
 
@@ -103,7 +103,7 @@ class InterceptClientTests: XCTestCase {
             userInput: InterceptClientTests.testEvent.userInput
         )
 
-        await flushAllAndAwait {
+        await awaitInterceptEvent(adapter: InterceptClientTests.testInterceptAdapter) {
             InterceptClientTests.testInterceptAdapter.testEvents.contains(where: { $0.event == InterceptEvent.Constants.NOT_MATCHED })
         }
 

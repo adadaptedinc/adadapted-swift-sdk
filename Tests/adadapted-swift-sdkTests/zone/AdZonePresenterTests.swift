@@ -89,7 +89,7 @@ class AdZonePresenterTests: XCTestCase {
         AdZonePresenterTests.testAdZonePresenter.onAdDisplayed(ad: &testAd, isAdVisible: true)
         AdZonePresenterTests.testAdZonePresenter.onAdClicked(ad: testAd)
 
-        await flushEventsAndAwait {
+        await awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.contains(where: { $0.name == EventStrings.ATL_AD_CLICKED })
         }
 
@@ -147,7 +147,7 @@ class AdZonePresenterTests: XCTestCase {
         AdZonePresenterTests.testAdZonePresenter.onAdDisplayed(ad: &testAd, isAdVisible: true)
         AdZonePresenterTests.testAdZonePresenter.onAdClicked(ad: testAd)
 
-        await flushEventsAndAwait {
+        await awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.contains(where: { $0.name == EventStrings.POPUP_AD_CLICKED })
         }
 

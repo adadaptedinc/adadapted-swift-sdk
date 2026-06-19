@@ -85,7 +85,7 @@ class PayloadClientTests: XCTestCase {
 
         PayloadClient.markContentAcknowledged(content: content)
 
-        await flushEventsAndAwait {
+        await awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.contains(where: { $0.name == EventStrings.ADDIT_ADDED_TO_LIST })
         }
 
@@ -99,7 +99,7 @@ class PayloadClientTests: XCTestCase {
 
         PayloadClient.markContentItemAcknowledged(content: content, item: Self.getTestAddToListItem())
 
-        await flushEventsAndAwait {
+        await awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.contains(where: { $0.name == EventStrings.ADDIT_ITEM_ADDED_TO_LIST })
         }
 
@@ -115,7 +115,7 @@ class PayloadClientTests: XCTestCase {
 
         PayloadClient.markContentDuplicate(content: content)
 
-        await flushEventsAndAwait {
+        await awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.contains(where: { $0.name == EventStrings.ADDIT_DUPLICATE_PAYLOAD })
         }
 
@@ -130,7 +130,7 @@ class PayloadClientTests: XCTestCase {
 
         PayloadClient.markContentDuplicate(content: content)
 
-        await flushEventsAndAwait {
+        await awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.contains(where: { $0.name == EventStrings.ADDIT_DUPLICATE_PAYLOAD })
         }
 
@@ -144,7 +144,7 @@ class PayloadClientTests: XCTestCase {
 
         PayloadClient.markContentFailed(content: content, message: "testFail")
 
-        await flushEventsAndAwait {
+        await awaitAdapterEvent {
             TestEventAdapter.shared.testSdkErrors.contains(where: { $0.code == EventStrings.ADDIT_CONTENT_FAILED })
         }
 
@@ -159,7 +159,7 @@ class PayloadClientTests: XCTestCase {
 
         PayloadClient.markContentFailed(content: content, message: "testFail")
 
-        await flushEventsAndAwait {
+        await awaitAdapterEvent {
             TestEventAdapter.shared.testSdkErrors.contains(where: { $0.code == EventStrings.ADDIT_CONTENT_FAILED })
         }
 
@@ -173,7 +173,7 @@ class PayloadClientTests: XCTestCase {
 
         PayloadClient.markContentItemFailed(content: content, item: Self.getTestAddToListItem(), message: "testItemFail")
 
-        await flushEventsAndAwait {
+        await awaitAdapterEvent {
             TestEventAdapter.shared.testSdkErrors.contains(where: { $0.code == EventStrings.ADDIT_CONTENT_ITEM_FAILED })
         }
 

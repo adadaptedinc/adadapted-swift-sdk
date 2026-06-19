@@ -48,7 +48,7 @@ class PopupContentTests: XCTestCase {
 
         testPopupContent.acknowledge()
 
-        await flushEventsAndAwait {
+        await awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.POPUP_ADDED_TO_LIST }
         }
 
@@ -61,7 +61,7 @@ class PopupContentTests: XCTestCase {
 
         testPopupContent.itemAcknowledge(item: testPopupContent.getItems().first!)
 
-        await flushEventsAndAwait {
+        await awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.count >= 2
         }
 
@@ -76,7 +76,7 @@ class PopupContentTests: XCTestCase {
 
         testPopupContent.failed(message: "popupFail")
 
-        await flushEventsAndAwait {
+        await awaitAdapterEvent {
             TestEventAdapter.shared.testSdkErrors.contains { $0.code == EventStrings.POPUP_CONTENT_FAILED }
         }
 
@@ -90,7 +90,7 @@ class PopupContentTests: XCTestCase {
 
         testPopupContent.itemFailed(item: self.testAddToListItems.first!, message: "popupItemFail")
 
-        await flushEventsAndAwait {
+        await awaitAdapterEvent {
             TestEventAdapter.shared.testSdkErrors.contains { $0.code == EventStrings.POPUP_CONTENT_ITEM_FAILED }
         }
 

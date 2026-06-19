@@ -25,7 +25,7 @@ class SuggestionTrackerTests: XCTestCase {
     func testSuggestionMatched() async {
         SuggestionTracker.suggestionMatched(searchId: "testMatchId", termId: "testTermId", term: "testTerm", replacement: "testReplacement", userInput: "testInput")
 
-        await flushAllAndAwait {
+        await awaitInterceptEvent(adapter: testInterceptAdapter) {
             self.testInterceptAdapter.testEvents.contains(where: { $0.event == InterceptEvent.Constants.MATCHED })
         }
 
@@ -37,7 +37,7 @@ class SuggestionTrackerTests: XCTestCase {
         SuggestionTracker.suggestionMatched(searchId: "testPresentedId", termId: "testTermId", term: "testTerm", replacement: "testReplacement", userInput: "testInput")
         SuggestionTracker.suggestionPresented(searchId: "testPresentedId", termId: "testTermId", replacement: "testReplacement")
 
-        await flushAllAndAwait {
+        await awaitInterceptEvent(adapter: testInterceptAdapter) {
             self.testInterceptAdapter.testEvents.contains(where: { $0.event == InterceptEvent.Constants.PRESENTED })
         }
 
@@ -49,7 +49,7 @@ class SuggestionTrackerTests: XCTestCase {
         SuggestionTracker.suggestionMatched(searchId: "testSelectedId", termId: "testTermId", term: "testTerm", replacement: "testReplacement", userInput: "testInput")
         SuggestionTracker.suggestionSelected(searchId: "testSelectedId", termId: "testTermId", replacement: "testReplacement")
 
-        await flushAllAndAwait {
+        await awaitInterceptEvent(adapter: testInterceptAdapter) {
             self.testInterceptAdapter.testEvents.contains(where: { $0.event == InterceptEvent.Constants.SELECTED })
         }
 
@@ -60,7 +60,7 @@ class SuggestionTrackerTests: XCTestCase {
     func testSuggestionNotMatched() async {
         SuggestionTracker.suggestionNotMatched(searchId: "testNotMatchedId", userInput: "testInput")
 
-        await flushAllAndAwait {
+        await awaitInterceptEvent(adapter: testInterceptAdapter) {
             self.testInterceptAdapter.testEvents.contains(where: { $0.event == InterceptEvent.Constants.NOT_MATCHED })
         }
 
@@ -72,6 +72,11 @@ class SuggestionTrackerTests: XCTestCase {
 class TestInterceptAdapter: InterceptAdapter {
     private let lock = NSLock()
     private var _testEvents = Set<InterceptEvent>()
+
+    /// Callback fired the instant events arrive — tests set this to
+    /// fulfill expectations without polling.
+    var onEventsPublished: (() -> Void)?
+
     var testEvents: Set<InterceptEvent> {
         get { lock.lock(); defer { lock.unlock() }; return _testEvents }
         set { lock.lock(); _testEvents = newValue; lock.unlock() }
@@ -85,5 +90,6 @@ class TestInterceptAdapter: InterceptAdapter {
         lock.lock()
         _testEvents.formUnion(events)
         lock.unlock()
+        onEventsPublished?()
     }
 }

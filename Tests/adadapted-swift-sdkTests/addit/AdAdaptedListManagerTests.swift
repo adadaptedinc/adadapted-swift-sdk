@@ -30,7 +30,7 @@ class AdAdaptedListManagerTest: XCTestCase {
     func testItemAddedToList() async {
         AdAdaptedListManager.itemAddedToList(item: "TestItem")
 
-        await flushEventsAndAwait {
+        await awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.contains {
                 $0.name == EventStrings.USER_ADDED_TO_LIST && $0.params["item_name"] == "TestItem"
             }
@@ -45,7 +45,7 @@ class AdAdaptedListManagerTest: XCTestCase {
     func testItemAddedToListWithList() async {
         AdAdaptedListManager.itemAddedToList(list: "TestList", item: "TestItem")
 
-        await flushEventsAndAwait {
+        await awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.contains {
                 $0.name == EventStrings.USER_ADDED_TO_LIST && $0.params["item_name"] == "TestItem"
             }
@@ -61,7 +61,7 @@ class AdAdaptedListManagerTest: XCTestCase {
     func testItemCrossedOffList() async {
         AdAdaptedListManager.itemCrossedOffList(item: "TestItem")
 
-        await flushEventsAndAwait {
+        await awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.contains {
                 $0.name == EventStrings.USER_CROSSED_OFF_LIST && $0.params["item_name"] == "TestItem"
             }
@@ -76,7 +76,7 @@ class AdAdaptedListManagerTest: XCTestCase {
     func testItemCrossedOffListWithList() async {
         AdAdaptedListManager.itemCrossedOffList(list: "TestList", item: "TestItem")
 
-        await flushEventsAndAwait {
+        await awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.contains {
                 $0.name == EventStrings.USER_CROSSED_OFF_LIST && $0.params["item_name"] == "TestItem"
             }
@@ -92,7 +92,7 @@ class AdAdaptedListManagerTest: XCTestCase {
     func testItemDeletedFromList() async {
         AdAdaptedListManager.itemDeletedFromList(item: "TestItem")
 
-        await flushEventsAndAwait {
+        await awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.contains {
                 $0.name == EventStrings.USER_DELETED_FROM_LIST && $0.params["item_name"] == "TestItem"
             }
@@ -107,7 +107,7 @@ class AdAdaptedListManagerTest: XCTestCase {
     func testItemDeletedFromListWithList() async {
         AdAdaptedListManager.itemDeletedFromList(list: "TestList", item: "TestItem")
 
-        await flushEventsAndAwait {
+        await awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.contains {
                 $0.name == EventStrings.USER_DELETED_FROM_LIST && $0.params["item_name"] == "TestItem"
             }

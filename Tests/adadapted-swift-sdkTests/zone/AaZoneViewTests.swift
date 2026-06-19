@@ -183,7 +183,7 @@ class AaZoneViewTests: XCTestCase {
         testAaZoneView.onAdLoadedInWebView(ad: &testAd)
         testAaZoneView.onAdInWebViewClicked(ad: testAd)
 
-        await flushEventsAndAwait {
+        await awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.ATL_AD_CLICKED }
         }
 

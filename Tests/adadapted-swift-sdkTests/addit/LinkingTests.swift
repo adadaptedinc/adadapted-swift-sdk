@@ -34,7 +34,7 @@ class LinkingTests: XCTestCase {
 
         AdAdaptedLinkHandler.parseUniversalLink(urlString)
 
-        await flushEventsAndAwait {
+        await awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.ADDIT_APP_OPENED }
         }
 

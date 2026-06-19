@@ -60,7 +60,7 @@ class SessionIdTests: XCTestCase {
 
         NotificationCenter.default.post(name: UIScene.didActivateNotification, object: nil)
 
-        await flushEventsAndAwait {
+        await awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.contains {
                 $0.name == EventStrings.SESSION_CREATED || $0.name == EventStrings.SESSION_RESUMED
             }
@@ -80,7 +80,7 @@ class SessionIdTests: XCTestCase {
 
         NotificationCenter.default.post(name: UIScene.didActivateNotification, object: nil)
 
-        await flushEventsAndAwait {
+        await awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.contains {
                 $0.name == EventStrings.SESSION_CREATED || $0.name == EventStrings.SESSION_RESUMED
             }
@@ -102,7 +102,7 @@ class SessionIdTests: XCTestCase {
 
         NotificationCenter.default.post(name: UIScene.willDeactivateNotification, object: nil)
 
-        await flushEventsAndAwait {
+        await awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.contains {
                 $0.name == EventStrings.SESSION_BACKGROUNDED
             }

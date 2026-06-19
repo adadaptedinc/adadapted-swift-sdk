@@ -29,7 +29,7 @@ class EventClientTests: XCTestCase {
     func testTrackAppEvent() async {
         EventClient.trackSdkEvent(name: "testTrackAppEvent")
 
-        await flushEventsAndAwait {
+        await awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.contains { $0.name == "testTrackAppEvent" }
         }
 
@@ -41,7 +41,7 @@ class EventClientTests: XCTestCase {
     func testTrackSdkEvent() async {
         EventClient.trackSdkEvent(name: "testTrackSdkEvent", params: [:])
 
-        await flushEventsAndAwait {
+        await awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.contains { $0.name == "testTrackSdkEvent" }
         }
 
@@ -53,7 +53,7 @@ class EventClientTests: XCTestCase {
     func testTrackError() async {
         EventClient.trackSdkError(code: "testErrorCode", message: "testTrackError", params: [:])
 
-        await flushEventsAndAwait {
+        await awaitAdapterEvent {
             TestEventAdapter.shared.testSdkErrors.contains { $0.code == "testErrorCode" }
         }
 
