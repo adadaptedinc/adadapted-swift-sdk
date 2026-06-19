@@ -22,15 +22,18 @@ class KeywordInterceptMatcherMinLengthTests: XCTestCase {
         KeywordInterceptMatcher.getInstance().initialize()
     }
 
+    override func setUp() async throws {
+        try await super.setUp()
+        // Let class setUp's initialize complete
+        try? await Task.sleep(nanoseconds: 200_000_000)
+    }
+
     override func tearDown() {
         super.tearDown()
         KeywordInterceptMatcherMinLengthTests.testInterceptAdapter.testEvents = Set()
     }
 
     func testMatchIgnoresInputShorterThan3Characters() {
-        // Allow class setUp's initialize to complete
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.5))
-
         let oneChar = KeywordInterceptMatcher.getInstance().match(constraint: "t")
         let twoChar = KeywordInterceptMatcher.getInstance().match(constraint: "te")
         XCTAssertTrue(oneChar.isEmpty, "1-char input should not match")
@@ -38,22 +41,16 @@ class KeywordInterceptMatcherMinLengthTests: XCTestCase {
     }
 
     func testMatchReturnsResultsForExactly3Characters() {
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.5))
-
         let results = KeywordInterceptMatcher.getInstance().match(constraint: "tes")
         XCTAssertFalse(results.isEmpty, "3-char input should match 'testTerm'")
     }
 
     func testMatchReturnsEmptyForNonMatchingInput() {
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.5))
-
         let results = KeywordInterceptMatcher.getInstance().match(constraint: "xyz")
         XCTAssertTrue(results.isEmpty)
     }
 
     func testMatchIsCaseInsensitive() {
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.5))
-
         let lower = KeywordInterceptMatcher.getInstance().match(constraint: "tes")
         let upper = KeywordInterceptMatcher.getInstance().match(constraint: "TES")
         XCTAssertEqual(lower.count, upper.count, "Match should be case insensitive")

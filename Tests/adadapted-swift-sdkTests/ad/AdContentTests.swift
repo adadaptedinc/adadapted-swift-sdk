@@ -7,9 +7,9 @@ import XCTest
 @testable import adadapted_swift_sdk
 
 class AdContentTests: XCTestCase {
-    
+
     private var testAddTolistItems: [AddToListItem] = [AddToListItem(trackingId: "testTrackingId", title: "title", brand: "brand", category: "cat", productUpc: "upc", retailerSku: "sku", retailerID: "discount", productImage: "image")]
-    
+
     override class func setUp() {
         super.setUp()
         let deviceInfoExtractor = DeviceInfoExtractor()
@@ -17,11 +17,10 @@ class AdContentTests: XCTestCase {
         EventClient.createInstance(eventAdapter: TestEventAdapter.shared)
     }
 
-    override func setUp() {
-        super.setUp()
-        // Drain any stale events from background timers, then clean
+    override func setUp() async throws {
+        try await super.setUp()
         EventClient.getInstance()?.onPublishEvents()
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.1))
+        try? await Task.sleep(nanoseconds: 100_000_000)
         TestEventAdapter.shared.cleanupEvents()
     }
 
@@ -34,28 +33,24 @@ class AdContentTests: XCTestCase {
         let adContent = AdContent.createAddToListContent(ad: Ad())
         XCTAssertTrue(adContent.hasNoItems())
     }
-    
+
     func testInitializationWithNonEmptyPayload() {
         let adContent = AdContent.createAddToListContent(ad: Ad(id: "adId", payload: Payload(detailedListItems: [AddToListItem(trackingId: "track", title: "title", brand: "brand", category: "cat", productUpc: "upc", retailerSku: "sku", retailerID: "discount", productImage: "image")])))
-        
+
         XCTAssertFalse(adContent.hasNoItems())
     }
-    
+
     func testZoneId() {
         let adContent = AdContent.createAddToListContent(ad: Ad(id: "adId", payload: Payload(detailedListItems: [AddToListItem(trackingId: "track", title: "title", brand: "brand", category: "cat", productUpc: "upc", retailerSku: "sku", retailerID: "discount", productImage: "image")])))
         let zoneId = adContent.zoneId()
         XCTAssertEqual(zoneId, adContent.zoneId())
     }
-    
-    func testAcknowledge() {
+
+    func testAcknowledge() async {
         let testAdContent = AdContent.createAddToListContent(ad: Ad(id: "adContentId", impressionId: "testZoneId"))
         testAdContent.acknowledge()
 
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.0))
-
-        EventClient.getInstance()?.onPublishEvents()
-
-        waitForCondition(timeout: 5) {
+        await awaitAdapterEvent {
             !TestEventAdapter.shared.testAdEvents.isEmpty
         }
 
@@ -64,15 +59,11 @@ class AdContentTests: XCTestCase {
         XCTAssertEqual("adContentId", TestEventAdapter.shared.testAdEvents.first?.adId)
     }
 
-    func testItemAcknowledge() {
+    func testItemAcknowledge() async {
         let testAdContent = AdContent.createAddToListContent(ad: Ad(id: "adContentId", impressionId: "testZoneId", payload: Payload(detailedListItems: testAddTolistItems)))
         testAdContent.itemAcknowledge(item: testAdContent.getItems().first!)
 
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.0))
-
-        EventClient.getInstance()?.onPublishEvents()
-
-        waitForCondition(timeout: 5) {
+        await awaitAdapterEvent {
             TestEventAdapter.shared.testAdEvents.contains { $0.eventType == AdEventTypes.INTERACTION }
                 && TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.ATL_ITEM_ADDED_TO_LIST }
         }
@@ -83,15 +74,11 @@ class AdContentTests: XCTestCase {
         XCTAssertEqual("adContentId", TestEventAdapter.shared.testAdEvents.first?.adId)
     }
 
-    func testContentFailed() {
+    func testContentFailed() async {
         let testAdContent = AdContent.createAddToListContent(ad: Ad(id: "adContentId", impressionId: "testZoneId", payload: Payload(detailedListItems: testAddTolistItems)))
         testAdContent.failed(message: "adContentFail")
 
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.0))
-
-        EventClient.getInstance()?.onPublishEvents()
-
-        waitForCondition(timeout: 5) {
+        await awaitAdapterEvent {
             !TestEventAdapter.shared.testSdkErrors.isEmpty
         }
 
@@ -99,15 +86,11 @@ class AdContentTests: XCTestCase {
         XCTAssertEqual("adContentFail", TestEventAdapter.shared.testSdkErrors.first!.message)
     }
 
-    func testContentItemFailed() {
+    func testContentItemFailed() async {
         let testAdContent = AdContent.createAddToListContent(ad: Ad(id: "adContentId", impressionId: "testZoneId", payload: Payload(detailedListItems: testAddTolistItems)))
         testAdContent.itemFailed(item: testAddTolistItems.first!, message: "adContentFail")
 
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.0))
-
-        EventClient.getInstance()?.onPublishEvents()
-
-        waitForCondition(timeout: 5) {
+        await awaitAdapterEvent {
             !TestEventAdapter.shared.testSdkErrors.isEmpty
         }
 
@@ -123,6 +106,12 @@ class TestEventAdapter: EventAdapter {
     private var _testAdEvents = [AdEvent]()
     private var _testSdkEvents = [SdkEvent]()
     private var _testSdkErrors = [SdkError]()
+
+    /// Callbacks fired the instant events arrive — tests set these to
+    /// fulfill expectations without polling.
+    var onAdEventPublished: (() -> Void)?
+    var onSdkEventPublished: (() -> Void)?
+    var onSdkErrorPublished: (() -> Void)?
 
     var testAdEvents: [AdEvent] {
         get { lock.lock(); defer { lock.unlock() }; return _testAdEvents }
@@ -143,18 +132,21 @@ class TestEventAdapter: EventAdapter {
         lock.lock()
         _testAdEvents.append(contentsOf: adEvents)
         lock.unlock()
+        onAdEventPublished?()
     }
 
     func publishSdkEvents(sessionId: String, deviceInfo:DeviceInfo, events: [SdkEvent]) {
         lock.lock()
         _testSdkEvents.append(contentsOf: events)
         lock.unlock()
+        onSdkEventPublished?()
     }
 
     func publishSdkErrors(sessionId: String, deviceInfo:DeviceInfo, errors: [SdkError]) {
         lock.lock()
         _testSdkErrors.append(contentsOf: errors)
         lock.unlock()
+        onSdkErrorPublished?()
     }
 
     func cleanupEvents() {

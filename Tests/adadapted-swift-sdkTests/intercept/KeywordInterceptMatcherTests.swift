@@ -26,65 +26,46 @@ class KeywordInterceptMatcherTests: XCTestCase {
         clearEvents()
     }
 
-    override func tearDown() {
-        // Allow pending backSerialQueue work to complete before cleanup
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.5))
+    override func tearDown() async throws {
+        try await super.tearDown()
+        try? await Task.sleep(nanoseconds: 200_000_000)
         TestEventAdapter.shared.cleanupEvents()
-        super.tearDown()
     }
 
-    func testInterceptMatches() {
+    func testInterceptMatches() async {
         KeywordInterceptMatcher.getInstance().match(constraint: "tes")
 
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.0))
-
-        InterceptClient.getInstance()?.onPublishEvents()
-
-        waitForCondition(timeout: 10) {
+        await awaitInterceptEvent(adapter: KeywordInterceptMatcherTests.testInterceptAdapter) {
             KeywordInterceptMatcherTests.testInterceptAdapter.testEvents.contains(where: { $0.userInput == "tes" && $0.event == InterceptEvent.Constants.MATCHED })
         }
 
         XCTAssertEqual(KeywordInterceptMatcherTests.testInterceptAdapter.testEvents.first(where: { $0.userInput == "tes" })?.event, InterceptEvent.Constants.MATCHED)
     }
 
-    func testInterceptDoesNotMatch() {
+    func testInterceptDoesNotMatch() async {
         KeywordInterceptMatcher.getInstance().match(constraint: "oxo")
 
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.0))
-
-        InterceptClient.getInstance()?.onPublishEvents()
-
-        waitForCondition(timeout: 10) {
+        await awaitInterceptEvent(adapter: KeywordInterceptMatcherTests.testInterceptAdapter) {
             KeywordInterceptMatcherTests.testInterceptAdapter.testEvents.contains(where: { $0.userInput == "oxo" && $0.event == InterceptEvent.Constants.NOT_MATCHED })
         }
 
         XCTAssertEqual(KeywordInterceptMatcherTests.testInterceptAdapter.testEvents.first(where: { $0.userInput == "oxo" })?.event, InterceptEvent.Constants.NOT_MATCHED)
     }
 
-    func testSessionIsNotAvailable() {
+    func testSessionIsNotAvailable() async {
         KeywordInterceptMatcher.getInstance().match(constraint: "two")
 
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.0))
-
-        InterceptClient.getInstance()?.onPublishEvents()
-        EventClient.getInstance()?.onPublishEvents()
-
-        waitForCondition(timeout: 10) {
+        await awaitInterceptEvent(adapter: KeywordInterceptMatcherTests.testInterceptAdapter) {
             KeywordInterceptMatcherTests.testInterceptAdapter.testEvents.contains(where: { $0.userInput == "two" && $0.event == InterceptEvent.Constants.MATCHED })
         }
 
         XCTAssertEqual(KeywordInterceptMatcherTests.testInterceptAdapter.testEvents.first(where: { $0.userInput == "two" })?.event, InterceptEvent.Constants.MATCHED)
     }
 
-    func testAdIsAvailable() {
+    func testAdIsAvailable() async {
         KeywordInterceptMatcher.getInstance().match(constraint: "thr")
 
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.0))
-
-        InterceptClient.getInstance()?.onPublishEvents()
-        EventClient.getInstance()?.onPublishEvents()
-
-        waitForCondition(timeout: 10) {
+        await awaitInterceptEvent(adapter: KeywordInterceptMatcherTests.testInterceptAdapter) {
             KeywordInterceptMatcherTests.testInterceptAdapter.testEvents.contains(where: { $0.userInput == "thr" && $0.event == InterceptEvent.Constants.MATCHED })
         }
 

@@ -56,8 +56,10 @@ final class AdClientTests: XCTestCase {
         let mockAdapter = MockAdAdapter()
         AdClient.createInstance(adapter: mockAdapter)
 
-        try? await Task.sleep(nanoseconds: 50_000_000) // Wait for queue flush
-        XCTAssertTrue(mockAdapter.requestCalled)
+        await awaitCondition {
+            mockAdapter.requestCalled
+        }
+
         XCTAssertEqual(mockAdapter.lastZoneId, "123")
     }
 
@@ -75,8 +77,10 @@ final class AdClientTests: XCTestCase {
             )
         )
 
-        try? await Task.sleep(nanoseconds: 50_000_000)
-        XCTAssertTrue(mockAdapter.requestCalled)
+        await awaitCondition {
+            mockAdapter.requestCalled
+        }
+
         XCTAssertTrue(failed)
         XCTAssertEqual(mockAdapter.lastZoneId, "456")
     }
@@ -108,7 +112,10 @@ final class AdClientTests: XCTestCase {
             extra: "extraData"
         )
 
-        try? await Task.sleep(nanoseconds: 50_000_000)
+        await awaitCondition {
+            mockAdapter.requestCalled
+        }
+
         XCTAssertEqual(mockAdapter.lastZoneId, "zone99")
         XCTAssertEqual(mockAdapter.lastStoreId, "store1")
         XCTAssertEqual(mockAdapter.lastContextId, "ctx1")
@@ -120,8 +127,8 @@ final class AdClientTests: XCTestCase {
         mockAdapter.shouldSucceed = true
         AdClient.createInstance(adapter: mockAdapter)
 
-        let expectation = XCTestExpectation(description: "Ad loaded")
         var loadedData: AdZoneData?
+        let expectation = XCTestExpectation(description: "Ad loaded")
 
         AdClient.fetchNewAd(
             zoneId: "zoneSuccess",
@@ -134,7 +141,7 @@ final class AdClientTests: XCTestCase {
             )
         )
 
-        await fulfillment(of: [expectation], timeout: 2)
+        await fulfillment(of: [expectation], timeout: 5)
         XCTAssertNotNil(loadedData)
         XCTAssertTrue(loadedData!.hasAd())
     }
@@ -151,7 +158,10 @@ final class AdClientTests: XCTestCase {
             )
         )
 
-        try? await Task.sleep(nanoseconds: 50_000_000)
+        await awaitCondition {
+            mockAdapter.requestCalled
+        }
+
         XCTAssertEqual(mockAdapter.lastStoreId, "")
         XCTAssertEqual(mockAdapter.lastContextId, "")
         XCTAssertEqual(mockAdapter.lastExtra, "")

@@ -15,10 +15,10 @@ class AdAdaptedListManagerTest: XCTestCase {
         TestEventAdapter.shared.cleanupEvents()
     }
 
-    override func setUp() {
-        super.setUp()
+    override func setUp() async throws {
+        try await super.setUp()
         EventClient.getInstance()?.onPublishEvents()
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.5))
+        try? await Task.sleep(nanoseconds: 100_000_000)
         TestEventAdapter.shared.cleanupEvents()
     }
 
@@ -27,14 +27,10 @@ class AdAdaptedListManagerTest: XCTestCase {
         TestEventAdapter.shared.cleanupEvents()
     }
 
-    func testItemAddedToList() {
+    func testItemAddedToList() async {
         AdAdaptedListManager.itemAddedToList(item: "TestItem")
 
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.0))
-
-        EventClient.getInstance()?.onPublishEvents()
-
-        waitForCondition(timeout: 5) {
+        await awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.contains {
                 $0.name == EventStrings.USER_ADDED_TO_LIST && $0.params["item_name"] == "TestItem"
             }
@@ -46,14 +42,10 @@ class AdAdaptedListManagerTest: XCTestCase {
         XCTAssertNotNil(event)
     }
 
-    func testItemAddedToListWithList() {
+    func testItemAddedToListWithList() async {
         AdAdaptedListManager.itemAddedToList(list: "TestList", item: "TestItem")
 
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.0))
-
-        EventClient.getInstance()?.onPublishEvents()
-
-        waitForCondition(timeout: 5) {
+        await awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.contains {
                 $0.name == EventStrings.USER_ADDED_TO_LIST && $0.params["item_name"] == "TestItem"
             }
@@ -66,14 +58,10 @@ class AdAdaptedListManagerTest: XCTestCase {
         XCTAssertEqual("TestList", event?.params["list_name"])
     }
 
-    func testItemCrossedOffList() {
+    func testItemCrossedOffList() async {
         AdAdaptedListManager.itemCrossedOffList(item: "TestItem")
 
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.0))
-
-        EventClient.getInstance()?.onPublishEvents()
-
-        waitForCondition(timeout: 5) {
+        await awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.contains {
                 $0.name == EventStrings.USER_CROSSED_OFF_LIST && $0.params["item_name"] == "TestItem"
             }
@@ -85,14 +73,10 @@ class AdAdaptedListManagerTest: XCTestCase {
         XCTAssertNotNil(event)
     }
 
-    func testItemCrossedOffListWithList() {
+    func testItemCrossedOffListWithList() async {
         AdAdaptedListManager.itemCrossedOffList(list: "TestList", item: "TestItem")
 
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.0))
-
-        EventClient.getInstance()?.onPublishEvents()
-
-        waitForCondition(timeout: 5) {
+        await awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.contains {
                 $0.name == EventStrings.USER_CROSSED_OFF_LIST && $0.params["item_name"] == "TestItem"
             }
@@ -105,14 +89,10 @@ class AdAdaptedListManagerTest: XCTestCase {
         XCTAssertEqual("TestList", event?.params["list_name"])
     }
 
-    func testItemDeletedFromList() {
+    func testItemDeletedFromList() async {
         AdAdaptedListManager.itemDeletedFromList(item: "TestItem")
 
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.0))
-
-        EventClient.getInstance()?.onPublishEvents()
-
-        waitForCondition(timeout: 5) {
+        await awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.contains {
                 $0.name == EventStrings.USER_DELETED_FROM_LIST && $0.params["item_name"] == "TestItem"
             }
@@ -124,14 +104,10 @@ class AdAdaptedListManagerTest: XCTestCase {
         XCTAssertNotNil(event)
     }
 
-    func testItemDeletedFromListWithList() {
+    func testItemDeletedFromListWithList() async {
         AdAdaptedListManager.itemDeletedFromList(list: "TestList", item: "TestItem")
 
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.0))
-
-        EventClient.getInstance()?.onPublishEvents()
-
-        waitForCondition(timeout: 5) {
+        await awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.contains {
                 $0.name == EventStrings.USER_DELETED_FROM_LIST && $0.params["item_name"] == "TestItem"
             }

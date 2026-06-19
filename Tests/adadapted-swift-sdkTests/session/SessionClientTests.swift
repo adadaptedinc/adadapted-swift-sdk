@@ -10,12 +10,11 @@ import XCTest
 
 final class SessionClientTests: XCTestCase {
 
-    override func setUp() {
-        super.setUp()
+    override func setUp() async throws {
+        try await super.setUp()
         SessionClient.start()
-        // Simulate the didActivateNotification that fires on app launch
         NotificationCenter.default.post(name: UIScene.didActivateNotification, object: nil)
-        RunLoop.current.run(until: Date().addingTimeInterval(0.1))
+        try? await Task.sleep(nanoseconds: 100_000_000)
     }
 
     func testSessionIdIsCreatedOnStart() {
@@ -24,12 +23,11 @@ final class SessionClientTests: XCTestCase {
         XCTAssertTrue(sessionId.hasPrefix("IOS"), "Session ID should start with 'IOS'")
     }
 
-    func testSessionIdStaysSameDuringQuickResume() {
+    func testSessionIdStaysSameDuringQuickResume() async {
         let firstId = SessionClient.getSessionId()
 
-        // Simulate a quick foreground resume
         NotificationCenter.default.post(name: UIScene.didActivateNotification, object: nil)
-        RunLoop.current.run(until: Date().addingTimeInterval(0.1))
+        try? await Task.sleep(nanoseconds: 100_000_000)
         let secondId = SessionClient.getSessionId()
 
         XCTAssertEqual(firstId, secondId, "Session ID should not change on quick resume")
@@ -38,9 +36,7 @@ final class SessionClientTests: XCTestCase {
     func testSessionIdCanChangeOnNewSession() {
         let secondId = SessionClient.getSessionId()
 
-        // We can't reliably assert it's different, but we can assert it's valid
         XCTAssertFalse(secondId.isEmpty)
         XCTAssertTrue(secondId.hasPrefix("IOS"))
     }
 }
-

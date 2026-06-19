@@ -16,21 +16,16 @@ class SuggestionTrackerTests: XCTestCase {
         testInterceptClient.createInstance(adapter: testInterceptAdapter, isKeywordInterceptEnabled: true)
     }
 
-    override func tearDown() {
-        // Allow pending backSerialQueue work to complete before cleanup
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.5))
+    override func tearDown() async throws {
+        try await super.tearDown()
+        try? await Task.sleep(nanoseconds: 200_000_000)
         testInterceptAdapter.testEvents = Set()
-        super.tearDown()
     }
 
-    func testSuggestionMatched() {
+    func testSuggestionMatched() async {
         SuggestionTracker.suggestionMatched(searchId: "testMatchId", termId: "testTermId", term: "testTerm", replacement: "testReplacement", userInput: "testInput")
 
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.0))
-
-        testInterceptClient.getInstance()?.onPublishEvents()
-
-        waitForCondition(timeout: 10) {
+        await awaitInterceptEvent(adapter: testInterceptAdapter) {
             self.testInterceptAdapter.testEvents.contains(where: { $0.event == InterceptEvent.Constants.MATCHED })
         }
 
@@ -38,15 +33,11 @@ class SuggestionTrackerTests: XCTestCase {
         XCTAssertTrue(testInterceptAdapter.testEvents.contains { $0.searchId == "testMatchId" })
     }
 
-    func testSuggestionPresented() {
+    func testSuggestionPresented() async {
         SuggestionTracker.suggestionMatched(searchId: "testPresentedId", termId: "testTermId", term: "testTerm", replacement: "testReplacement", userInput: "testInput")
         SuggestionTracker.suggestionPresented(searchId: "testPresentedId", termId: "testTermId", replacement: "testReplacement")
 
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.0))
-
-        testInterceptClient.getInstance()?.onPublishEvents()
-
-        waitForCondition(timeout: 10) {
+        await awaitInterceptEvent(adapter: testInterceptAdapter) {
             self.testInterceptAdapter.testEvents.contains(where: { $0.event == InterceptEvent.Constants.PRESENTED })
         }
 
@@ -54,18 +45,11 @@ class SuggestionTrackerTests: XCTestCase {
         XCTAssertTrue(testInterceptAdapter.testEvents.contains { $0.searchId == "testPresentedId" })
     }
 
-    func testSuggestionSelected() {
+    func testSuggestionSelected() async {
         SuggestionTracker.suggestionMatched(searchId: "testSelectedId", termId: "testTermId", term: "testTerm", replacement: "testReplacement", userInput: "testInput")
+        SuggestionTracker.suggestionSelected(searchId: "testSelectedId", termId: "testTermId", replacement: "testReplacement")
 
-        runOnMainAndWait {
-            SuggestionTracker.suggestionSelected(searchId: "testSelectedId", termId: "testTermId", replacement: "testReplacement")
-        }
-
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.0))
-
-        testInterceptClient.getInstance()?.onPublishEvents()
-
-        waitForCondition(timeout: 10) {
+        await awaitInterceptEvent(adapter: testInterceptAdapter) {
             self.testInterceptAdapter.testEvents.contains(where: { $0.event == InterceptEvent.Constants.SELECTED })
         }
 
@@ -73,14 +57,10 @@ class SuggestionTrackerTests: XCTestCase {
         XCTAssertTrue(testInterceptAdapter.testEvents.contains { $0.searchId == "testSelectedId" })
     }
 
-    func testSuggestionNotMatched() {
+    func testSuggestionNotMatched() async {
         SuggestionTracker.suggestionNotMatched(searchId: "testNotMatchedId", userInput: "testInput")
 
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.0))
-
-        testInterceptClient.getInstance()?.onPublishEvents()
-
-        waitForCondition(timeout: 10) {
+        await awaitInterceptEvent(adapter: testInterceptAdapter) {
             self.testInterceptAdapter.testEvents.contains(where: { $0.event == InterceptEvent.Constants.NOT_MATCHED })
         }
 
@@ -92,6 +72,11 @@ class SuggestionTrackerTests: XCTestCase {
 class TestInterceptAdapter: InterceptAdapter {
     private let lock = NSLock()
     private var _testEvents = Set<InterceptEvent>()
+
+    /// Callback fired the instant events arrive — tests set this to
+    /// fulfill expectations without polling.
+    var onEventsPublished: (() -> Void)?
+
     var testEvents: Set<InterceptEvent> {
         get { lock.lock(); defer { lock.unlock() }; return _testEvents }
         set { lock.lock(); _testEvents = newValue; lock.unlock() }
@@ -105,5 +90,6 @@ class TestInterceptAdapter: InterceptAdapter {
         lock.lock()
         _testEvents.formUnion(events)
         lock.unlock()
+        onEventsPublished?()
     }
 }
