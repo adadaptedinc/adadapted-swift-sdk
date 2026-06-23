@@ -62,7 +62,6 @@ class PayloadClientTests: XCTestCase {
             testContent = $0
         }
 
-        // While deeplink is in progress, payloads should not be delivered
         try? await Task.sleep(nanoseconds: 200_000_000)
         XCTAssertTrue(testContent.isEmpty)
 

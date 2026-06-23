@@ -27,7 +27,7 @@ class InterceptClientTests: XCTestCase {
             customIdentifier: "",
             deviceInfoExtractor: deviceInfoExtractor
         )
-        InterceptClient.createInstance(adapter: testInterceptAdapter, isKeywordInterceptEnabled: false)
+        InterceptClient.createInstance(adapter: testInterceptAdapter, isKeywordInterceptEnabled: true)
     }
 
     override func setUp() async throws {
