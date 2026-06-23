@@ -16,9 +16,8 @@ class SuggestionTrackerTests: XCTestCase {
         testInterceptClient.createInstance(adapter: testInterceptAdapter, isKeywordInterceptEnabled: true)
     }
 
-    override func tearDown() async throws {
-        try await super.tearDown()
-        try? await Task.sleep(nanoseconds: 200_000_000)
+    override func tearDown() {
+        super.tearDown()
         testInterceptAdapter.testEvents = Set()
     }
 
