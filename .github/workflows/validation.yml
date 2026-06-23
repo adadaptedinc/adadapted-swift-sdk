@@ -14,12 +14,21 @@ jobs:
       - name: Select available simulator
         id: sim
         run: |
-          SIM_NAME=$(xcrun simctl list devices available | grep -oE 'iPhone [^(]+' | head -1 | xargs)
-          echo "name=$SIM_NAME" >> "$GITHUB_OUTPUT"
-          echo "Using simulator: $SIM_NAME"
+          SIM_UDID=$(xcrun simctl list devices available -j | python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)['devices']
+          for runtime in sorted(data.keys(), reverse=True):
+              if 'iOS' not in runtime:
+                  continue
+              for d in data[runtime]:
+                  if 'iPhone' in d['name'] and d['isAvailable']:
+                      print(d['udid']); sys.exit(0)
+          ")
+          echo "udid=$SIM_UDID" >> "$GITHUB_OUTPUT"
+          echo "Using simulator UDID: $SIM_UDID"
 
       - name: Run unit tests
         run: |
           xcodebuild test \
             -scheme adadapted-swift-sdk \
-            -destination "platform=iOS Simulator,name=${{ steps.sim.outputs.name }},OS=latest"
+            -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}"
