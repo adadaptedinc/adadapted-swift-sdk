@@ -4,96 +4,53 @@ import XCTest
 extension XCTestCase {
 
     /// Waits for `TestEventAdapter` to receive events that satisfy the
-    /// condition.  Triggers `onPublishEvents()` once to start the pipeline,
-    /// then relies on the adapter's callback to fulfill the expectation the
-    /// instant data arrives — no polling, no timing assumptions.
+    /// condition.  Repeatedly triggers `onPublishEvents()` and yields via
+    /// `Task.sleep` so GCD queues (including `.background`) make progress.
     func awaitAdapterEvent(
         timeout: TimeInterval = 15.0,
         condition: @escaping () -> Bool
     ) async {
-        if condition() { return }
-        let exp = XCTestExpectation(description: "adapter event")
-        exp.assertForOverFulfill = false
-
-        let callback: () -> Void = {
-            if condition() { exp.fulfill() }
+        let deadline = Date().addingTimeInterval(timeout)
+        while !condition() && Date() < deadline {
+            EventClient.getInstance()?.onPublishEvents()
+            try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
         }
-
-        TestEventAdapter.shared.onAdEventPublished = callback
-        TestEventAdapter.shared.onSdkEventPublished = callback
-        TestEventAdapter.shared.onSdkErrorPublished = callback
-
-        // Kick the publish pipeline — the adapter callback will fulfill
-        EventClient.getInstance()?.onPublishEvents()
-
-        await fulfillment(of: [exp], timeout: timeout)
-
-        TestEventAdapter.shared.onAdEventPublished = nil
-        TestEventAdapter.shared.onSdkEventPublished = nil
-        TestEventAdapter.shared.onSdkErrorPublished = nil
+        if !condition() {
+            XCTFail("awaitAdapterEvent timed out after \(timeout)s")
+        }
     }
 
     /// Waits for `TestInterceptAdapter` to receive events that satisfy the
-    /// condition.  Triggers both publish pipelines and periodically re-triggers
-    /// to handle cases where events are queued after the initial publish call.
+    /// condition.  Repeatedly triggers `onPublishEvents()` and yields via
+    /// `Task.sleep` so GCD queues (including `.background`) make progress.
     func awaitInterceptEvent(
         adapter: TestInterceptAdapter,
         timeout: TimeInterval = 15.0,
         condition: @escaping () -> Bool
     ) async {
-        if condition() { return }
-        let exp = XCTestExpectation(description: "intercept event")
-        exp.assertForOverFulfill = false
-
-        adapter.onEventsPublished = {
-            if condition() { exp.fulfill() }
-        }
-
-        EventClient.getInstance()?.onPublishEvents()
-        InterceptClient.getInstance()?.onPublishEvents()
-
-        // Periodically re-trigger publish and check condition as a fallback,
-        // in case the initial publish fires before events are queued.
-        let timer = DispatchSource.makeTimerSource(queue: .main)
-        timer.schedule(deadline: .now() + 0.1, repeating: 0.25)
-        timer.setEventHandler {
+        let deadline = Date().addingTimeInterval(timeout)
+        while !condition() && Date() < deadline {
             InterceptClient.getInstance()?.onPublishEvents()
-            if condition() {
-                exp.fulfill()
-                timer.cancel()
-            }
+            try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
         }
-        timer.activate()
-
-        await fulfillment(of: [exp], timeout: timeout)
-
-        timer.cancel()
-        adapter.onEventsPublished = nil
+        if !condition() {
+            XCTFail("awaitInterceptEvent timed out after \(timeout)s")
+        }
     }
 
-    /// Waits for an arbitrary async condition to be met — for tests that wait
-    /// on listener callbacks dispatched via `DispatchQueue.main.async` or
-    /// `Task {}`.  Uses a high-frequency main-queue timer so `fulfillment`
-    /// pumps the run loop and processes pending blocks.
+    /// Waits for an arbitrary async condition to be met.  Yields via
+    /// `Task.sleep` between checks so pending GCD blocks and Tasks can
+    /// execute.
     func awaitCondition(
         timeout: TimeInterval = 10.0,
         condition: @escaping () -> Bool
     ) async {
-        if condition() { return }
-        let exp = XCTestExpectation(description: "awaitCondition")
-        exp.assertForOverFulfill = false
-
-        let timer = DispatchSource.makeTimerSource(queue: .main)
-        timer.schedule(deadline: .now(), repeating: 0.05)
-        timer.setEventHandler {
-            if condition() {
-                exp.fulfill()
-                timer.cancel()
-            }
+        let deadline = Date().addingTimeInterval(timeout)
+        while !condition() && Date() < deadline {
+            try? await Task.sleep(nanoseconds: 50_000_000) // 50ms
         }
-        timer.activate()
-
-        await fulfillment(of: [exp], timeout: timeout)
-        timer.cancel()
+        if !condition() {
+            XCTFail("awaitCondition timed out after \(timeout)s")
+        }
     }
 }
