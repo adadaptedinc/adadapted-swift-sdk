@@ -11,8 +11,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Select available simulator
+        id: sim
+        run: |
+          SIM_NAME=$(xcrun simctl list devices available | grep -oE 'iPhone [^(]+' | head -1 | xargs)
+          echo "name=$SIM_NAME" >> "$GITHUB_OUTPUT"
+          echo "Using simulator: $SIM_NAME"
+
       - name: Run unit tests
         run: |
           xcodebuild test \
             -scheme adadapted-swift-sdk \
-            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest'
+            -destination "platform=iOS Simulator,name=${{ steps.sim.outputs.name }},OS=latest"
