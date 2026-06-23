@@ -30,9 +30,13 @@ class InterceptClientTests: XCTestCase {
         InterceptClient.createInstance(adapter: testInterceptAdapter, isKeywordInterceptEnabled: false)
     }
 
+    override func setUp() async throws {
+        try await super.setUp()
+        InterceptClientTests.testInterceptAdapter.testEvents = Set()
+    }
+
     override func tearDown() async throws {
         try await super.tearDown()
-        try? await Task.sleep(nanoseconds: 200_000_000)
         InterceptClientTests.testInterceptAdapter.testEvents = Set()
     }
 

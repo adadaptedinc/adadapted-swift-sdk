@@ -26,9 +26,14 @@ class KeywordInterceptMatcherTests: XCTestCase {
         clearEvents()
     }
 
+    override func setUp() async throws {
+        try await super.setUp()
+        KeywordInterceptMatcherTests.testInterceptAdapter.testEvents = Set()
+        TestEventAdapter.shared.cleanupEvents()
+    }
+
     override func tearDown() async throws {
         try await super.tearDown()
-        try? await Task.sleep(nanoseconds: 200_000_000)
         TestEventAdapter.shared.cleanupEvents()
     }
 

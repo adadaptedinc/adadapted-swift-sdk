@@ -34,8 +34,8 @@ extension XCTestCase {
     }
 
     /// Waits for `TestInterceptAdapter` to receive events that satisfy the
-    /// condition.  Triggers both publish pipelines once, then relies on the
-    /// adapter's callback.
+    /// condition.  Triggers both publish pipelines and periodically re-triggers
+    /// to handle cases where events are queued after the initial publish call.
     func awaitInterceptEvent(
         adapter: TestInterceptAdapter,
         timeout: TimeInterval = 15.0,
@@ -52,8 +52,22 @@ extension XCTestCase {
         EventClient.getInstance()?.onPublishEvents()
         InterceptClient.getInstance()?.onPublishEvents()
 
+        // Periodically re-trigger publish and check condition as a fallback,
+        // in case the initial publish fires before events are queued.
+        let timer = DispatchSource.makeTimerSource(queue: .main)
+        timer.schedule(deadline: .now() + 0.1, repeating: 0.25)
+        timer.setEventHandler {
+            InterceptClient.getInstance()?.onPublishEvents()
+            if condition() {
+                exp.fulfill()
+                timer.cancel()
+            }
+        }
+        timer.activate()
+
         await fulfillment(of: [exp], timeout: timeout)
 
+        timer.cancel()
         adapter.onEventsPublished = nil
     }
 

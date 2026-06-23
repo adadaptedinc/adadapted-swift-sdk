@@ -21,6 +21,7 @@ class PayloadClientTests: XCTestCase {
 
     override func setUp() async throws {
         try await super.setUp()
+        PayloadClient.deeplinkCompleted()
         EventClient.getInstance()?.onPublishEvents()
         try? await Task.sleep(nanoseconds: 100_000_000)
         TestEventAdapter.shared.cleanupEvents()
