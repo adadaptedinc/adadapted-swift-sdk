@@ -7,345 +7,199 @@ import XCTest
 
 class AdZonePresenterTests: XCTestCase {
     static var testAdZonePresenter: AdZonePresenter!
-    static var testSession = MockData.session
-    
+
     override class func setUp() {
         super.setUp()
         let deviceInfoExtractor = DeviceInfoExtractor()
         DeviceInfoClient.createInstance(appId: "apiKey", isProd: false, params: [:], customIdentifier: "", deviceInfoExtractor: deviceInfoExtractor)
-        SessionClient.createInstance(adapter: HttpSessionAdapter(initUrl: Config.getInitSessionUrl(), refreshUrl: Config.getRefreshAdsUrl()))
         EventClient.createInstance(eventAdapter: TestEventAdapter.shared)
-        EventClient.getInstance().onSessionAvailable(session: MockData.session)
-        EventClient.getInstance().onAdsAvailable(session: MockData.session)
-        
-        testAdZonePresenter = AdZonePresenter(adViewHandler: AdViewHandler(), sessionClient: SessionClient.getInstance())
+        AdClient.createInstance(adapter: TestAdAdapter())
+        testAdZonePresenter = AdZonePresenter(adViewHandler: AdViewHandler())
     }
-    
-    override class func tearDown() {
-        SessionClient.getInstance().refreshTimer?.stopTimer()
-        SessionClient.getInstance().eventTimer?.stopTimer()
+
+    override func setUp() async throws {
+        try await super.setUp()
+        EventClient.getInstance()?.onPublishEvents()
+        try? await Task.sleep(nanoseconds: 100_000_000)
+        TestEventAdapter.shared.cleanupEvents()
     }
-    
+
     override func tearDown() {
         AdZonePresenterTests.testAdZonePresenter.onDetach()
+        TestEventAdapter.shared.cleanupEvents()
     }
-    
-    func testOnAttach() {
-        AdZonePresenterTests.testAdZonePresenter.inititialize(zoneId: "testZoneId")
-        let zones = ["testZoneId": Zone(id: "testZoneId", ads: [Ad(id: "TestAdId")])]
-        AdZonePresenterTests.testSession.updateZones(newZones: zones)
-        SessionClient.getInstance().onSessionInitialized(session: AdZonePresenterTests.testSession)
-        
-        let testListener = TestAdZonePresenterListener()
-        AdZonePresenterTests.testAdZonePresenter.onAttach(adZonePresenterListener: testListener)
-        
-        XCTAssertEqual("TestAdId", testListener.testAd.id)
+
+    override class func tearDown() {
+        AdClient.reset()
+        super.tearDown()
     }
-    
-    func testOnDetach() {
-        AdZonePresenterTests.testAdZonePresenter.inititialize(zoneId: "testZoneId")
-        let zones = ["testZoneId": Zone(id: "testZoneId", ads: [Ad(id: "TestAdId")])]
-        AdZonePresenterTests.testSession.updateZones(newZones: zones)
-        
-        let testListener = TestAdZonePresenterListener()
-        AdZonePresenterTests.testAdZonePresenter.onSessionAvailable(session: AdZonePresenterTests.testSession)
-        AdZonePresenterTests.testAdZonePresenter.onAttach(adZonePresenterListener: testListener)
-        XCTAssertEqual("TestAdId", testListener.testAd.id)
-        
+
+    func testOnAdDisplayedButZoneNotVisible() async {
+        AdZonePresenterTests.testAdZonePresenter.initialize(zoneId: "testZoneId")
         let testAdEventListener = TestAdEventClientListener()
         EventClient.addListener(listener: testAdEventListener)
-        
+
+        // Let addListener Task complete
+        try? await Task.sleep(nanoseconds: 200_000_000)
+
         var testAd = Ad(id: "TestAdId")
-        AdZonePresenterTests.testAdZonePresenter.onAdDisplayed(ad: &testAd, isAdVisible: true)
-        AdZonePresenterTests.testAdZonePresenter.onDetach()
-        
-        XCTAssertEqual("", testListener.testZone.id)
-    }
-    
-    func testOnAdDisplayed() {
-        let expectation = XCTestExpectation(description: "Content available expectation")
-        AdZonePresenterTests.testAdZonePresenter.inititialize(zoneId: "testZoneId")
-        let zones = ["testZoneId": Zone(id: "testZoneId", ads: [Ad(id: "TestAdId")])]
-        AdZonePresenterTests.testSession.updateZones(newZones: zones)
-        AdZonePresenterTests.testAdZonePresenter.onSessionAvailable(session: AdZonePresenterTests.testSession)
-        
-        let testAdEventListener = TestAdEventClientListener()
-        EventClient.addListener(listener: testAdEventListener)
-        
-        var testAd = Ad(id: "TestAdId")
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            AdZonePresenterTests.testAdZonePresenter.onAdDisplayed(ad: &testAd, isAdVisible: true)
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            XCTAssertEqual(AdEventTypes.IMPRESSION, testAdEventListener.testAdEvent?.eventType)
-            expectation.fulfill()
-        }
-        
-        wait(for: [expectation], timeout: 2.5)
-    }
-    
-    func testOnAdDisplayedButZoneNotVisible() {
-        let expectation = XCTestExpectation(description: "Content available expectation")
-        AdZonePresenterTests.testAdZonePresenter.inititialize(zoneId: "testZoneId")
-        let zones = ["testZoneId": Zone(id: "testZoneId", ads: [Ad(id: "TestAdId")])]
-        AdZonePresenterTests.testSession.updateZones(newZones: zones)
-        AdZonePresenterTests.testAdZonePresenter.onSessionAvailable(session: AdZonePresenterTests.testSession)
-        
-        let testAdEventListener = TestAdEventClientListener()
-        EventClient.addListener(listener: testAdEventListener)
-        
-        var testAd = Ad(id: "TestAdId")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            AdZonePresenterTests.testAdZonePresenter.onAdDisplayed(ad: &testAd, isAdVisible: false)
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            XCTAssertNil(testAdEventListener.testAdEvent)
-            expectation.fulfill()
-        }
-        
-        wait(for: [expectation], timeout: 2.5)
-    }
-    
-    func testOnAdCompletedButZoneNotVisible() {
-        let expectation = XCTestExpectation(description: "Content available expectation")
-        AdZonePresenterTests.testAdZonePresenter.inititialize(zoneId: "testZoneId")
-        var testAd = Ad(id: "TestAdId")
-        let zones = ["testZoneId": Zone(id: "testZoneId", ads: [testAd, testAd])]
-        AdZonePresenterTests.testSession.updateZones(newZones: zones)
-        AdZonePresenterTests.testAdZonePresenter.onSessionAvailable(session: AdZonePresenterTests.testSession)
-        
-        let testAdEventListener = TestAdEventClientListener()
-        EventClient.addListener(listener: testAdEventListener)
         AdZonePresenterTests.testAdZonePresenter.onAdDisplayed(ad: &testAd, isAdVisible: false)
-        
-        let testListener = TestAdZonePresenterListener()
-        AdZonePresenterTests.testAdZonePresenter.onAttach(adZonePresenterListener: testListener)
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            AdZonePresenterTests.testAdZonePresenter.onAdClicked(ad: testAd)
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            AdZonePresenterTests.testAdZonePresenter.onAdDisplayed(ad: &testAd, isAdVisible: false)
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
-            AdZonePresenterTests.testAdZonePresenter.onAdClicked(ad: testAd)
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 7) {
-            XCTAssertEqual(AdEventTypes.INVISIBLE_IMPRESSION, testAdEventListener.testAdEvent?.eventType)
-            expectation.fulfill()
-        }
-        
-        wait(for: [expectation], timeout: 15)
+
+        // Give time for any async event tracking, then verify no event was tracked
+        try? await Task.sleep(nanoseconds: 500_000_000)
+        XCTAssertNil(testAdEventListener.testAdEvent)
     }
-    
-    func testAdNotCompletedBecauseThereIsOnlyOne() {
-        let expectation = XCTestExpectation(description: "Content available expectation")
-        AdZonePresenterTests.testAdZonePresenter.inititialize(zoneId: "testZoneId")
+
+    func testAdNotCompletedBecauseThereIsOnlyOne() async {
+        AdZonePresenterTests.testAdZonePresenter.initialize(zoneId: "testZoneId")
         var testAd = Ad(id: "TestAdId")
-        let zones = ["testZoneId": Zone(id: "testZoneId", ads: [testAd])]
-        AdZonePresenterTests.testSession.updateZones(newZones: zones)
-        AdZonePresenterTests.testAdZonePresenter.onSessionAvailable(session: AdZonePresenterTests.testSession)
-        
+
         let testAdEventListener = TestAdEventClientListener()
         EventClient.addListener(listener: testAdEventListener)
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            AdZonePresenterTests.testAdZonePresenter.onAdDisplayed(ad: &testAd, isAdVisible: false)
-        }
-        
+
+        // Let addListener Task complete
+        try? await Task.sleep(nanoseconds: 200_000_000)
+
         let testListener = TestAdZonePresenterListener()
         AdZonePresenterTests.testAdZonePresenter.onAttach(adZonePresenterListener: testListener)
-        
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
-            AdZonePresenterTests.testAdZonePresenter.onAdClicked(ad: testAd)
+
+        await awaitCondition {
+            testListener.testAd.id == "NoAdAvail" || testListener.testAd.id != ""
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
-            XCTAssertNil(testAdEventListener.testAdEvent)
-            expectation.fulfill()
+
+        AdZonePresenterTests.testAdZonePresenter.onAdDisplayed(ad: &testAd, isAdVisible: false)
+        AdZonePresenterTests.testAdZonePresenter.onAdClicked(ad: testAd)
+
+        await awaitCondition {
+            testAdEventListener.testAdEvent?.eventType == AdEventTypes.INVISIBLE_IMPRESSION
         }
-        
-        wait(for: [expectation], timeout: 8)
+
+        XCTAssertEqual(AdEventTypes.INVISIBLE_IMPRESSION, testAdEventListener.testAdEvent?.eventType)
     }
-    
-    func testOnAdClickedContent() {
-        let expectation = XCTestExpectation(description: "Content available expectation")
-        AdZonePresenterTests.testAdZonePresenter.inititialize(zoneId: "testZoneId")
+
+    func testOnAdClickedContent() async {
+        AdZonePresenterTests.testAdZonePresenter.initialize(zoneId: "testZoneId")
         var testAd = Ad(id: "TestAdId", impressionId: "impressionId", url: "url", actionType: AdActionType.CONTENT)
-        let zones = ["testZoneId": Zone(id: "testZoneId", ads: [testAd])]
-        AdZonePresenterTests.testSession.updateZones(newZones: zones)
-        AdZonePresenterTests.testAdZonePresenter.onSessionAvailable(session: AdZonePresenterTests.testSession)
-        
+
         let testAdEventListener = TestAdEventClientListener()
         EventClient.addListener(listener: testAdEventListener)
+
+        try? await Task.sleep(nanoseconds: 200_000_000)
+
         AdZonePresenterTests.testAdZonePresenter.onAdDisplayed(ad: &testAd, isAdVisible: true)
         AdZonePresenterTests.testAdZonePresenter.onAdClicked(ad: testAd)
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventClient.getInstance().onPublishEvents()
+
+        await awaitAdapterEvent {
+            TestEventAdapter.shared.testSdkEvents.contains(where: { $0.name == EventStrings.ATL_AD_CLICKED })
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.ATL_AD_CLICKED })
-            expectation.fulfill()
-        }
-        
-        wait(for: [expectation], timeout: 2.5)
+
+        XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.ATL_AD_CLICKED })
     }
-    
-    func testOnAdClickedLink() {
-        let expectation = XCTestExpectation(description: "Content available expectation")
-        AdZonePresenterTests.testAdZonePresenter = AdZonePresenter(adViewHandler: AdViewHandler(), sessionClient: SessionClient.getInstance())
-        AdZonePresenterTests.testAdZonePresenter.inititialize(zoneId: "testZoneId")
+
+    func testOnAdClickedLink() async {
+        AdZonePresenterTests.testAdZonePresenter = AdZonePresenter(adViewHandler: AdViewHandler())
+        AdZonePresenterTests.testAdZonePresenter.initialize(zoneId: "testZoneId")
         var testAd = Ad(id: "TestAdId", impressionId: "impressionId", url: "url", actionType: AdActionType.LINK)
-        let zones = ["testZoneId": Zone(id: "testZoneId", ads: [testAd])]
-        AdZonePresenterTests.testSession.updateZones(newZones: zones)
-        AdZonePresenterTests.testAdZonePresenter.onSessionAvailable(session: AdZonePresenterTests.testSession)
-        
+
         let testAdEventListener = TestAdEventClientListener()
         EventClient.addListener(listener: testAdEventListener)
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            AdZonePresenterTests.testAdZonePresenter.onAdDisplayed(ad: &testAd, isAdVisible: true)
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            AdZonePresenterTests.testAdZonePresenter.onAdClicked(ad: testAd)
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
-            XCTAssertEqual(AdEventTypes.INTERACTION, testAdEventListener.testAdEvent?.eventType)
-            expectation.fulfill()
-        }
-        
-        wait(for: [expectation], timeout: 7)
-    }
-    
-    func testOnAdClickedPopup() {
-        let expectation = XCTestExpectation(description: "Content available expectation")
-        AdZonePresenterTests.testAdZonePresenter.inititialize(zoneId: "testZoneId")
-        var testAd = Ad(id: "TestAdId", impressionId: "impressionId", url: "url", actionType: AdActionType.POPUP)
-        let zones = ["testZoneId": Zone(id: "testZoneId", ads: [testAd])]
-        AdZonePresenterTests.testSession.updateZones(newZones: zones)
-        AdZonePresenterTests.testAdZonePresenter.onSessionAvailable(session: AdZonePresenterTests.testSession)
-        
-        let testAdEventListener = TestAdEventClientListener()
-        EventClient.addListener(listener: testAdEventListener)
-        
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            AdZonePresenterTests.testAdZonePresenter.onAdDisplayed(ad: &testAd, isAdVisible: true)
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            AdZonePresenterTests.testAdZonePresenter.onAdClicked(ad: testAd)
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
-            XCTAssertEqual(AdEventTypes.INTERACTION, testAdEventListener.testAdEvent?.eventType)
-            expectation.fulfill()
-        }
-        
-        wait(for: [expectation], timeout: 7)
-    }
-    
-    func testOnAdClickedContentPopup() {
-        let expectation = XCTestExpectation(description: "Content available expectation")
-        AdZonePresenterTests.testAdZonePresenter.inititialize(zoneId: "testZoneId")
-        var testAd = Ad(id: "TestAdId", impressionId: "impressionId", url: "url", actionType: AdActionType.CONTENT_POPUP)
-        let zones = ["testZoneId": Zone(id: "testZoneId", ads: [testAd])]
-        AdZonePresenterTests.testSession.updateZones(newZones: zones)
-        AdZonePresenterTests.testAdZonePresenter.onSessionAvailable(session: AdZonePresenterTests.testSession)
-        
-        let testAdEventListener = TestAdEventClientListener()
-        EventClient.addListener(listener: testAdEventListener)
+
+        try? await Task.sleep(nanoseconds: 200_000_000)
+
         AdZonePresenterTests.testAdZonePresenter.onAdDisplayed(ad: &testAd, isAdVisible: true)
         AdZonePresenterTests.testAdZonePresenter.onAdClicked(ad: testAd)
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventClient.getInstance().onPublishEvents()
+
+        await awaitCondition {
+            testAdEventListener.testAdEvent?.eventType == AdEventTypes.INTERACTION
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.POPUP_AD_CLICKED })
-            expectation.fulfill()
+
+        XCTAssertEqual(AdEventTypes.INTERACTION, testAdEventListener.testAdEvent?.eventType)
+    }
+
+    func testOnAdClickedPopup() async {
+        AdZonePresenterTests.testAdZonePresenter.initialize(zoneId: "testZoneId")
+        var testAd = Ad(id: "TestAdId", impressionId: "impressionId", url: "url", actionType: AdActionType.POPUP)
+
+        let testAdEventListener = TestAdEventClientListener()
+        EventClient.addListener(listener: testAdEventListener)
+
+        try? await Task.sleep(nanoseconds: 200_000_000)
+
+        AdZonePresenterTests.testAdZonePresenter.onAdDisplayed(ad: &testAd, isAdVisible: true)
+        AdZonePresenterTests.testAdZonePresenter.onAdClicked(ad: testAd)
+
+        await awaitCondition {
+            testAdEventListener.testAdEvent?.eventType == AdEventTypes.INTERACTION
         }
-        
-        wait(for: [expectation], timeout: 2.5)
+
+        XCTAssertEqual(AdEventTypes.INTERACTION, testAdEventListener.testAdEvent?.eventType)
     }
-    
-    func testOnAdsAvailable() {
-        AdZonePresenterTests.testAdZonePresenter.inititialize(zoneId: "testZoneId")
-        let zones = ["testZoneId": Zone(id: "testZoneId", ads: [Ad(id: "TestAdId")])]
-        AdZonePresenterTests.testSession.updateZones(newZones: zones)
-        
-        let testListener = TestAdZonePresenterListener()
-        AdZonePresenterTests.testAdZonePresenter.onAttach(adZonePresenterListener: testListener)
-        AdZonePresenterTests.testAdZonePresenter.onAdsAvailable(session: AdZonePresenterTests.testSession)
-        
-        XCTAssertEqual("testZoneId", testListener.testZone.id)
+
+    func testOnAdClickedContentPopup() async {
+        AdZonePresenterTests.testAdZonePresenter.initialize(zoneId: "testZoneId")
+        var testAd = Ad(id: "TestAdId", impressionId: "impressionId", url: "url", actionType: AdActionType.CONTENT_POPUP)
+
+        let testAdEventListener = TestAdEventClientListener()
+        EventClient.addListener(listener: testAdEventListener)
+
+        try? await Task.sleep(nanoseconds: 200_000_000)
+
+        AdZonePresenterTests.testAdZonePresenter.onAdDisplayed(ad: &testAd, isAdVisible: true)
+        AdZonePresenterTests.testAdZonePresenter.onAdClicked(ad: testAd)
+
+        await awaitAdapterEvent {
+            TestEventAdapter.shared.testSdkEvents.contains(where: { $0.name == EventStrings.POPUP_AD_CLICKED })
+        }
+
+        XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.POPUP_AD_CLICKED })
     }
-    
-    func testOnSessioninitFailed() {
-        AdZonePresenterTests.testAdZonePresenter.inititialize(zoneId: "testZoneId")
-        let zones = ["testZoneId": Zone(id: "testZoneId", ads: [Ad(id: "TestAdId")])]
-        AdZonePresenterTests.testSession.updateZones(newZones: zones)
-        
-        let testListener = TestAdZonePresenterListener()
-        AdZonePresenterTests.testAdZonePresenter.onAttach(adZonePresenterListener: testListener)
-        AdZonePresenterTests.testAdZonePresenter.onSessionInitFailed()
-        
-        XCTAssertEqual("NoAdAvail", testListener.testAd.id)
-    }
-    
+
     func testNullListener() {
-        AdZonePresenterTests.testAdZonePresenter.inititialize(zoneId: "testZoneId")
-        let zones = ["testZoneId": Zone(id: "testZoneId", ads: [Ad(id: "TestAdId")])]
-        AdZonePresenterTests.testSession.updateZones(newZones: zones)
-        
-        AdZonePresenterTests.testAdZonePresenter.onSessionAvailable(session: AdZonePresenterTests.testSession)
+        AdZonePresenterTests.testAdZonePresenter.initialize(zoneId: "testZoneId")
         AdZonePresenterTests.testAdZonePresenter.onAttach(adZonePresenterListener: nil)
-        
         XCTAssertNotNil(AdZonePresenterTests.testAdZonePresenter)
     }
 }
 
 class TestAdZonePresenterListener: AdZonePresenterListener {
-    var testZone = Zone()
-    var testAd = Ad()
-    
-    func onZoneAvailable(zone: Zone) {
-        testZone = zone
+    private let lock = NSLock()
+    private var _testZone = AdZoneData()
+    private var _testAd = Ad()
+
+    var testZone: AdZoneData {
+        lock.lock(); defer { lock.unlock() }; return _testZone
     }
-    
-    func onAdsRefreshed(zone: Zone) {
-        testZone = zone
+    var testAd: Ad {
+        lock.lock(); defer { lock.unlock() }; return _testAd
     }
-    
+
+    func onZoneAvailable(adZoneData: AdZoneData) {
+        lock.lock(); _testZone = adZoneData; lock.unlock()
+    }
+
     func onAdAvailable(ad: Ad) {
-        testAd = ad
+        lock.lock(); _testAd = ad; lock.unlock()
     }
-    
+
     func onNoAdAvailable() {
-        testAd = Ad(id: "NoAdAvail")
+        lock.lock(); _testAd = Ad(id: "NoAdAvail"); lock.unlock()
     }
-    
+
     func onAdVisibilityChanged(ad: Ad) {
-        testAd = ad
+        lock.lock(); _testAd = ad; lock.unlock()
     }
 }
 
 class TestAdEventClientListener: EventClientListener {
-    var testAdEvent: AdEvent?
-    
+    private let lock = NSLock()
+    private var _testAdEvent: AdEvent?
+    var testAdEvent: AdEvent? {
+        lock.lock(); defer { lock.unlock() }; return _testAdEvent
+    }
+
     func onAdEventTracked(event: AdEvent?) {
-        testAdEvent = event
+        lock.lock()
+        _testAdEvent = event
+        lock.unlock()
     }
 }

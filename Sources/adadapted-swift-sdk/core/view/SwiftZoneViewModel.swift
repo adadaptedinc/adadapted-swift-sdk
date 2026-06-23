@@ -25,7 +25,7 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
     
     // MARK: - Initializer
     public init(zoneId: String, adContentListener: AdContentListener, zoneViewListener: ZoneViewListener, isZoneVisible: Binding<Bool>, zoneContextId: Binding<String>) {
-        self.presenter = AdZonePresenter(adViewHandler: AdViewHandler(), sessionClient: SessionClient.getInstance())
+        self.presenter = AdZonePresenter(adViewHandler: AdViewHandler())
         self.adContentListener = adContentListener
         self.zoneViewListener = zoneViewListener
         self._isZoneVisible = isZoneVisible
@@ -42,7 +42,7 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
     // MARK: - Initialization Helper
     private func initializePresenter(with zoneId: String) {
         ZoneViewModelManager.shared.addViewModel(viewModel: self)
-        presenter.inititialize(zoneId: zoneId)
+        presenter.initialize(zoneId: zoneId)
         AdContentPublisher.getInstance().addListener(listener: adContentListener)
         
         if !$zoneContextId.wrappedValue.isEmpty {
@@ -118,12 +118,10 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
     }
     
     // MARK: - AdZonePresenterListener Protocol Methods
-    func onZoneAvailable(zone: Zone) {
-        notifyClientZoneHasAds(hasAds: zone.hasAds())
+    func onZoneAvailable(adZoneData: AdZoneData) {
+        notifyClientZoneHasAds(hasAds: adZoneData.hasAd())
     }
-    func onAdsRefreshed(zone: Zone) {
-        notifyClientZoneHasAds(hasAds: zone.hasAds())
-    }
+
     func onAdAvailable(ad: Ad) {
         DispatchQueue.main.async { [weak self] in
             self?.currentAd = ad
@@ -141,8 +139,6 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
     
     // MARK: - Reporting Ads
     func reportButtonTapped() {
-        if let udid = DeviceInfoClient.getCachedDeviceInfo()?.udid {
-            presenter.onReportAdClicked(adId: currentAd?.id ?? "", udid: udid)
-        }
+        presenter.onReportAdClicked(adId: currentAd?.id ?? "", udid: DeviceInfoClient.getCachedDeviceInfo().udid)
     }
 }

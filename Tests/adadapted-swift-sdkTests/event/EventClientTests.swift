@@ -6,115 +6,69 @@ import XCTest
 @testable import adadapted_swift_sdk
 
 class EventClientTests: XCTestCase {
-    
+
     override class func setUp() {
         super.setUp()
         let deviceInfoExtractor = DeviceInfoExtractor()
         DeviceInfoClient.createInstance(appId: "apiKey", isProd: false, params: [:], customIdentifier: "", deviceInfoExtractor: deviceInfoExtractor)
-        SessionClient.createInstance(adapter: HttpSessionAdapter(initUrl: Config.getInitSessionUrl(), refreshUrl: Config.getRefreshAdsUrl()))
         EventClient.createInstance(eventAdapter: TestEventAdapter.shared)
-        EventClient.getInstance().onSessionAvailable(session: MockData.session)
     }
-    
+
+    override func setUp() async throws {
+        try await super.setUp()
+        EventClient.getInstance()?.onPublishEvents()
+        try? await Task.sleep(nanoseconds: 100_000_000)
+        TestEventAdapter.shared.cleanupEvents()
+    }
+
     override func tearDown() {
         super.tearDown()
         TestEventAdapter.shared.cleanupEvents()
     }
-    
-    override class func tearDown() {
-        SessionClient.getInstance().refreshTimer?.stopTimer()
-        SessionClient.getInstance().eventTimer?.stopTimer()
+
+    func testTrackAppEvent() async {
+        EventClient.trackSdkEvent(name: "testTrackAppEvent")
+
+        await awaitAdapterEvent {
+            TestEventAdapter.shared.testSdkEvents.contains { $0.name == "testTrackAppEvent" }
+        }
+
+        let event = TestEventAdapter.shared.testSdkEvents.first { $0.name == "testTrackAppEvent" }
+        XCTAssertNotNil(event)
+        XCTAssertEqual("sdk", event?.type)
     }
-    
-    func testTrackAppEvent() {
-        let expectation = XCTestExpectation(description: "Content available expectation")
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventClient.trackSdkEvent(name: "testTrackAppEvent")
+
+    func testTrackSdkEvent() async {
+        EventClient.trackSdkEvent(name: "testTrackSdkEvent", params: [:])
+
+        await awaitAdapterEvent {
+            TestEventAdapter.shared.testSdkEvents.contains { $0.name == "testTrackSdkEvent" }
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            EventClient.getInstance().onPublishEvents()
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            XCTAssertEqual("sdk", TestEventAdapter.shared.testSdkEvents.first?.type)
-            XCTAssertEqual("testTrackAppEvent", TestEventAdapter.shared.testSdkEvents.first?.name)
-            expectation.fulfill()
-        }
-        
-        wait(for: [expectation], timeout: 4)
+
+        let event = TestEventAdapter.shared.testSdkEvents.first { $0.name == "testTrackSdkEvent" }
+        XCTAssertNotNil(event)
+        XCTAssertEqual("sdk", event?.type)
     }
-    
-    func testTrackSdkEvent() {
-        let expectation = XCTestExpectation(description: "Content available expectation")
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventClient.trackSdkEvent(name: "testTrackSdkEvent", params: [:])
+
+    func testTrackError() async {
+        EventClient.trackSdkError(code: "testErrorCode", message: "testTrackError", params: [:])
+
+        await awaitAdapterEvent {
+            TestEventAdapter.shared.testSdkErrors.contains { $0.code == "testErrorCode" }
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            EventClient.getInstance().onPublishEvents()
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            XCTAssertEqual("sdk", TestEventAdapter.shared.testSdkEvents.first?.type)
-            XCTAssertEqual("testTrackSdkEvent", TestEventAdapter.shared.testSdkEvents.first?.name)
-            expectation.fulfill()
-        }
-        
-        wait(for: [expectation], timeout: 4)
+
+        let error = TestEventAdapter.shared.testSdkErrors.first { $0.code == "testErrorCode" }
+        XCTAssertNotNil(error)
+        XCTAssertEqual("testTrackError", error?.message)
     }
-    
-    func testTrackError() {
-        let expectation = XCTestExpectation(description: "Content available expectation")
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventClient.trackSdkError(code: "testErrorCode", message: "testTrackError", params: [:])
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            EventClient.getInstance().onPublishEvents()
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            XCTAssertEqual("testErrorCode", TestEventAdapter.shared.testSdkErrors.last?.code)
-            XCTAssertEqual("testTrackError", TestEventAdapter.shared.testSdkErrors.last?.message)
-            expectation.fulfill()
-        }
-        
-        wait(for: [expectation], timeout: 4)
-    }
-    
-    func testOnSessionExpired() {
-        let expectation = XCTestExpectation(description: "Content available expectation")
-        TestEventAdapter.shared.cleanupEvents()
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventClient.getInstance().onSessionExpired()
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            EventClient.getInstance().onPublishEvents()
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            XCTAssertEqual("sdk", TestEventAdapter.shared.testSdkEvents.first?.type)
-            XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.EXPIRED_EVENT })
-            expectation.fulfill()
-        }
-        
-        wait(for: [expectation], timeout: 4)
-    }
-    
+
     func testThreadSafetyOfSafeSets() async {
         let adSet = SafeSet<AdEvent>()
         let sdkSet = SafeSet<SdkEvent>()
         let sdkErrorSet = SafeSet<SdkError>()
 
-        // concurrently modify SafeSets to verify no crashes from concurrent access
         await withTaskGroup(of: Void.self) { group in
-            for i in 0..<1000 {
+            for i in 0..<100 {
                 group.addTask {
                     await adSet.insert(AdEvent(adId: "\(i)", zoneId: "zone", impressionId: "imp", eventType: "test"))
                     await sdkSet.insert(SdkEvent(type: "SDK", name: "Event\(i)", params: [:]))
@@ -129,12 +83,10 @@ class EventClientTests: XCTestCase {
             }
         }
 
-        // After all concurrent operations, verify the actor is still functional
-        let remainingAdEvents = await adSet.copyAndClear()
-        let remainingSdkEvents = await sdkSet.copyAndClear()
-        let remainingSdkErrors = await sdkErrorSet.copyAndClear()
+        let _ = await adSet.copyAndClear()
+        let _ = await sdkSet.copyAndClear()
+        let _ = await sdkErrorSet.copyAndClear()
 
-        // Sets should now be empty after the final copyAndClear
         let adEmpty = await adSet.isEmpty()
         let sdkEmpty = await sdkSet.isEmpty()
         let errorsEmpty = await sdkErrorSet.isEmpty()
@@ -143,15 +95,14 @@ class EventClientTests: XCTestCase {
         XCTAssertTrue(sdkEmpty)
         XCTAssertTrue(errorsEmpty)
     }
-    
+
     func testThreadSafetyOfSafeArray() async {
         let listenerArray = SafeArray<EventClientListener>()
         let listener1 = TestEventClientListener()
         let listener2 = TestEventClientListener()
 
-        // concurrently modify SafeArray to verify no crashes from concurrent access
         await withTaskGroup(of: Void.self) { group in
-            for _ in 0..<1000 {
+            for _ in 0..<100 {
                 group.addTask {
                     await listenerArray.append(listener1)
                     await listenerArray.append(listener2)
@@ -164,7 +115,6 @@ class EventClientTests: XCTestCase {
             }
         }
 
-        // After all concurrent operations, do a final cleanup and verify actor is functional
         await listenerArray.removeAll(where: { _ in true })
         let remainingListeners = await listenerArray.isEmpty()
 

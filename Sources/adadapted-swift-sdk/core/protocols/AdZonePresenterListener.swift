@@ -5,8 +5,7 @@
 import Foundation
 
 protocol AdZonePresenterListener {
-    func onZoneAvailable(zone: Zone)
-    func onAdsRefreshed(zone: Zone)
+    func onZoneAvailable(adZoneData: AdZoneData)
     func onAdAvailable(ad: Ad)
     func onNoAdAvailable()
     func onAdVisibilityChanged(ad: Ad)

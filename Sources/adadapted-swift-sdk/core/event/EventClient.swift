@@ -4,15 +4,15 @@
 
 import Foundation
 
-class EventClient: SessionListener {
+class EventClient {
     
     private static var eventAdapter: EventAdapter? = nil
     private static var listeners = SafeArray<EventClientListener>()
     private static var adEvents = SafeSet<AdEvent>()
     private static var sdkEvents = SafeSet<SdkEvent>()
     private static var sdkErrors = SafeSet<SdkError>()
-    private static var session: Session? = nil
-    private static var hasInstance: Bool = false
+    private var eventTimer: Timer?
+    private var eventTimerRunning: Bool = false
     
     private static func performTrackSdkEvent(name: String, params: [String: String]) {
         Task {
@@ -28,9 +28,6 @@ class EventClient: SessionListener {
     }
     
     private static func fileEvent(ad: Ad, eventType: String) {
-        guard session != nil else {
-            return
-        }
         let event = AdEvent(
             adId: ad.id,
             zoneId: ad.zoneId(),
@@ -47,43 +44,40 @@ class EventClient: SessionListener {
     
     private static func performPublishSdkErrors() {
         Task {
-            guard let currentSession = session,
-                  let adapter = eventAdapter else {
+            guard let adapter = eventAdapter else {
                 return
             }
 
             let currentSdkErrors = await sdkErrors.copyAndClear()
             guard !currentSdkErrors.isEmpty else { return }
 
-            adapter.publishSdkErrors(session: currentSession, errors: currentSdkErrors)
+            adapter.publishSdkErrors(sessionId: SessionClient.getSessionId(), deviceInfo: DeviceInfoClient.getCachedDeviceInfo(), errors: currentSdkErrors)
         }
     }
     
     private static func performPublishSdkEvents() {
         Task {
-            guard let currentSession = session,
-                  let adapter = eventAdapter else {
+            guard let adapter = eventAdapter else {
                 return
             }
             
             let currentSdkEvents = await sdkEvents.copyAndClear()
             guard !currentSdkEvents.isEmpty else { return }
 
-            adapter.publishSdkEvents(session: currentSession, events: currentSdkEvents)
+            adapter.publishSdkEvents(sessionId: SessionClient.getSessionId(), deviceInfo: DeviceInfoClient.getCachedDeviceInfo(), events: currentSdkEvents)
         }
     }
     
     private static func performPublishAdEvents() {
         Task {
-            guard let currentSession = session,
-                  let adapter = eventAdapter else {
+            guard let adapter = eventAdapter else {
                 return
             }
 
             let currentAdEvents = await adEvents.copyAndClear()
             guard !currentAdEvents.isEmpty else { return }
             
-            adapter.publishAdEvents(session: currentSession, adEvents: currentAdEvents)
+            adapter.publishAdEvents(sessionId: SessionClient.getSessionId(), deviceInfo: DeviceInfoClient.getCachedDeviceInfo(), adEvents: currentAdEvents)
         }
     }
     
@@ -95,43 +89,32 @@ class EventClient: SessionListener {
         await listeners.removeFirst(where: { $0 === listener })
     }
     
-    private static func trackGAIDAvailability(session: Session) {
-        guard !session.deviceInfo.isAllowRetargetingEnabled else {
-            return
-        }
-        trackSdkError(
-            code: EventStrings.GAID_UNAVAILABLE,
-            message: "GAID and/or tracking has been disabled for this device."
-        )
-    }
-    
     private static func notifyAdEventTracked(event: AdEvent) async {
         await listeners.forEach { listener in
             listener.onAdEventTracked(event: event)
         }
     }
     
+    private func startPublishTimer() {
+        if (eventTimerRunning) {
+            return
+        }
+        eventTimerRunning = true
+        
+        eventTimer = Timer(
+            repeatMillis: Config.DEFAULT_EVENT_POLLING,
+            delayMillis: Config.DEFAULT_EVENT_POLLING,
+            timerAction: { [weak self] in
+                self?.onPublishEvents()
+            }
+        )
+        eventTimer?.startTimer()
+    }
+    
     func onPublishEvents() {
         EventClient.performPublishAdEvents()
         EventClient.performPublishSdkEvents()
         EventClient.performPublishSdkErrors()
-    }
-    
-    static func hasBeenInitialized() -> Bool {
-        return hasInstance
-    }
-    
-    func onSessionAvailable(session: Session) {
-        EventClient.session = session
-        EventClient.trackGAIDAvailability(session: session)
-    }
-    
-    func onSessionExpired() {
-        EventClient.trackSdkEvent(name: EventStrings.EXPIRED_EVENT)
-    }
-    
-    func onAdsAvailable(session: Session) {
-        EventClient.session = session
     }
     
     static func trackSdkEvent(name: String, params: [String: String] = [:]) {
@@ -156,6 +139,7 @@ class EventClient: SessionListener {
     
     static func trackImpression(ad: Ad) {
         AALogger.logDebug(message: "Ad Impression Tracked.")
+        ad.setImpressionTracked()
         fileEvent(ad: ad, eventType: AdEventTypes.IMPRESSION)
     }
     
@@ -180,19 +164,18 @@ class EventClient: SessionListener {
         trackSdkEvent(name: EventStrings.RECIPE_CONTEXT, params: eventParams)
     }
     
-    static private var instance: EventClient!
-    
-    static func getInstance() -> EventClient {
+    static private var instance: EventClient?
+
+    static func getInstance() -> EventClient? {
         return instance
     }
     
     static func createInstance(eventAdapter: EventAdapter) {
         instance = EventClient()
         EventClient.eventAdapter = eventAdapter
-        hasInstance = true
     }
     
     init() {
-        SessionClient.getInstance().addListener(listener: self)
+        startPublishTimer()
     }
 }

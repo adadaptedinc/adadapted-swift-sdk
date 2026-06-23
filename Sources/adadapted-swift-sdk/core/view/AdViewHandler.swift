@@ -7,7 +7,7 @@ import UIKit
 
 class AdViewHandler {
     func handleLink(ad: Ad) {
-        guard let url = URL(string: ad.actionPath) else { return }
+        guard let url = URL(string: ad.actionPath ?? "") else { return }
         UIApplication.shared.open(url, options: [:], completionHandler: nil)
     }
     

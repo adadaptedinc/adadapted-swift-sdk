@@ -9,7 +9,6 @@ import Foundation
 
 @objc(AdAdapted)
 public class AdAdaptedObjC: NSObject {
-    private static var sessionListenerAdapter: SessionListenerAdapter?
     private static var eventListenerAdapter: EventListenerAdapter?
     private static var additContentListenerAdapter: AdditContentListenerAdapter?
 
@@ -19,12 +18,6 @@ public class AdAdaptedObjC: NSObject {
 
     @objc public static func inEnvironmentProduction(_ isProd: Bool) {
         _ = AdAdapted.inEnv(env: isProd ? .PROD : .DEV)
-    }
-
-    @objc public static func setSdkSessionListener(_ listener: SessionListenerObjC) {
-        let adapter = SessionListenerAdapter(listener: listener as AnyObject & SessionListenerObjC)
-        sessionListenerAdapter = adapter
-        _ = AdAdapted.setSdkSessionListener(listener: adapter)
     }
 
     @objc public static func enableKeywordIntercept(_ value: Bool) {

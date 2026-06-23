@@ -5,7 +5,6 @@
 import Foundation
 
 public class ContentSources {
-    static let DEEPLINK = "deeplink"
     static let PAYLOAD = "payload"
     static let IN_APP = "in_app"
     static let OUT_OF_APP = "out_of_app"

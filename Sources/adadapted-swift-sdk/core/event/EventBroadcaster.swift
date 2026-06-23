@@ -25,7 +25,7 @@ class EventBroadcaster: EventClientListener {
         if (listener == nil || event == nil) {
             return
         }
-        DispatchQueue.global(qos: .background).async { [weak self] in
+        DispatchQueue.main.async { [weak self] in
             self?.listener?.onNextAdEvent(zoneId: event?.zoneId ?? "", eventType: event?.eventType ?? "")
         }
     }

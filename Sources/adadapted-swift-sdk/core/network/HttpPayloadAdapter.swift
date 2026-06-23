@@ -29,7 +29,7 @@ class HttpPayloadAdapter: PayloadAdapter {
             return
         }
         
-        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+        HttpConnector.dataTask(with: request) { data, response, error in
             if let error = error {
                 AALogger.logError(message: error.localizedDescription)
                 HttpErrorTracker.trackHttpError(
@@ -40,7 +40,7 @@ class HttpPayloadAdapter: PayloadAdapter {
                 )
                 return
             }
-            
+
             if let data = data {
                 do {
                     let payloadResponse = try JSONDecoder().decode(PayloadResponse.self, from: data)
@@ -51,7 +51,6 @@ class HttpPayloadAdapter: PayloadAdapter {
                 }
             }
         }
-        task.resume()
     }
     
     func publishEvent(deviceInfo: DeviceInfo, event: PayloadEvent) {
@@ -70,7 +69,7 @@ class HttpPayloadAdapter: PayloadAdapter {
             return
         }
         
-        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+        HttpConnector.dataTask(with: request) { data, response, error in
             if let error = error {
                 AALogger.logError(message: error.localizedDescription)
                 HttpErrorTracker.trackHttpError(
@@ -82,6 +81,5 @@ class HttpPayloadAdapter: PayloadAdapter {
                 return
             }
         }
-        task.resume()
     }
 }

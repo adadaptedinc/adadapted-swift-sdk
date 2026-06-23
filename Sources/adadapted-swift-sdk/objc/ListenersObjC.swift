@@ -7,13 +7,6 @@
 
 import Foundation
 
-// MARK: - Session Listener
-
-@objc(SessionListener)
-public protocol SessionListenerObjC {
-    @objc func onHasAdsToServe(_ hasAds: Bool, availableZoneIds: [String])
-}
-
 // MARK: - Event Listener
 
 @objc(AaSdkEventListener)
@@ -46,18 +39,6 @@ public protocol AdContentListenerObjC {
 }
 
 // MARK: - Internal Adapters (bridge ObjC listeners to Swift protocols)
-
-internal class SessionListenerAdapter: AaSdkSessionListener {
-    private weak var objcListener: (AnyObject & SessionListenerObjC)?
-
-    init(listener: AnyObject & SessionListenerObjC) {
-        self.objcListener = listener
-    }
-
-    func onHasAdsToServe(hasAds: Bool, availableZoneIds: Array<String>) {
-        objcListener?.onHasAdsToServe(hasAds, availableZoneIds: availableZoneIds)
-    }
-}
 
 internal class EventListenerAdapter: AaSdkEventListener {
     private weak var objcListener: (AnyObject & AaSdkEventListenerObjC)?

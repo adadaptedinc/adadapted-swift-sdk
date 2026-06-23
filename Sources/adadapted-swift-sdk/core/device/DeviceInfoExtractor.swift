@@ -3,8 +3,6 @@
 //
 
 import Foundation
-import AppTrackingTransparency
-import AdSupport
 import CoreTelephony
 import UIKit
 
@@ -27,7 +25,7 @@ class DeviceInfoExtractor {
             id = generateUdid()
             preferences.setValue(id, forKey: AA_UUID_KEY)
         } else {
-            id = preferences.value(forKey: AA_UUID_KEY) as! String
+            id = (preferences.value(forKey: AA_UUID_KEY) as? String) ?? generateUdid()
         }
         return id
     }

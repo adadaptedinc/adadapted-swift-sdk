@@ -12,27 +12,31 @@ class DeviceInfoClient {
     private static var deviceInfoExtractor: DeviceInfoExtractor?
     private static var deviceInfo: DeviceInfo?
     private static var deviceCallbacks: Array<DeviceCallback> = []
+    private static let queue = DispatchQueue(label: "com.adadapted.deviceinfoclient")
 
     private static func performGetInfo(deviceCallback: DeviceCallback) {
-        if let info = deviceInfo {
+        let cachedInfo: DeviceInfo? = queue.sync {
+            if let info = deviceInfo {
+                return info
+            } else {
+                deviceCallbacks.insert(deviceCallback, at: 0)
+                return nil
+            }
+        }
+        if let info = cachedInfo {
             deviceCallback.onDeviceInfoCollected(deviceInfo: info)
-        } else {
-            deviceCallbacks.insert(deviceCallback, at: 0)
         }
     }
 
     private static func collectDeviceInfo() {
-        deviceInfo = deviceInfoExtractor?.extractDeviceInfo(appId: appId, isProd: isProd, customIdentifier: customIdentifier, params: params)
-        notifyCallbacks()
-    }
-
-    private static func notifyCallbacks() {
-        let currentDeviceCallbacks: Array<DeviceCallback> = Array(deviceCallbacks)
-        for (caller) in currentDeviceCallbacks {
-            caller.onDeviceInfoCollected(deviceInfo: deviceInfo ?? DeviceInfo())
-            if let index = deviceCallbacks.firstIndex(where: { $0 === caller }) {
-                deviceCallbacks.remove(at: index)
-            }
+        let callbacksToNotify: (Array<DeviceCallback>, DeviceInfo) = queue.sync {
+            deviceInfo = deviceInfoExtractor?.extractDeviceInfo(appId: appId, isProd: isProd, customIdentifier: customIdentifier, params: params)
+            let currentDeviceCallbacks = Array(deviceCallbacks)
+            deviceCallbacks.removeAll()
+            return (currentDeviceCallbacks, deviceInfo ?? DeviceInfo())
+        }
+        for caller in callbacksToNotify.0 {
+            caller.onDeviceInfoCollected(deviceInfo: callbacksToNotify.1)
         }
     }
 
@@ -40,8 +44,8 @@ class DeviceInfoClient {
         performGetInfo(deviceCallback: deviceCallback)
     }
 
-    static func getCachedDeviceInfo() -> DeviceInfo? {
-        return deviceInfo
+    static func getCachedDeviceInfo() -> DeviceInfo {
+        return queue.sync { deviceInfo ?? DeviceInfo() }
     }
 
     static func createInstance(

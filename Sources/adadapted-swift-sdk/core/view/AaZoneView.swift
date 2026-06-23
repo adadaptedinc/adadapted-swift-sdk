@@ -10,7 +10,7 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
     // MARK: - Properties
     private var webViewManager: AdWebViewManager!
     private var reportButton: UIButton!
-    private var presenter: AdZonePresenter = AdZonePresenter(adViewHandler: AdViewHandler(), sessionClient: SessionClient.getInstance())
+    private var presenter: AdZonePresenter = AdZonePresenter(adViewHandler: AdViewHandler())
     internal var zoneViewListener: ZoneViewListener?
     internal var isVisible = true
     private var isAdVisible = true
@@ -65,7 +65,7 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
     // MARK: - Public Methods
     
     @objc public func initialize(zoneId: String) {
-        presenter.inititialize(zoneId: zoneId)
+        presenter.initialize(zoneId: zoneId)
         presenter.setWebViewManager(webViewManager: webViewManager)
     }
     
@@ -102,10 +102,6 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
         presenter.removeZoneContext()
     }
     
-    @objc public func clearAdZoneContext() {
-        presenter.clearZoneContext()
-    }
-    
     @objc public func onStop() {
         zoneViewListener = nil
         presenter.onDetach()
@@ -122,25 +118,28 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
     
     // MARK: - AdZonePresenterListener
     
-    func onZoneAvailable(zone: Zone) {
-        notifyClientZoneHasAds(hasAds: zone.hasAds())
+    func onZoneAvailable(adZoneData: AdZoneData) {
+        DispatchQueue.main.async { [weak self] in
+            self?.notifyClientZoneHasAds(hasAds: adZoneData.hasAd())
+        }
     }
-    
-    func onAdsRefreshed(zone: Zone) {
-        notifyClientZoneHasAds(hasAds: zone.hasAds())
-    }
-    
+
     func onAdAvailable(ad: Ad) {
-        loadWebViewAd(ad: ad)
+        DispatchQueue.main.async { [weak self] in
+            self?.loadWebViewAd(ad: ad)
+        }
     }
-    
+
     func onNoAdAvailable() {
-        webViewManager.loadBlank()
+        DispatchQueue.main.async { [weak self] in
+            self?.webViewManager.loadBlank()
+        }
     }
-    
+
     func onAdVisibilityChanged(ad: Ad) {
-        if !webViewLoaded {
-            loadWebViewAd(ad: ad)
+        DispatchQueue.main.async { [weak self] in
+            guard let self, !self.webViewLoaded else { return }
+            self.loadWebViewAd(ad: ad)
         }
     }
     
@@ -188,9 +187,6 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
     // MARK: - Action
     
     @objc private func reportButtonTapped() {
-        if let cachedDeviceInfo = DeviceInfoClient.getCachedDeviceInfo() {
-            let udid = cachedDeviceInfo.udid
-            presenter.onReportAdClicked(adId: webViewManager.currentAd().id, udid: udid)
-        }
+        presenter.onReportAdClicked(adId: webViewManager.currentAd().id, udid: DeviceInfoClient.getCachedDeviceInfo().udid)
     }
 }

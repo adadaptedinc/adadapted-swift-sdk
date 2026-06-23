@@ -3,13 +3,11 @@ import XCTest
 
 class SuggestionObjCTests: XCTestCase {
 
-    private func makeTerm() -> Term {
-        return Term(
+    private func makeTerm() -> InterceptTerm {
+        return InterceptTerm(
             termId: "term1",
-            searchTerm: "milk",
+            term: "milk",
             replacement: "Whole Milk 1 Gallon",
-            icon: "https://example.com/icon.png",
-            tagline: "Fresh from the farm",
             priority: 1
         )
     }
@@ -25,8 +23,6 @@ class SuggestionObjCTests: XCTestCase {
         XCTAssertEqual(wrapper.searchId, "search123")
         XCTAssertEqual(wrapper.termId, "term1")
         XCTAssertEqual(wrapper.name, "Whole Milk 1 Gallon")
-        XCTAssertEqual(wrapper.icon, "https://example.com/icon.png")
-        XCTAssertEqual(wrapper.tagline, "Fresh from the farm")
         XCTAssertFalse(wrapper.presented)
         XCTAssertFalse(wrapper.selected)
     }

@@ -6,204 +6,189 @@
 import XCTest
 
 class AaZoneViewTests: XCTestCase {
-    static var testAaZoneView: AaZoneView!
-    
+    var testAaZoneView: AaZoneView!
+
     override class func setUp() {
         super.setUp()
         let deviceInfoExtractor = DeviceInfoExtractor()
         DeviceInfoClient.createInstance(appId: "apiKey", isProd: false, params: [:], customIdentifier: "", deviceInfoExtractor: deviceInfoExtractor)
-        SessionClient.createInstance(adapter: HttpSessionAdapter(initUrl: Config.getInitSessionUrl(), refreshUrl: Config.getRefreshAdsUrl()))
         EventClient.createInstance(eventAdapter: TestEventAdapter.shared)
-        EventClient.getInstance().onSessionAvailable(session: MockData.session)
-        EventClient.getInstance().onAdsAvailable(session: MockData.session)
-        AaZoneViewTests.testAaZoneView = AaZoneView()
+        AdClient.createInstance(adapter: TestAdAdapter())
     }
-    
-    override class func tearDown() {
-        SessionClient.getInstance().refreshTimer?.stopTimer()
-        SessionClient.getInstance().eventTimer?.stopTimer()
+
+    override func setUp() {
+        super.setUp()
+        testAaZoneView = AaZoneView()
     }
-    
+
+    override func tearDown() {
+        testAaZoneView.onStop()
+        testAaZoneView = nil
+        super.tearDown()
+    }
+
     func testStart() {
         let testListener = TestAaZoneViewListener()
         var testAd = Ad(id:"NewAdId")
-        AaZoneViewTests.testAaZoneView.initialize(zoneId: "TestZoneId")
-        AaZoneViewTests.testAaZoneView.onStart(listener: testListener)
-        AaZoneViewTests.testAaZoneView.onAdAvailable(ad: testAd)
-        AaZoneViewTests.testAaZoneView.onAdLoadedInWebView(ad: &testAd)
+        testAaZoneView.initialize(zoneId: "TestZoneId")
+        testAaZoneView.onStart(listener: testListener)
+        testAaZoneView.onAdAvailable(ad: testAd)
+        testAaZoneView.onAdLoadedInWebView(ad: &testAd)
         XCTAssertTrue(testListener.adLoaded)
     }
-    
-    func testStartContentListener() {
-        let expectation = XCTestExpectation(description: "Content available expectation")
+
+    func testStartContentListener() async {
         let testAdContentListener = MockAdContentListener()
         var testAd = Ad(id:"NewAdId")
-        AaZoneViewTests.testAaZoneView.initialize(zoneId: "TestZoneId")
-        AaZoneViewTests.testAaZoneView.onStart(contentListener: testAdContentListener)
-        AaZoneViewTests.testAaZoneView.onAdAvailable(ad: testAd)
-        AaZoneViewTests.testAaZoneView.onAdLoadedInWebView(ad: &testAd)
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            AdContentPublisher.getInstance().publishContent(
-                zoneId: "TestZoneId",
-                content: AdContent.createAddToListContent(
-                    ad: Ad(
-                        payload: Payload(
-                            detailedListItems: [AddToListItem(
-                                trackingId: "trackId",
-                                title: "title",
-                                brand: "brand",
-                                category: "cat",
-                                productUpc: "upc",
-                                retailerSku: "sku",
-                                retailerID: "disc",
-                                productImage: "image"
-                            )]
-                        )
+        testAaZoneView.initialize(zoneId: "TestZoneId")
+        testAaZoneView.onStart(contentListener: testAdContentListener)
+        testAaZoneView.onAdAvailable(ad: testAd)
+        testAaZoneView.onAdLoadedInWebView(ad: &testAd)
+
+        AdContentPublisher.getInstance().publishContent(
+            zoneId: "TestZoneId",
+            content: AdContent.createAddToListContent(
+                ad: Ad(
+                    payload: Payload(
+                        detailedListItems: [AddToListItem(
+                            trackingId: "trackId",
+                            title: "title",
+                            brand: "brand",
+                            category: "cat",
+                            productUpc: "upc",
+                            retailerSku: "sku",
+                            retailerID: "disc",
+                            productImage: "image"
+                        )]
                     )
                 )
             )
+        )
+
+        await awaitCondition {
+            testAdContentListener.receivedZoneId == "TestZoneId"
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-            XCTAssertEqual("TestZoneId", testAdContentListener.receivedZoneId)
-            expectation.fulfill()
-        }
-        wait(for: [expectation], timeout: 3.5)
+
+        XCTAssertEqual("TestZoneId", testAdContentListener.receivedZoneId)
     }
-    
+
     func testStartBothListeners() {
         let testListener = TestAaZoneViewListener()
         let testAdContentListener = MockAdContentListener()
         var testAd = Ad(id:"NewAdId")
-        AaZoneViewTests.testAaZoneView.initialize(zoneId: "TestZoneId")
-        AaZoneViewTests.testAaZoneView.onStart(listener: testListener, contentListener: testAdContentListener)
-        AaZoneViewTests.testAaZoneView.onAdAvailable(ad: testAd)
-        AaZoneViewTests.testAaZoneView.onAdLoadedInWebView(ad: &testAd)
-        
+        testAaZoneView.initialize(zoneId: "TestZoneId")
+        testAaZoneView.onStart(listener: testListener, contentListener: testAdContentListener)
+        testAaZoneView.onAdAvailable(ad: testAd)
+        testAaZoneView.onAdLoadedInWebView(ad: &testAd)
+
         XCTAssertTrue(testListener.adLoaded)
     }
-    
+
     func testNoAdStart() {
         let testListener = TestAaZoneViewListener()
-        AaZoneViewTests.testAaZoneView.initialize(zoneId: "TestZoneId")
-        AaZoneViewTests.testAaZoneView.onStart(listener: testListener)
-        AaZoneViewTests.testAaZoneView.onNoAdAvailable()
-        
+        testAaZoneView.initialize(zoneId: "TestZoneId")
+        testAaZoneView.onStart(listener: testListener)
+        testAaZoneView.onNoAdAvailable()
+
         XCTAssertFalse(testListener.adLoaded)
     }
-    
+
     func testOnStop() {
         let testListener = TestAaZoneViewListener()
-        AaZoneViewTests.testAaZoneView.initialize(zoneId: "TestZoneId")
-        AaZoneViewTests.testAaZoneView.onStart(listener: testListener)
-        AaZoneViewTests.testAaZoneView.onAdsRefreshed(zone: Zone(id: "TestZoneId", ads: [Ad(id: "NewZoneAdId")]))
-        AaZoneViewTests.testAaZoneView.onStop()
-        
-        XCTAssertTrue(AaZoneViewTests.testAaZoneView.zoneViewListener == nil)
+        testAaZoneView.initialize(zoneId: "TestZoneId")
+        testAaZoneView.onStart(listener: testListener)
+        testAaZoneView.onStop()
+
+        XCTAssertTrue(testAaZoneView.zoneViewListener == nil)
     }
-    
+
     func testOnStopWithContentListener() {
         let testListener = TestAaZoneViewListener()
         let testAdContentListener = MockAdContentListener()
-        AaZoneViewTests.testAaZoneView.initialize(zoneId: "TestZoneId")
-        AaZoneViewTests.testAaZoneView.onStart(listener: testListener, contentListener: testAdContentListener)
-        AaZoneViewTests.testAaZoneView.onAdsRefreshed(zone: Zone(id: "TestZoneId", ads: [Ad(id: "NewZoneAdId")]))
-        AaZoneViewTests.testAaZoneView.onStop(listener: testAdContentListener)
-        
-        XCTAssertTrue(AaZoneViewTests.testAaZoneView.zoneViewListener == nil)
+        testAaZoneView.initialize(zoneId: "TestZoneId")
+        testAaZoneView.onStart(listener: testListener, contentListener: testAdContentListener)
+        testAaZoneView.onStop(listener: testAdContentListener)
+
+        XCTAssertTrue(testAaZoneView.zoneViewListener == nil)
     }
-    
+
     func testShutdown() {
         let testListener = TestAaZoneViewListener()
-        AaZoneViewTests.testAaZoneView.initialize(zoneId: "TestZoneId")
-        AaZoneViewTests.testAaZoneView.onStart(listener: testListener)
-        AaZoneViewTests.testAaZoneView.shutdown()
-        AaZoneViewTests.testAaZoneView.onAdAvailable(ad: Ad(id: "NewAdId"))
-        
+        testAaZoneView.initialize(zoneId: "TestZoneId")
+        testAaZoneView.onStart(listener: testListener)
+        testAaZoneView.shutdown()
+        testAaZoneView.onAdAvailable(ad: Ad(id: "NewAdId"))
+
         XCTAssertEqual(testListener.adLoaded, false)
     }
-    
-    func testOnZoneAvail() {
+
+    func testOnZoneAvail() async {
         let testListener = TestAaZoneViewListener()
-        AaZoneViewTests.testAaZoneView.initialize(zoneId: "TestZoneId")
-        AaZoneViewTests.testAaZoneView.onStart(listener: testListener)
-        AaZoneViewTests.testAaZoneView.onZoneAvailable(zone: Zone(id: "TestZoneId", ads: [Ad(id: "NewZoneAdId")]))
-        
+        testAaZoneView.initialize(zoneId: "TestZoneId")
+        testAaZoneView.onStart(listener: testListener)
+        testAaZoneView.onZoneAvailable(adZoneData: AdZoneData(ad: Ad(id: "NewZoneAdId")))
+
+        await awaitCondition {
+            testListener.zoneHasAds == true
+        }
+
         XCTAssertEqual(testListener.zoneHasAds, true)
     }
-    
-    func testOnAdsRefreshed() {
-        let testListener = TestAaZoneViewListener()
-        AaZoneViewTests.testAaZoneView.initialize(zoneId: "TestZoneId")
-        AaZoneViewTests.testAaZoneView.onStart(listener: testListener)
-        AaZoneViewTests.testAaZoneView.onAdsRefreshed(zone: Zone(id: "TestZoneId", ads: [Ad(id: "NewZoneAdId")]))
-        
-        XCTAssertEqual(testListener.zoneHasAds, true)
-    }
-    
+
     func testOnAdLoaded() {
         let testListener = TestAaZoneViewListener()
         var ad = Ad(id: "NewAdId")
-        AaZoneViewTests.testAaZoneView.initialize(zoneId: "TestZoneId")
-        AaZoneViewTests.testAaZoneView.onStart(listener: testListener)
-        AaZoneViewTests.testAaZoneView.onAdLoadedInWebView(ad: &ad)
-        
+        testAaZoneView.initialize(zoneId: "TestZoneId")
+        testAaZoneView.onStart(listener: testListener)
+        testAaZoneView.onAdLoadedInWebView(ad: &ad)
+
         XCTAssertEqual(testListener.adLoaded, true)
     }
-    
+
     func testOnAdFailed() {
         let testListener = TestAaZoneViewListener()
-        AaZoneViewTests.testAaZoneView.initialize(zoneId: "TestZoneId")
-        AaZoneViewTests.testAaZoneView.onStart(listener: testListener)
-        AaZoneViewTests.testAaZoneView.onAdLoadInWebViewFailed()
-        
+        testAaZoneView.initialize(zoneId: "TestZoneId")
+        testAaZoneView.onStart(listener: testListener)
+        testAaZoneView.onAdLoadInWebViewFailed()
+
         XCTAssertEqual(testListener.adFailed, true)
     }
-    
+
     func testOnBlankAdDisplayed() {
         let testListener = TestAaZoneViewListener()
-        AaZoneViewTests.testAaZoneView.initialize(zoneId: "TestZoneId")
-        AaZoneViewTests.testAaZoneView.onStart(listener: testListener)
-        AaZoneViewTests.testAaZoneView.onBlankAdInWebViewLoaded()
-        
+        testAaZoneView.initialize(zoneId: "TestZoneId")
+        testAaZoneView.onStart(listener: testListener)
+        testAaZoneView.onBlankAdInWebViewLoaded()
+
         XCTAssertEqual(testListener.adLoaded, false)
     }
-    
+
     func testOnVisibilityChanged() {
         let testListener = TestAaZoneViewListener()
         var ad = Ad(id: "NewAdId")
-        AaZoneViewTests.testAaZoneView.initialize(zoneId: "TestZoneId")
-        AaZoneViewTests.testAaZoneView.onStart(listener: testListener)
-        AaZoneViewTests.testAaZoneView.isVisible = false
-        AaZoneViewTests.testAaZoneView.isVisible = true
-        AaZoneViewTests.testAaZoneView.onAdLoadedInWebView(ad: &ad)
-        
+        testAaZoneView.initialize(zoneId: "TestZoneId")
+        testAaZoneView.onStart(listener: testListener)
+        testAaZoneView.isVisible = false
+        testAaZoneView.isVisible = true
+        testAaZoneView.onAdLoadedInWebView(ad: &ad)
+
         XCTAssertEqual(testListener.adLoaded, true)
     }
-    
-    func testOnAdClicked() {
-        let expectation = XCTestExpectation(description: "Content available expectation")
+
+    func testOnAdClicked() async {
         let testListener = TestAaZoneViewListener()
         var testAd = Ad(id: "NewAdId", actionType: "c")
-        AaZoneViewTests.testAaZoneView.initialize(zoneId: "TestZoneId")
-        AaZoneViewTests.testAaZoneView.onStart(listener: testListener)
-        AaZoneViewTests.testAaZoneView.onAdLoadedInWebView(ad: &testAd)
-        AaZoneViewTests.testAaZoneView.onAdInWebViewClicked(ad: testAd)
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            EventClient.getInstance().onPublishEvents()
+        testAaZoneView.initialize(zoneId: "TestZoneId")
+        testAaZoneView.onStart(listener: testListener)
+        testAaZoneView.onAdLoadedInWebView(ad: &testAd)
+        testAaZoneView.onAdInWebViewClicked(ad: testAd)
+
+        await awaitAdapterEvent {
+            TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.ATL_AD_CLICKED }
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-            XCTAssertEqual(testListener.adLoaded, true)
-            XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.contains { event -> Bool in
-                event.name == EventStrings.ATL_AD_CLICKED
-            })
-            expectation.fulfill()
-        }
-        
-        wait(for: [expectation], timeout: 3.5)
+
+        XCTAssertEqual(testListener.adLoaded, true)
+        XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.ATL_AD_CLICKED })
     }
 }
 
@@ -211,16 +196,20 @@ class TestAaZoneViewListener: ZoneViewListener {
     var zoneHasAds = false
     var adLoaded = false
     var adFailed = false
-    
+
     func onZoneHasAds(hasAds: Bool) {
         zoneHasAds = hasAds
     }
-    
+
     func onAdLoaded() {
         adLoaded = true
     }
-    
+
     func onAdLoadFailed() {
         adFailed = true
     }
+}
+
+class TestAdAdapter: AdAdapter {
+
 }
