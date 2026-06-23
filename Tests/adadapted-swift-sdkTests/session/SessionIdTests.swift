@@ -7,11 +7,11 @@ import XCTest
 
 class SessionIdTests: XCTestCase {
 
-    override func setUp() async throws {
-        try await super.setUp()
+    override func setUp() {
+        super.setUp()
         SessionClient.start()
         NotificationCenter.default.post(name: UIScene.didActivateNotification, object: nil)
-        try? await Task.sleep(nanoseconds: 100_000_000)
+        Thread.sleep(forTimeInterval: 0.1)
     }
 
     func testSessionIdHasCorrectPrefix() {
@@ -35,13 +35,13 @@ class SessionIdTests: XCTestCase {
         }
     }
 
-    func testSessionIdPersistsOnQuickResume() async {
+    func testSessionIdPersistsOnQuickResume() {
         let firstId = SessionClient.getSessionId()
 
         NotificationCenter.default.post(name: UIScene.willDeactivateNotification, object: nil)
-        try? await Task.sleep(nanoseconds: 50_000_000)
+        Thread.sleep(forTimeInterval: 0.05)
         NotificationCenter.default.post(name: UIScene.didActivateNotification, object: nil)
-        try? await Task.sleep(nanoseconds: 50_000_000)
+        Thread.sleep(forTimeInterval: 0.05)
 
         let secondId = SessionClient.getSessionId()
         XCTAssertEqual(firstId, secondId, "Session ID should not change on quick resume")
@@ -52,7 +52,7 @@ class SessionIdTests: XCTestCase {
         XCTAssertFalse(sessionId.isEmpty)
     }
 
-    func testSessionCreatedEventIsTracked() async {
+    func testSessionCreatedEventIsTracked() {
         let deviceInfoExtractor = DeviceInfoExtractor()
         DeviceInfoClient.createInstance(appId: "apiKey", isProd: false, params: [:], customIdentifier: "", deviceInfoExtractor: deviceInfoExtractor)
         EventClient.createInstance(eventAdapter: TestEventAdapter.shared)
@@ -60,7 +60,7 @@ class SessionIdTests: XCTestCase {
 
         NotificationCenter.default.post(name: UIScene.didActivateNotification, object: nil)
 
-        await awaitAdapterEvent {
+        awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.contains {
                 $0.name == EventStrings.SESSION_CREATED || $0.name == EventStrings.SESSION_RESUMED
             }
@@ -72,7 +72,7 @@ class SessionIdTests: XCTestCase {
         XCTAssertTrue(hasSessionEvent, "Should track SESSION_CREATED or SESSION_RESUMED")
     }
 
-    func testSessionEventIncludesSessionIdParam() async {
+    func testSessionEventIncludesSessionIdParam() {
         let deviceInfoExtractor = DeviceInfoExtractor()
         DeviceInfoClient.createInstance(appId: "apiKey", isProd: false, params: [:], customIdentifier: "", deviceInfoExtractor: deviceInfoExtractor)
         EventClient.createInstance(eventAdapter: TestEventAdapter.shared)
@@ -80,7 +80,7 @@ class SessionIdTests: XCTestCase {
 
         NotificationCenter.default.post(name: UIScene.didActivateNotification, object: nil)
 
-        await awaitAdapterEvent {
+        awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.contains {
                 $0.name == EventStrings.SESSION_CREATED || $0.name == EventStrings.SESSION_RESUMED
             }
@@ -94,7 +94,7 @@ class SessionIdTests: XCTestCase {
         XCTAssertEqual(sessionEvent?.params["sessionId"], SessionClient.getSessionId())
     }
 
-    func testBackgroundEventIsTracked() async {
+    func testBackgroundEventIsTracked() {
         let deviceInfoExtractor = DeviceInfoExtractor()
         DeviceInfoClient.createInstance(appId: "apiKey", isProd: false, params: [:], customIdentifier: "", deviceInfoExtractor: deviceInfoExtractor)
         EventClient.createInstance(eventAdapter: TestEventAdapter.shared)
@@ -102,7 +102,7 @@ class SessionIdTests: XCTestCase {
 
         NotificationCenter.default.post(name: UIScene.willDeactivateNotification, object: nil)
 
-        await awaitAdapterEvent {
+        awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.contains {
                 $0.name == EventStrings.SESSION_BACKGROUNDED
             }
@@ -114,14 +114,14 @@ class SessionIdTests: XCTestCase {
         XCTAssertTrue(hasBackgroundEvent, "Should track SESSION_BACKGROUNDED")
     }
 
-    func testMultipleStartStopCyclesMaintainSameSession() async {
+    func testMultipleStartStopCyclesMaintainSameSession() {
         let sessionId = SessionClient.getSessionId()
 
         for _ in 0..<5 {
             NotificationCenter.default.post(name: UIScene.willDeactivateNotification, object: nil)
-            try? await Task.sleep(nanoseconds: 20_000_000)
+            Thread.sleep(forTimeInterval: 0.02)
             NotificationCenter.default.post(name: UIScene.didActivateNotification, object: nil)
-            try? await Task.sleep(nanoseconds: 20_000_000)
+            Thread.sleep(forTimeInterval: 0.02)
         }
 
         XCTAssertEqual(sessionId, SessionClient.getSessionId(), "Session ID should not change across quick cycles")

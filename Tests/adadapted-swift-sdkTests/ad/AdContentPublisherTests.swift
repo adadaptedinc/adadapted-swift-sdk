@@ -8,7 +8,7 @@ import XCTest
 
 class AdContentPublisherTests: XCTestCase {
 
-    func testPublishContentWithItems() async {
+    func testPublishContentWithItems() {
         let publisher = AdContentPublisher.getInstance()
         let mockListener = MockAdContentListener()
         publisher.addListener(listener: mockListener)
@@ -18,7 +18,7 @@ class AdContentPublisherTests: XCTestCase {
 
         publisher.publishContent(zoneId: zoneId, content: adContent)
 
-        await awaitCondition {
+        awaitCondition {
             mockListener.onContentAvailableCalled
         }
 
@@ -26,7 +26,7 @@ class AdContentPublisherTests: XCTestCase {
         XCTAssertEqual(mockListener.receivedZoneId, zoneId)
     }
 
-    func testPublishContentWithNoItems() async {
+    func testPublishContentWithNoItems() {
         let publisher = AdContentPublisher.getInstance()
         let mockListener = MockAdContentListener()
         publisher.addListener(listener: mockListener)
@@ -36,7 +36,7 @@ class AdContentPublisherTests: XCTestCase {
 
         publisher.publishNonContentNotification(zoneId: zoneId, adId: adId)
 
-        await awaitCondition {
+        awaitCondition {
             mockListener.onNonContentNotificationCalled
         }
 

@@ -17,10 +17,10 @@ class AdContentTests: XCTestCase {
         EventClient.createInstance(eventAdapter: TestEventAdapter.shared)
     }
 
-    override func setUp() async throws {
-        try await super.setUp()
+    override func setUp() {
+        super.setUp()
         EventClient.getInstance()?.onPublishEvents()
-        try? await Task.sleep(nanoseconds: 100_000_000)
+        Thread.sleep(forTimeInterval: 0.1)
         TestEventAdapter.shared.cleanupEvents()
     }
 
@@ -46,11 +46,11 @@ class AdContentTests: XCTestCase {
         XCTAssertEqual(zoneId, adContent.zoneId())
     }
 
-    func testAcknowledge() async {
+    func testAcknowledge() {
         let testAdContent = AdContent.createAddToListContent(ad: Ad(id: "adContentId", impressionId: "testZoneId"))
         testAdContent.acknowledge()
 
-        await awaitAdapterEvent {
+        awaitAdapterEvent {
             !TestEventAdapter.shared.testAdEvents.isEmpty
         }
 
@@ -59,11 +59,11 @@ class AdContentTests: XCTestCase {
         XCTAssertEqual("adContentId", TestEventAdapter.shared.testAdEvents.first?.adId)
     }
 
-    func testItemAcknowledge() async {
+    func testItemAcknowledge() {
         let testAdContent = AdContent.createAddToListContent(ad: Ad(id: "adContentId", impressionId: "testZoneId", payload: Payload(detailedListItems: testAddTolistItems)))
         testAdContent.itemAcknowledge(item: testAdContent.getItems().first!)
 
-        await awaitAdapterEvent {
+        awaitAdapterEvent {
             TestEventAdapter.shared.testAdEvents.contains { $0.eventType == AdEventTypes.INTERACTION }
                 && TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.ATL_ITEM_ADDED_TO_LIST }
         }
@@ -74,11 +74,11 @@ class AdContentTests: XCTestCase {
         XCTAssertEqual("adContentId", TestEventAdapter.shared.testAdEvents.first?.adId)
     }
 
-    func testContentFailed() async {
+    func testContentFailed() {
         let testAdContent = AdContent.createAddToListContent(ad: Ad(id: "adContentId", impressionId: "testZoneId", payload: Payload(detailedListItems: testAddTolistItems)))
         testAdContent.failed(message: "adContentFail")
 
-        await awaitAdapterEvent {
+        awaitAdapterEvent {
             !TestEventAdapter.shared.testSdkErrors.isEmpty
         }
 
@@ -86,11 +86,11 @@ class AdContentTests: XCTestCase {
         XCTAssertEqual("adContentFail", TestEventAdapter.shared.testSdkErrors.first!.message)
     }
 
-    func testContentItemFailed() async {
+    func testContentItemFailed() {
         let testAdContent = AdContent.createAddToListContent(ad: Ad(id: "adContentId", impressionId: "testZoneId", payload: Payload(detailedListItems: testAddTolistItems)))
         testAdContent.itemFailed(item: testAddTolistItems.first!, message: "adContentFail")
 
-        await awaitAdapterEvent {
+        awaitAdapterEvent {
             !TestEventAdapter.shared.testSdkErrors.isEmpty
         }
 

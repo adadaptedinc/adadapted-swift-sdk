@@ -14,10 +14,10 @@ class EventClientTests: XCTestCase {
         EventClient.createInstance(eventAdapter: TestEventAdapter.shared)
     }
 
-    override func setUp() async throws {
-        try await super.setUp()
+    override func setUp() {
+        super.setUp()
         EventClient.getInstance()?.onPublishEvents()
-        try? await Task.sleep(nanoseconds: 100_000_000)
+        Thread.sleep(forTimeInterval: 0.1)
         TestEventAdapter.shared.cleanupEvents()
     }
 
@@ -26,10 +26,10 @@ class EventClientTests: XCTestCase {
         TestEventAdapter.shared.cleanupEvents()
     }
 
-    func testTrackAppEvent() async {
+    func testTrackAppEvent() {
         EventClient.trackSdkEvent(name: "testTrackAppEvent")
 
-        await awaitAdapterEvent {
+        awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.contains { $0.name == "testTrackAppEvent" }
         }
 
@@ -38,10 +38,10 @@ class EventClientTests: XCTestCase {
         XCTAssertEqual("sdk", event?.type)
     }
 
-    func testTrackSdkEvent() async {
+    func testTrackSdkEvent() {
         EventClient.trackSdkEvent(name: "testTrackSdkEvent", params: [:])
 
-        await awaitAdapterEvent {
+        awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.contains { $0.name == "testTrackSdkEvent" }
         }
 
@@ -50,10 +50,10 @@ class EventClientTests: XCTestCase {
         XCTAssertEqual("sdk", event?.type)
     }
 
-    func testTrackError() async {
+    func testTrackError() {
         EventClient.trackSdkError(code: "testErrorCode", message: "testTrackError", params: [:])
 
-        await awaitAdapterEvent {
+        awaitAdapterEvent {
             TestEventAdapter.shared.testSdkErrors.contains { $0.code == "testErrorCode" }
         }
 

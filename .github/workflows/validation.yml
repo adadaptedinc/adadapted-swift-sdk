@@ -11,15 +11,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Select available simulator
-        id: sim
+      - name: Boot simulator
         run: |
-          SIM_UDID=$(xcrun simctl list devices available | grep 'iPhone' | tail -1 | awk -F'[()]' '{print $2}')
-          echo "udid=$SIM_UDID" >> "$GITHUB_OUTPUT"
-          echo "Using simulator UDID: $SIM_UDID"
+          UDID=$(xcrun simctl list devices available | grep iPhone | tail -1 | awk -F '[()]' '{print $2}')
+          xcrun simctl boot "$UDID" 2>/dev/null || true
+          echo "Booted simulator: $UDID"
+          echo "SIM_UDID=$UDID" >> "$GITHUB_ENV"
 
       - name: Run unit tests
         run: |
           xcodebuild test \
             -scheme adadapted-swift-sdk \
-            -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}"
+            -destination "platform=iOS Simulator,id=$SIM_UDID"

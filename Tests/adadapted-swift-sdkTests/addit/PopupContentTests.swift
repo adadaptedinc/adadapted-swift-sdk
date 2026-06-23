@@ -25,10 +25,10 @@ class PopupContentTests: XCTestCase {
         TestEventAdapter.shared.cleanupEvents()
     }
 
-    override func setUp() async throws {
-        try await super.setUp()
+    override func setUp() {
+        super.setUp()
         EventClient.getInstance()?.onPublishEvents()
-        try? await Task.sleep(nanoseconds: 100_000_000)
+        Thread.sleep(forTimeInterval: 0.1)
         TestEventAdapter.shared.cleanupEvents()
     }
 
@@ -42,26 +42,26 @@ class PopupContentTests: XCTestCase {
         XCTAssertEqual("testPayloadId", testPopupContent.payloadId)
     }
 
-    func testAcknowledge() async {
+    func testAcknowledge() {
         let testPopupContent = PopupContent(payloadId: "testPayloadId", items: testAddToListItems)
         TestEventAdapter.shared.testSdkEvents = []
 
         testPopupContent.acknowledge()
 
-        await awaitAdapterEvent {
+        awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.POPUP_ADDED_TO_LIST }
         }
 
         XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.POPUP_ADDED_TO_LIST })
     }
 
-    func testItemAcknowledge() async {
+    func testItemAcknowledge() {
         let testPopupContent = PopupContent(payloadId: "testPayloadId", items: testAddToListItems)
         TestEventAdapter.shared.testSdkEvents = []
 
         testPopupContent.itemAcknowledge(item: testPopupContent.getItems().first!)
 
-        await awaitAdapterEvent {
+        awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.count >= 2
         }
 
@@ -70,13 +70,13 @@ class PopupContentTests: XCTestCase {
         XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.POPUP_ITEM_ADDED_TO_LIST })
     }
 
-    func testFailed() async {
+    func testFailed() {
         let testPopupContent = PopupContent(payloadId: "testPayloadId", items: testAddToListItems)
         TestEventAdapter.shared.testSdkErrors = []
 
         testPopupContent.failed(message: "popupFail")
 
-        await awaitAdapterEvent {
+        awaitAdapterEvent {
             TestEventAdapter.shared.testSdkErrors.contains { $0.code == EventStrings.POPUP_CONTENT_FAILED }
         }
 
@@ -84,13 +84,13 @@ class PopupContentTests: XCTestCase {
         XCTAssertEqual("popupFail", TestEventAdapter.shared.testSdkErrors.first?.message)
     }
 
-    func testItemFailed() async {
+    func testItemFailed() {
         let testPopupContent = PopupContent(payloadId: "testPayloadId", items: testAddToListItems)
         TestEventAdapter.shared.testSdkErrors = []
 
         testPopupContent.itemFailed(item: self.testAddToListItems.first!, message: "popupItemFail")
 
-        await awaitAdapterEvent {
+        awaitAdapterEvent {
             TestEventAdapter.shared.testSdkErrors.contains { $0.code == EventStrings.POPUP_CONTENT_ITEM_FAILED }
         }
 

@@ -17,10 +17,10 @@ class AdZonePresenterTests: XCTestCase {
         testAdZonePresenter = AdZonePresenter(adViewHandler: AdViewHandler())
     }
 
-    override func setUp() async throws {
-        try await super.setUp()
+    override func setUp() {
+        super.setUp()
         EventClient.getInstance()?.onPublishEvents()
-        try? await Task.sleep(nanoseconds: 100_000_000)
+        Thread.sleep(forTimeInterval: 0.1)
         TestEventAdapter.shared.cleanupEvents()
     }
 
@@ -34,23 +34,23 @@ class AdZonePresenterTests: XCTestCase {
         super.tearDown()
     }
 
-    func testOnAdDisplayedButZoneNotVisible() async {
+    func testOnAdDisplayedButZoneNotVisible() {
         AdZonePresenterTests.testAdZonePresenter.initialize(zoneId: "testZoneId")
         let testAdEventListener = TestAdEventClientListener()
         EventClient.addListener(listener: testAdEventListener)
 
         // Let addListener Task complete
-        try? await Task.sleep(nanoseconds: 200_000_000)
+        Thread.sleep(forTimeInterval: 0.2)
 
         var testAd = Ad(id: "TestAdId")
         AdZonePresenterTests.testAdZonePresenter.onAdDisplayed(ad: &testAd, isAdVisible: false)
 
         // Give time for any async event tracking, then verify no event was tracked
-        try? await Task.sleep(nanoseconds: 500_000_000)
+        Thread.sleep(forTimeInterval: 0.5)
         XCTAssertNil(testAdEventListener.testAdEvent)
     }
 
-    func testAdNotCompletedBecauseThereIsOnlyOne() async {
+    func testAdNotCompletedBecauseThereIsOnlyOne() {
         AdZonePresenterTests.testAdZonePresenter.initialize(zoneId: "testZoneId")
         var testAd = Ad(id: "TestAdId")
 
@@ -58,45 +58,45 @@ class AdZonePresenterTests: XCTestCase {
         EventClient.addListener(listener: testAdEventListener)
 
         // Let addListener Task complete
-        try? await Task.sleep(nanoseconds: 200_000_000)
+        Thread.sleep(forTimeInterval: 0.2)
 
         let testListener = TestAdZonePresenterListener()
         AdZonePresenterTests.testAdZonePresenter.onAttach(adZonePresenterListener: testListener)
 
-        await awaitCondition {
+        awaitCondition {
             testListener.testAd.id == "NoAdAvail" || testListener.testAd.id != ""
         }
 
         AdZonePresenterTests.testAdZonePresenter.onAdDisplayed(ad: &testAd, isAdVisible: false)
         AdZonePresenterTests.testAdZonePresenter.onAdClicked(ad: testAd)
 
-        await awaitCondition {
+        awaitCondition {
             testAdEventListener.testAdEvent?.eventType == AdEventTypes.INVISIBLE_IMPRESSION
         }
 
         XCTAssertEqual(AdEventTypes.INVISIBLE_IMPRESSION, testAdEventListener.testAdEvent?.eventType)
     }
 
-    func testOnAdClickedContent() async {
+    func testOnAdClickedContent() {
         AdZonePresenterTests.testAdZonePresenter.initialize(zoneId: "testZoneId")
         var testAd = Ad(id: "TestAdId", impressionId: "impressionId", url: "url", actionType: AdActionType.CONTENT)
 
         let testAdEventListener = TestAdEventClientListener()
         EventClient.addListener(listener: testAdEventListener)
 
-        try? await Task.sleep(nanoseconds: 200_000_000)
+        Thread.sleep(forTimeInterval: 0.2)
 
         AdZonePresenterTests.testAdZonePresenter.onAdDisplayed(ad: &testAd, isAdVisible: true)
         AdZonePresenterTests.testAdZonePresenter.onAdClicked(ad: testAd)
 
-        await awaitAdapterEvent {
+        awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.contains(where: { $0.name == EventStrings.ATL_AD_CLICKED })
         }
 
         XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.ATL_AD_CLICKED })
     }
 
-    func testOnAdClickedLink() async {
+    func testOnAdClickedLink() {
         AdZonePresenterTests.testAdZonePresenter = AdZonePresenter(adViewHandler: AdViewHandler())
         AdZonePresenterTests.testAdZonePresenter.initialize(zoneId: "testZoneId")
         var testAd = Ad(id: "TestAdId", impressionId: "impressionId", url: "url", actionType: AdActionType.LINK)
@@ -104,50 +104,50 @@ class AdZonePresenterTests: XCTestCase {
         let testAdEventListener = TestAdEventClientListener()
         EventClient.addListener(listener: testAdEventListener)
 
-        try? await Task.sleep(nanoseconds: 200_000_000)
+        Thread.sleep(forTimeInterval: 0.2)
 
         AdZonePresenterTests.testAdZonePresenter.onAdDisplayed(ad: &testAd, isAdVisible: true)
         AdZonePresenterTests.testAdZonePresenter.onAdClicked(ad: testAd)
 
-        await awaitCondition {
+        awaitCondition {
             testAdEventListener.testAdEvent?.eventType == AdEventTypes.INTERACTION
         }
 
         XCTAssertEqual(AdEventTypes.INTERACTION, testAdEventListener.testAdEvent?.eventType)
     }
 
-    func testOnAdClickedPopup() async {
+    func testOnAdClickedPopup() {
         AdZonePresenterTests.testAdZonePresenter.initialize(zoneId: "testZoneId")
         var testAd = Ad(id: "TestAdId", impressionId: "impressionId", url: "url", actionType: AdActionType.POPUP)
 
         let testAdEventListener = TestAdEventClientListener()
         EventClient.addListener(listener: testAdEventListener)
 
-        try? await Task.sleep(nanoseconds: 200_000_000)
+        Thread.sleep(forTimeInterval: 0.2)
 
         AdZonePresenterTests.testAdZonePresenter.onAdDisplayed(ad: &testAd, isAdVisible: true)
         AdZonePresenterTests.testAdZonePresenter.onAdClicked(ad: testAd)
 
-        await awaitCondition {
+        awaitCondition {
             testAdEventListener.testAdEvent?.eventType == AdEventTypes.INTERACTION
         }
 
         XCTAssertEqual(AdEventTypes.INTERACTION, testAdEventListener.testAdEvent?.eventType)
     }
 
-    func testOnAdClickedContentPopup() async {
+    func testOnAdClickedContentPopup() {
         AdZonePresenterTests.testAdZonePresenter.initialize(zoneId: "testZoneId")
         var testAd = Ad(id: "TestAdId", impressionId: "impressionId", url: "url", actionType: AdActionType.CONTENT_POPUP)
 
         let testAdEventListener = TestAdEventClientListener()
         EventClient.addListener(listener: testAdEventListener)
 
-        try? await Task.sleep(nanoseconds: 200_000_000)
+        Thread.sleep(forTimeInterval: 0.2)
 
         AdZonePresenterTests.testAdZonePresenter.onAdDisplayed(ad: &testAd, isAdVisible: true)
         AdZonePresenterTests.testAdZonePresenter.onAdClicked(ad: testAd)
 
-        await awaitAdapterEvent {
+        awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.contains(where: { $0.name == EventStrings.POPUP_AD_CLICKED })
         }
 

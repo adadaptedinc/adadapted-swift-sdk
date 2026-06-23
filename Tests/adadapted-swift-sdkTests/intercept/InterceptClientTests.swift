@@ -30,13 +30,13 @@ class InterceptClientTests: XCTestCase {
         InterceptClient.createInstance(adapter: testInterceptAdapter, isKeywordInterceptEnabled: true)
     }
 
-    override func setUp() async throws {
-        try await super.setUp()
+    override func setUp() {
+        super.setUp()
         InterceptClientTests.testInterceptAdapter.testEvents = Set()
     }
 
-    override func tearDown() async throws {
-        try await super.tearDown()
+    override func tearDown() {
+        super.tearDown()
         InterceptClientTests.testInterceptAdapter.testEvents = Set()
     }
 
@@ -44,19 +44,19 @@ class InterceptClientTests: XCTestCase {
         XCTAssertNotNil(InterceptClient.getInstance())
     }
 
-    func testInitialize() async {
+    func testInitialize() {
         let mockListener = InterceptListenerMock()
 
         InterceptClient.getInstance()?.initialize(sessionId: "123", interceptListener: mockListener)
 
-        await awaitCondition {
+        awaitCondition {
             mockListener.onKeywordInterceptInitializedCalled
         }
 
         XCTAssertTrue(mockListener.onKeywordInterceptInitializedCalled)
     }
 
-    func testTrackMatched() async {
+    func testTrackMatched() {
         InterceptClient.getInstance()?.trackMatched(
             searchId: InterceptClientTests.testEvent.searchId,
             termId: InterceptClientTests.testEvent.termId,
@@ -64,14 +64,14 @@ class InterceptClientTests: XCTestCase {
             userInput: InterceptClientTests.testEvent.userInput
         )
 
-        await awaitInterceptEvent(adapter: InterceptClientTests.testInterceptAdapter) {
+        awaitInterceptEvent(adapter: InterceptClientTests.testInterceptAdapter) {
             InterceptClientTests.testInterceptAdapter.testEvents.contains(where: { $0.event == InterceptEvent.Constants.MATCHED })
         }
 
         XCTAssertTrue(InterceptClientTests.testInterceptAdapter.testEvents.contains(where: { $0.event == InterceptEvent.Constants.MATCHED }))
     }
 
-    func testTrackPresented() async {
+    func testTrackPresented() {
         InterceptClient.getInstance()?.trackPresented(
             searchId: InterceptClientTests.testEvent.searchId,
             termId: InterceptClientTests.testEvent.termId,
@@ -79,14 +79,14 @@ class InterceptClientTests: XCTestCase {
             userInput: InterceptClientTests.testEvent.userInput
         )
 
-        await awaitInterceptEvent(adapter: InterceptClientTests.testInterceptAdapter) {
+        awaitInterceptEvent(adapter: InterceptClientTests.testInterceptAdapter) {
             InterceptClientTests.testInterceptAdapter.testEvents.contains(where: { $0.event == InterceptEvent.Constants.PRESENTED })
         }
 
         XCTAssertTrue(InterceptClientTests.testInterceptAdapter.testEvents.contains(where: { $0.event == InterceptEvent.Constants.PRESENTED }))
     }
 
-    func testTrackSelected() async {
+    func testTrackSelected() {
         InterceptClient.getInstance()?.trackSelected(
             searchId: InterceptClientTests.testEvent.searchId,
             termId: InterceptClientTests.testEvent.termId,
@@ -94,20 +94,20 @@ class InterceptClientTests: XCTestCase {
             userInput: InterceptClientTests.testEvent.userInput
         )
 
-        await awaitInterceptEvent(adapter: InterceptClientTests.testInterceptAdapter) {
+        awaitInterceptEvent(adapter: InterceptClientTests.testInterceptAdapter) {
             InterceptClientTests.testInterceptAdapter.testEvents.contains(where: { $0.event == InterceptEvent.Constants.SELECTED })
         }
 
         XCTAssertTrue(InterceptClientTests.testInterceptAdapter.testEvents.contains(where: { $0.event == InterceptEvent.Constants.SELECTED }))
     }
 
-    func testTrackNotMatched() async {
+    func testTrackNotMatched() {
         InterceptClient.getInstance()?.trackNotMatched(
             searchId: InterceptClientTests.testEvent.searchId,
             userInput: InterceptClientTests.testEvent.userInput
         )
 
-        await awaitInterceptEvent(adapter: InterceptClientTests.testInterceptAdapter) {
+        awaitInterceptEvent(adapter: InterceptClientTests.testInterceptAdapter) {
             InterceptClientTests.testInterceptAdapter.testEvents.contains(where: { $0.event == InterceptEvent.Constants.NOT_MATCHED })
         }
 

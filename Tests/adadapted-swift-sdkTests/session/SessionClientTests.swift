@@ -10,11 +10,11 @@ import XCTest
 
 final class SessionClientTests: XCTestCase {
 
-    override func setUp() async throws {
-        try await super.setUp()
+    override func setUp() {
+        super.setUp()
         SessionClient.start()
         NotificationCenter.default.post(name: UIScene.didActivateNotification, object: nil)
-        try? await Task.sleep(nanoseconds: 100_000_000)
+        Thread.sleep(forTimeInterval: 0.1)
     }
 
     func testSessionIdIsCreatedOnStart() {
@@ -23,11 +23,11 @@ final class SessionClientTests: XCTestCase {
         XCTAssertTrue(sessionId.hasPrefix("IOS"), "Session ID should start with 'IOS'")
     }
 
-    func testSessionIdStaysSameDuringQuickResume() async {
+    func testSessionIdStaysSameDuringQuickResume() {
         let firstId = SessionClient.getSessionId()
 
         NotificationCenter.default.post(name: UIScene.didActivateNotification, object: nil)
-        try? await Task.sleep(nanoseconds: 100_000_000)
+        Thread.sleep(forTimeInterval: 0.1)
         let secondId = SessionClient.getSessionId()
 
         XCTAssertEqual(firstId, secondId, "Session ID should not change on quick resume")

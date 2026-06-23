@@ -40,7 +40,7 @@ final class AdClientTests: XCTestCase {
         AdClient.reset()
     }
 
-    func testRequestIsQueuedWhenNoAdapter() async {
+    func testRequestIsQueuedWhenNoAdapter() {
         var called = false
 
         AdClient.fetchNewAd(
@@ -56,14 +56,14 @@ final class AdClientTests: XCTestCase {
         let mockAdapter = MockAdAdapter()
         AdClient.createInstance(adapter: mockAdapter)
 
-        await awaitCondition {
+        awaitCondition {
             mockAdapter.requestCalled
         }
 
         XCTAssertEqual(mockAdapter.lastZoneId, "123")
     }
 
-    func testRequestCallsAdapterImmediatelyWhenAvailable() async {
+    func testRequestCallsAdapterImmediatelyWhenAvailable() {
         let mockAdapter = MockAdAdapter()
         AdClient.createInstance(adapter: mockAdapter)
 
@@ -77,7 +77,7 @@ final class AdClientTests: XCTestCase {
             )
         )
 
-        await awaitCondition {
+        awaitCondition {
             mockAdapter.requestCalled
         }
 
@@ -97,7 +97,7 @@ final class AdClientTests: XCTestCase {
         XCTAssertFalse(AdClient.hasBeenInitialized())
     }
 
-    func testFetchNewAdForwardsAllParameters() async {
+    func testFetchNewAdForwardsAllParameters() {
         let mockAdapter = MockAdAdapter()
         AdClient.createInstance(adapter: mockAdapter)
 
@@ -112,7 +112,7 @@ final class AdClientTests: XCTestCase {
             extra: "extraData"
         )
 
-        await awaitCondition {
+        awaitCondition {
             mockAdapter.requestCalled
         }
 
@@ -146,7 +146,7 @@ final class AdClientTests: XCTestCase {
         XCTAssertTrue(loadedData!.hasAd())
     }
 
-    func testFetchNewAdDefaultParametersAreEmpty() async {
+    func testFetchNewAdDefaultParametersAreEmpty() {
         let mockAdapter = MockAdAdapter()
         AdClient.createInstance(adapter: mockAdapter)
 
@@ -158,7 +158,7 @@ final class AdClientTests: XCTestCase {
             )
         )
 
-        await awaitCondition {
+        awaitCondition {
             mockAdapter.requestCalled
         }
 

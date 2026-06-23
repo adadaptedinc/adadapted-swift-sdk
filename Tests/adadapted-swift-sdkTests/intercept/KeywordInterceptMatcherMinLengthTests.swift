@@ -22,10 +22,10 @@ class KeywordInterceptMatcherMinLengthTests: XCTestCase {
         KeywordInterceptMatcher.getInstance().initialize()
     }
 
-    override func setUp() async throws {
-        try await super.setUp()
+    override func setUp() {
+        super.setUp()
         // Let class setUp's initialize complete
-        try? await Task.sleep(nanoseconds: 200_000_000)
+        Thread.sleep(forTimeInterval: 0.2)
     }
 
     override func tearDown() {

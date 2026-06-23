@@ -21,10 +21,10 @@ class EventBroadcasterTests: XCTestCase {
         TestEventAdapter.shared.cleanupEvents()
     }
 
-    func testAddListenerAndPublishAdEventTracked() async {
+    func testAddListenerAndPublishAdEventTracked() {
         EventBroadcaster.getInstance().onAdEventTracked(event: AdEvent(adId: "adId", zoneId: "adZoneId", impressionId: "impressionId", eventType: AdEventTypes.IMPRESSION))
 
-        await awaitCondition {
+        awaitCondition {
             EventBroadcasterTests.testListener.resultEventType == "impression"
         }
 
@@ -32,10 +32,10 @@ class EventBroadcasterTests: XCTestCase {
         XCTAssertEqual("adZoneId", EventBroadcasterTests.testListener.resultZoneId)
     }
 
-    func testAddListenerAndPublishAdEventInteractionTracked() async {
+    func testAddListenerAndPublishAdEventInteractionTracked() {
         EventBroadcaster.getInstance().onAdEventTracked(event: AdEvent(adId: "adId", zoneId: "adZoneId", impressionId: "impressionId", eventType: AdEventTypes.INTERACTION))
 
-        await awaitCondition {
+        awaitCondition {
             EventBroadcasterTests.testListener.resultEventType == "interaction"
         }
 
@@ -43,14 +43,14 @@ class EventBroadcasterTests: XCTestCase {
         XCTAssertEqual("adZoneId", EventBroadcasterTests.testListener.resultZoneId)
     }
 
-    func testAddListenerAndPublishAdEventNullNotTracked() async {
+    func testAddListenerAndPublishAdEventNullNotTracked() {
         EventBroadcasterTests.testListener.resultEventType = ""
         EventBroadcasterTests.testListener.resultZoneId = ""
 
         EventBroadcaster.getInstance().onAdEventTracked(event: nil)
 
         // Null event should not change the listener state. Wait briefly to confirm.
-        try? await Task.sleep(nanoseconds: 500_000_000)
+        Thread.sleep(forTimeInterval: 0.5)
 
         XCTAssertEqual("", EventBroadcasterTests.testListener.resultEventType)
         XCTAssertEqual("", EventBroadcasterTests.testListener.resultZoneId)

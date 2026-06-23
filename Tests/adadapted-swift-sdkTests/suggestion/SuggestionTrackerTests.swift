@@ -21,10 +21,10 @@ class SuggestionTrackerTests: XCTestCase {
         testInterceptAdapter.testEvents = Set()
     }
 
-    func testSuggestionMatched() async {
+    func testSuggestionMatched() {
         SuggestionTracker.suggestionMatched(searchId: "testMatchId", termId: "testTermId", term: "testTerm", replacement: "testReplacement", userInput: "testInput")
 
-        await awaitInterceptEvent(adapter: testInterceptAdapter) {
+        awaitInterceptEvent(adapter: testInterceptAdapter) {
             self.testInterceptAdapter.testEvents.contains(where: { $0.event == InterceptEvent.Constants.MATCHED })
         }
 
@@ -32,11 +32,11 @@ class SuggestionTrackerTests: XCTestCase {
         XCTAssertTrue(testInterceptAdapter.testEvents.contains { $0.searchId == "testMatchId" })
     }
 
-    func testSuggestionPresented() async {
+    func testSuggestionPresented() {
         SuggestionTracker.suggestionMatched(searchId: "testPresentedId", termId: "testTermId", term: "testTerm", replacement: "testReplacement", userInput: "testInput")
         SuggestionTracker.suggestionPresented(searchId: "testPresentedId", termId: "testTermId", replacement: "testReplacement")
 
-        await awaitInterceptEvent(adapter: testInterceptAdapter) {
+        awaitInterceptEvent(adapter: testInterceptAdapter) {
             self.testInterceptAdapter.testEvents.contains(where: { $0.event == InterceptEvent.Constants.PRESENTED })
         }
 
@@ -44,11 +44,11 @@ class SuggestionTrackerTests: XCTestCase {
         XCTAssertTrue(testInterceptAdapter.testEvents.contains { $0.searchId == "testPresentedId" })
     }
 
-    func testSuggestionSelected() async {
+    func testSuggestionSelected() {
         SuggestionTracker.suggestionMatched(searchId: "testSelectedId", termId: "testTermId", term: "testTerm", replacement: "testReplacement", userInput: "testInput")
         SuggestionTracker.suggestionSelected(searchId: "testSelectedId", termId: "testTermId", replacement: "testReplacement")
 
-        await awaitInterceptEvent(adapter: testInterceptAdapter) {
+        awaitInterceptEvent(adapter: testInterceptAdapter) {
             self.testInterceptAdapter.testEvents.contains(where: { $0.event == InterceptEvent.Constants.SELECTED })
         }
 
@@ -56,10 +56,10 @@ class SuggestionTrackerTests: XCTestCase {
         XCTAssertTrue(testInterceptAdapter.testEvents.contains { $0.searchId == "testSelectedId" })
     }
 
-    func testSuggestionNotMatched() async {
+    func testSuggestionNotMatched() {
         SuggestionTracker.suggestionNotMatched(searchId: "testNotMatchedId", userInput: "testInput")
 
-        await awaitInterceptEvent(adapter: testInterceptAdapter) {
+        awaitInterceptEvent(adapter: testInterceptAdapter) {
             self.testInterceptAdapter.testEvents.contains(where: { $0.event == InterceptEvent.Constants.NOT_MATCHED })
         }
 

@@ -20,31 +20,31 @@ class AdEventClientTests: XCTestCase {
         XCTAssertNotNil(TestEventAdapter.shared)
     }
 
-    func testAddListenerAndTrackEventImpression() async {
+    func testAddListenerAndTrackEventImpression() {
         let mockListener = TestEventClientListener()
         EventClient.addListener(listener: mockListener)
 
         // Let addListener Task complete before tracking
-        try? await Task.sleep(nanoseconds: 200_000_000)
+        Thread.sleep(forTimeInterval: 0.2)
 
         EventClient.trackImpression(ad: self.testAd)
 
-        await awaitCondition {
+        awaitCondition {
             mockListener.trackedEvent != nil
         }
 
         XCTAssertNotNil(mockListener.trackedEvent)
     }
 
-    func testRemoveListener() async {
+    func testRemoveListener() {
         let mockListener = TestEventClientListener()
         EventClient.addListener(listener: mockListener)
 
-        try? await Task.sleep(nanoseconds: 200_000_000)
+        Thread.sleep(forTimeInterval: 0.2)
 
         EventClient.trackImpression(ad: self.testAd)
 
-        await awaitCondition {
+        awaitCondition {
             mockListener.trackedEvent != nil
         }
 
@@ -53,42 +53,42 @@ class AdEventClientTests: XCTestCase {
         EventClient.removeListener(listener: mockListener)
 
         // Let removeListener Task complete
-        try? await Task.sleep(nanoseconds: 200_000_000)
+        Thread.sleep(forTimeInterval: 0.2)
 
         mockListener.trackedEvent = nil
 
         EventClient.trackImpression(ad: self.testAd)
 
         // After removing, the listener should NOT receive events.
-        try? await Task.sleep(nanoseconds: 500_000_000)
+        Thread.sleep(forTimeInterval: 0.5)
 
         XCTAssertNil(mockListener.trackedEvent)
     }
 
-    func testTrackInteraction() async {
+    func testTrackInteraction() {
         let mockListener = TestEventClientListener()
         EventClient.addListener(listener: mockListener)
 
-        try? await Task.sleep(nanoseconds: 200_000_000)
+        Thread.sleep(forTimeInterval: 0.2)
 
         EventClient.trackInteraction(ad: self.testAd)
 
-        await awaitCondition {
+        awaitCondition {
             mockListener.trackedEvent?.eventType == AdEventTypes.INTERACTION
         }
 
         XCTAssertEqual(mockListener.trackedEvent?.eventType, AdEventTypes.INTERACTION)
     }
 
-    func testTrackPopupBegin() async {
+    func testTrackPopupBegin() {
         let mockListener = TestEventClientListener()
         EventClient.addListener(listener: mockListener)
 
-        try? await Task.sleep(nanoseconds: 200_000_000)
+        Thread.sleep(forTimeInterval: 0.2)
 
         EventClient.trackPopupBegin(ad: self.testAd)
 
-        await awaitCondition {
+        awaitCondition {
             mockListener.trackedEvent?.eventType == AdEventTypes.POPUP_BEGIN
         }
 

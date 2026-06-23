@@ -19,11 +19,11 @@ class PayloadClientTests: XCTestCase {
         TestEventAdapter.shared.cleanupEvents()
     }
 
-    override func setUp() async throws {
-        try await super.setUp()
+    override func setUp() {
+        super.setUp()
         PayloadClient.deeplinkCompleted()
         EventClient.getInstance()?.onPublishEvents()
-        try? await Task.sleep(nanoseconds: 100_000_000)
+        Thread.sleep(forTimeInterval: 0.1)
         TestEventAdapter.shared.cleanupEvents()
     }
 
@@ -37,7 +37,7 @@ class PayloadClientTests: XCTestCase {
         super.tearDown()
     }
 
-    func testPickupPayloads() async {
+    func testPickupPayloads() {
         var testContent: [AdditContent] = []
         XCTAssertTrue(testContent.isEmpty)
 
@@ -45,7 +45,7 @@ class PayloadClientTests: XCTestCase {
             testContent = $0
         }
 
-        await awaitCondition {
+        awaitCondition {
             !testContent.isEmpty
         }
 
@@ -53,7 +53,7 @@ class PayloadClientTests: XCTestCase {
         XCTAssertEqual("testPayloadId", testContent.first?.payloadId)
     }
 
-    func testDeeplinkInProgressAndCompletes() async {
+    func testDeeplinkInProgressAndCompletes() {
         var testContent: [AdditContent] = []
         XCTAssertTrue(testContent.isEmpty)
         PayloadClient.deeplinkInProgress()
@@ -62,7 +62,7 @@ class PayloadClientTests: XCTestCase {
             testContent = $0
         }
 
-        try? await Task.sleep(nanoseconds: 200_000_000)
+        Thread.sleep(forTimeInterval: 0.2)
         XCTAssertTrue(testContent.isEmpty)
 
         PayloadClient.deeplinkCompleted()
@@ -71,7 +71,7 @@ class PayloadClientTests: XCTestCase {
             testContent = $0
         }
 
-        await awaitCondition {
+        awaitCondition {
             !testContent.isEmpty
         }
 
@@ -79,13 +79,13 @@ class PayloadClientTests: XCTestCase {
         XCTAssertEqual("testPayloadId", testContent.first?.payloadId)
     }
 
-    func testMarkContentAcknowledged() async {
+    func testMarkContentAcknowledged() {
         let content = Self.getTestAdditPayloadContent()
         TestEventAdapter.shared.cleanupEvents()
 
         PayloadClient.markContentAcknowledged(content: content)
 
-        await awaitAdapterEvent {
+        awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.contains(where: { $0.name == EventStrings.ADDIT_ADDED_TO_LIST })
         }
 
@@ -94,12 +94,12 @@ class PayloadClientTests: XCTestCase {
         XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.first { $0.name == EventStrings.ADDIT_ADDED_TO_LIST }?.params["source"] == ContentSources.PAYLOAD)
     }
 
-    func testMarkContentItemAcknowledged() async {
+    func testMarkContentItemAcknowledged() {
         let content = Self.getTestAdditPayloadContent()
 
         PayloadClient.markContentItemAcknowledged(content: content, item: Self.getTestAddToListItem())
 
-        await awaitAdapterEvent {
+        awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.contains(where: { $0.name == EventStrings.ADDIT_ITEM_ADDED_TO_LIST })
         }
 
@@ -109,13 +109,13 @@ class PayloadClientTests: XCTestCase {
         XCTAssertEqual(ContentSources.PAYLOAD, TestEventAdapter.shared.testSdkEvents.first?.params["source"])
     }
 
-    func testMarkContentDuplicate() async {
+    func testMarkContentDuplicate() {
         let content = Self.getTestAdditPayloadContent()
         TestEventAdapter.shared.testSdkEvents = []
 
         PayloadClient.markContentDuplicate(content: content)
 
-        await awaitAdapterEvent {
+        awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.contains(where: { $0.name == EventStrings.ADDIT_DUPLICATE_PAYLOAD })
         }
 
@@ -124,13 +124,13 @@ class PayloadClientTests: XCTestCase {
         XCTAssertEqual("duplicate", PayloadClientTests.testPayloadAdapter.publishedEvent.status)
     }
 
-    func testMarkNonPayloadContentDuplicate() async {
+    func testMarkNonPayloadContentDuplicate() {
         let content = PayloadClientTests.getTestAdditPayloadContent(isPayloadSource: false)
         TestEventAdapter.shared.testSdkEvents = []
 
         PayloadClient.markContentDuplicate(content: content)
 
-        await awaitAdapterEvent {
+        awaitAdapterEvent {
             TestEventAdapter.shared.testSdkEvents.contains(where: { $0.name == EventStrings.ADDIT_DUPLICATE_PAYLOAD })
         }
 
@@ -138,13 +138,13 @@ class PayloadClientTests: XCTestCase {
         XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.first { $0.name == EventStrings.ADDIT_DUPLICATE_PAYLOAD }?.params["payload_id"] == "testPayloadId")
     }
 
-    func testMarkContentFailed() async {
+    func testMarkContentFailed() {
         let content = Self.getTestAdditPayloadContent()
         TestEventAdapter.shared.testSdkErrors = []
 
         PayloadClient.markContentFailed(content: content, message: "testFail")
 
-        await awaitAdapterEvent {
+        awaitAdapterEvent {
             TestEventAdapter.shared.testSdkErrors.contains(where: { $0.code == EventStrings.ADDIT_CONTENT_FAILED })
         }
 
@@ -153,13 +153,13 @@ class PayloadClientTests: XCTestCase {
         XCTAssertEqual("rejected", PayloadClientTests.testPayloadAdapter.publishedEvent.status)
     }
 
-    func testMarkNonPayloadContentFailed() async {
+    func testMarkNonPayloadContentFailed() {
         let content = PayloadClientTests.getTestAdditPayloadContent(isPayloadSource: false)
         TestEventAdapter.shared.testSdkErrors = []
 
         PayloadClient.markContentFailed(content: content, message: "testFail")
 
-        await awaitAdapterEvent {
+        awaitAdapterEvent {
             TestEventAdapter.shared.testSdkErrors.contains(where: { $0.code == EventStrings.ADDIT_CONTENT_FAILED })
         }
 
@@ -167,13 +167,13 @@ class PayloadClientTests: XCTestCase {
         XCTAssertTrue(TestEventAdapter.shared.testSdkErrors.contains { $0.message == "testFail" })
     }
 
-    func testMarkContentItemFailed() async {
+    func testMarkContentItemFailed() {
         let content = Self.getTestAdditPayloadContent()
         TestEventAdapter.shared.testSdkErrors = []
 
         PayloadClient.markContentItemFailed(content: content, item: Self.getTestAddToListItem(), message: "testItemFail")
 
-        await awaitAdapterEvent {
+        awaitAdapterEvent {
             TestEventAdapter.shared.testSdkErrors.contains(where: { $0.code == EventStrings.ADDIT_CONTENT_ITEM_FAILED })
         }
 
