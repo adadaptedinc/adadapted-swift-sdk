@@ -10,8 +10,10 @@ class MockAdAdapter: AdAdapter {
     var lastStoreId: String?
     var lastContextId: String?
     var lastExtra: String?
-    var requestCalled = false
+    var requestCount = 0
+    var requestCalled: Bool { requestCount > 0 }
     var shouldSucceed = false
+    var mockAdZoneData = AdZoneData(ad: Ad(id: "mockAdId"))
 
     func requestAd(
         zoneId: String,
@@ -20,13 +22,13 @@ class MockAdAdapter: AdAdapter {
         contextId: String,
         extra: String
     ) async {
-        requestCalled = true
+        requestCount += 1
         lastZoneId = zoneId
         lastStoreId = storeId
         lastContextId = contextId
         lastExtra = extra
         if shouldSucceed {
-            listener.onAdLoaded(AdZoneData(ad: Ad(id: "mockAdId")))
+            listener.onAdLoaded(mockAdZoneData)
         } else {
             listener.onAdLoadFailed()
         }

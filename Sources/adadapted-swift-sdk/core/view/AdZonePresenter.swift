@@ -102,6 +102,7 @@ class AdZonePresenter: ZoneAdListener {
         currentAd = ad
         adStarted = false
         adCompleted = false
+        restartTimer()
         displayAd()
     }
     
@@ -124,11 +125,11 @@ class AdZonePresenter: ZoneAdListener {
     
     func onAdDisplayed(ad: inout Ad, isAdVisible: Bool) {
         isZoneVisible = isAdVisible
-        startZoneTimer()
-        adStarted = true
         if (ad.id != currentAd.id) {
             currentAd = ad
         }
+        startZoneTimer() //Must stay after the currentAd sync above, or the timer picks up the previous Ad's refresh time
+        adStarted = true
         trackAdImpression(ad: &currentAd, isAdVisible: isAdVisible)
     }
     
@@ -139,15 +140,17 @@ class AdZonePresenter: ZoneAdListener {
     }
     
     func onAdDisplayFailed() {
-        startZoneTimer()
-        adStarted = true
-        currentAd = Ad()
+        clearAdAndStartTimer()
     }
     
     func onBlankDisplayed() {
-        startZoneTimer()
+        clearAdAndStartTimer()
+    }
+
+    private func clearAdAndStartTimer() {
         adStarted = true
-        currentAd = Ad()
+        currentAd = Ad(refreshTime: currentAd.refreshTime)
+        startZoneTimer()
     }
     
     func onAdClicked(ad: Ad) {
@@ -199,9 +202,14 @@ class AdZonePresenter: ZoneAdListener {
         if !zoneLoaded || timerRunning {
             return
         }
-        let timerDelay = Config.DEFAULT_AD_REFRESH
+        let refreshSeconds = currentAd.refreshTimeOrDefault
+        if currentAd.refreshTimeWasRejected {
+            AALogger.logError(message: "Ad refresh time of \(currentAd.refreshTime)s was served but not honored. Using \(refreshSeconds)s")
+        } else {
+            AALogger.logDebug(message: "Zone timer starting with a refresh of \(refreshSeconds)s")
+        }
         timerRunning = true
-        timer = Timer(repeatMillis: timerDelay, delayMillis: timerDelay, timerAction: { [weak self] in
+        timer = Timer(repeatSeconds: refreshSeconds, delaySeconds: refreshSeconds, timerAction: { [weak self] in
             self?.getNextAd()
         })
         timer?.startTimer()
@@ -252,7 +260,6 @@ class AdZonePresenter: ZoneAdListener {
     private func updateCurrentZone(adZoneData: AdZoneData) {
         zoneLoaded = true
         currentAdZoneData = adZoneData
-        restartTimer()
         handleAd(ad: adZoneData.ad)
     }
     

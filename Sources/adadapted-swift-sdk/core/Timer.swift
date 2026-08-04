@@ -11,9 +11,9 @@ class Timer {
     private var delay: DispatchTimeInterval
     private var timerAction: (() -> Void)?
 
-    init(repeatMillis: Int, delayMillis: Int = 0, timerAction: @escaping () -> Void) {
-        self.repeatInterval = .milliseconds(repeatMillis)
-        self.delay = .milliseconds(delayMillis)
+    init(repeatSeconds: Int, delaySeconds: Int = 0, timerAction: @escaping () -> Void) {
+        self.repeatInterval = .seconds(repeatSeconds)
+        self.delay = .seconds(delaySeconds)
         self.timerAction = timerAction
     }
 
