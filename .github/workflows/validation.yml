@@ -11,8 +11,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Resolved at run time rather than pinned to a device name, since the runner image drops
+      # older iPhone models as Xcode versions roll forward
+      - name: Select an iOS simulator
+        id: simulator
+        run: |
+          udid=$(xcrun simctl list devices available -j \
+            | jq -r 'first(.devices | to_entries[] | select(.key | test("iOS")) | .value[] | select(.name | startswith("iPhone")) | .udid)')
+          if [ -z "$udid" ] || [ "$udid" = "null" ]; then
+            echo "::error::No available iPhone simulator on this runner"
+            xcrun simctl list devices available
+            exit 1
+          fi
+          xcrun simctl list devices available | grep "$udid"
+          echo "udid=$udid" >> "$GITHUB_OUTPUT"
+
       - name: Run unit tests
         run: |
           xcodebuild test \
             -scheme adadapted-swift-sdk \
-            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest'
+            -destination "id=${{ steps.simulator.outputs.udid }}"
