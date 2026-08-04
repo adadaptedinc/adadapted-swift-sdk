@@ -48,6 +48,11 @@ playground.xcworkspace
 
 .build/
 
+# Test output written by the validation workflow's xcodebuild invocation, which is also handy to run
+# locally
+*.xcresult
+xcodebuild.log
+
 # CocoaPods
 #
 # We recommend against adding the Pods directory to your .gitignore. However

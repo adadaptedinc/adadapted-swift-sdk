@@ -5,15 +5,48 @@
 import XCTest
 @testable import adadapted_swift_sdk
 
+/// `requestAd` is driven off the SDK's own task/timer threads while tests read the recorded values
+/// from the test thread, so every property is lock guarded.  Without that, a test can sit and wait
+/// on a `requestCount` bump it never observes.
 class MockAdAdapter: AdAdapter {
-    var lastZoneId: String?
-    var lastStoreId: String?
-    var lastContextId: String?
-    var lastExtra: String?
-    var requestCount = 0
+    private let lock = NSLock()
+    private var _lastZoneId: String?
+    private var _lastStoreId: String?
+    private var _lastContextId: String?
+    private var _lastExtra: String?
+    private var _requestCount = 0
+    private var _shouldSucceed = false
+    private var _mockAdZoneData = AdZoneData(ad: Ad(id: "mockAdId"))
+
+    var lastZoneId: String? {
+        get { lock.lock(); defer { lock.unlock() }; return _lastZoneId }
+        set { lock.lock(); _lastZoneId = newValue; lock.unlock() }
+    }
+    var lastStoreId: String? {
+        get { lock.lock(); defer { lock.unlock() }; return _lastStoreId }
+        set { lock.lock(); _lastStoreId = newValue; lock.unlock() }
+    }
+    var lastContextId: String? {
+        get { lock.lock(); defer { lock.unlock() }; return _lastContextId }
+        set { lock.lock(); _lastContextId = newValue; lock.unlock() }
+    }
+    var lastExtra: String? {
+        get { lock.lock(); defer { lock.unlock() }; return _lastExtra }
+        set { lock.lock(); _lastExtra = newValue; lock.unlock() }
+    }
+    var requestCount: Int {
+        get { lock.lock(); defer { lock.unlock() }; return _requestCount }
+        set { lock.lock(); _requestCount = newValue; lock.unlock() }
+    }
     var requestCalled: Bool { requestCount > 0 }
-    var shouldSucceed = false
-    var mockAdZoneData = AdZoneData(ad: Ad(id: "mockAdId"))
+    var shouldSucceed: Bool {
+        get { lock.lock(); defer { lock.unlock() }; return _shouldSucceed }
+        set { lock.lock(); _shouldSucceed = newValue; lock.unlock() }
+    }
+    var mockAdZoneData: AdZoneData {
+        get { lock.lock(); defer { lock.unlock() }; return _mockAdZoneData }
+        set { lock.lock(); _mockAdZoneData = newValue; lock.unlock() }
+    }
 
     func requestAd(
         zoneId: String,
@@ -22,13 +55,19 @@ class MockAdAdapter: AdAdapter {
         contextId: String,
         extra: String
     ) async {
-        requestCount += 1
-        lastZoneId = zoneId
-        lastStoreId = storeId
-        lastContextId = contextId
-        lastExtra = extra
-        if shouldSucceed {
-            listener.onAdLoaded(mockAdZoneData)
+        lock.lock()
+        _requestCount += 1
+        _lastZoneId = zoneId
+        _lastStoreId = storeId
+        _lastContextId = contextId
+        _lastExtra = extra
+        let succeed = _shouldSucceed
+        let adZoneData = _mockAdZoneData
+        lock.unlock()
+
+        // Called outside the lock — the listener can request another ad synchronously
+        if succeed {
+            listener.onAdLoaded(adZoneData)
         } else {
             listener.onAdLoadFailed()
         }
@@ -69,21 +108,23 @@ final class AdClientTests: XCTestCase {
         let mockAdapter = MockAdAdapter()
         AdClient.createInstance(adapter: mockAdapter)
 
-        var failed = false
+        let failed = Locked(false)
 
         AdClient.fetchNewAd(
             zoneId: "456",
             listener: TestZoneAdListener(
                 onAdLoadedHandler: { _ in },
-                onAdLoadFailedHandler: { failed = true }
+                onAdLoadFailedHandler: { failed.value = true }
             )
         )
 
+        // Waits on the callback itself, not on the request count - the count is bumped before the
+        // adapter calls back, so waiting on it can return before `failed` has been set
         await awaitCondition {
-            mockAdapter.requestCalled
+            failed.value
         }
 
-        XCTAssertTrue(failed)
+        XCTAssertTrue(failed.value)
         XCTAssertEqual(mockAdapter.lastZoneId, "456")
     }
 

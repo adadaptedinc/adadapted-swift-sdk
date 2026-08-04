@@ -193,20 +193,24 @@ class AaZoneViewTests: XCTestCase {
 }
 
 class TestAaZoneViewListener: ZoneViewListener {
-    var zoneHasAds = false
-    var adLoaded = false
-    var adFailed = false
+    private let _zoneHasAds = Locked(false)
+    private let _adLoaded = Locked(false)
+    private let _adFailed = Locked(false)
+
+    var zoneHasAds: Bool { _zoneHasAds.value }
+    var adLoaded: Bool { _adLoaded.value }
+    var adFailed: Bool { _adFailed.value }
 
     func onZoneHasAds(hasAds: Bool) {
-        zoneHasAds = hasAds
+        _zoneHasAds.value = hasAds
     }
 
     func onAdLoaded() {
-        adLoaded = true
+        _adLoaded.value = true
     }
 
     func onAdLoadFailed() {
-        adFailed = true
+        _adFailed.value = true
     }
 }
 

@@ -37,46 +37,48 @@ class PayloadClientTests: XCTestCase {
     }
 
     func testPickupPayloads() async {
-        var testContent: [AdditContent] = []
-        XCTAssertTrue(testContent.isEmpty)
+        // The pickup callback lands on a background queue, so the delivered content is boxed rather
+        // than captured in a bare local the test thread would have no ordered view of
+        let testContent = Locked<[AdditContent]>([])
+        XCTAssertTrue(testContent.value.isEmpty)
 
         PayloadClient.pickupPayloads {
-            testContent = $0
+            testContent.value = $0
         }
 
         await awaitCondition {
-            !testContent.isEmpty
+            !testContent.value.isEmpty
         }
 
-        XCTAssertFalse(testContent.isEmpty)
-        XCTAssertEqual("testPayloadId", testContent.first?.payloadId)
+        XCTAssertFalse(testContent.value.isEmpty)
+        XCTAssertEqual("testPayloadId", testContent.value.first?.payloadId)
     }
 
     func testDeeplinkInProgressAndCompletes() async {
-        var testContent: [AdditContent] = []
-        XCTAssertTrue(testContent.isEmpty)
+        let testContent = Locked<[AdditContent]>([])
+        XCTAssertTrue(testContent.value.isEmpty)
         PayloadClient.deeplinkInProgress()
 
         PayloadClient.pickupPayloads {
-            testContent = $0
+            testContent.value = $0
         }
 
         // While deeplink is in progress, payloads should not be delivered
         try? await Task.sleep(nanoseconds: 200_000_000)
-        XCTAssertTrue(testContent.isEmpty)
+        XCTAssertTrue(testContent.value.isEmpty)
 
         PayloadClient.deeplinkCompleted()
 
         PayloadClient.pickupPayloads {
-            testContent = $0
+            testContent.value = $0
         }
 
         await awaitCondition {
-            !testContent.isEmpty
+            !testContent.value.isEmpty
         }
 
-        XCTAssertFalse(testContent.isEmpty)
-        XCTAssertEqual("testPayloadId", testContent.first?.payloadId)
+        XCTAssertFalse(testContent.value.isEmpty)
+        XCTAssertEqual("testPayloadId", testContent.value.first?.payloadId)
     }
 
     func testMarkContentAcknowledged() async {

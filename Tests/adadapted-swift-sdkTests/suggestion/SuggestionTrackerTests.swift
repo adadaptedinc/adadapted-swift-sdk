@@ -73,10 +73,6 @@ class TestInterceptAdapter: InterceptAdapter {
     private let lock = NSLock()
     private var _testEvents = Set<InterceptEvent>()
 
-    /// Callback fired the instant events arrive — tests set this to
-    /// fulfill expectations without polling.
-    var onEventsPublished: (() -> Void)?
-
     var testEvents: Set<InterceptEvent> {
         get { lock.lock(); defer { lock.unlock() }; return _testEvents }
         set { lock.lock(); _testEvents = newValue; lock.unlock() }
@@ -90,6 +86,5 @@ class TestInterceptAdapter: InterceptAdapter {
         lock.lock()
         _testEvents.formUnion(events)
         lock.unlock()
-        onEventsPublished?()
     }
 }

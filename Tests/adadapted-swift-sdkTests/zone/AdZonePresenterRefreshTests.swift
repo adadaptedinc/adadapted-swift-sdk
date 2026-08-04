@@ -8,6 +8,20 @@ import XCTest
 /// These run against the real `Timer`, so the waits are wall clock and every refresh time used here
 /// is deliberately small. The "slower than the default" case would need a 60+ second wait, so it is
 /// covered by `AdTests.testServerSuppliedRefreshTimeIsUsedWhenItMeetsTheFloor` instead.
+///
+/// NOT RUN IN CI - a contended runner cannot be trusted to fire a `Timer` on a wall clock deadline,
+/// which made this class an endless source of false failures, so `.github/workflows/validation.yml`
+/// skips it.
+///
+/// The presenter's refresh wiring is not riding on this class: `AdZonePresenterTimerTests` asserts
+/// on the interval the zone timer is armed with, covers the same behavior in milliseconds, and does
+/// run in CI. What only these tests establish is the last link - that a timer armed with N seconds
+/// actually refetches after N seconds. Worth running locally after changing anything about how the
+/// timer itself is built or scheduled:
+///
+///     xcodebuild test -scheme adadapted-swift-sdk \
+///       -destination "id=$(xcrun simctl list devices available -j | jq -r 'first(.devices | to_entries[] | select(.key | test("iOS")) | .value[] | select(.name | startswith("iPhone")) | .udid)')" \
+///       -only-testing:adadapted-swift-sdkTests/AdZonePresenterRefreshTests
 class AdZonePresenterRefreshTests: XCTestCase {
     private static let testAdAdapter = MockAdAdapter()
     private var testAdZonePresenter: AdZonePresenter!
@@ -40,14 +54,16 @@ class AdZonePresenterRefreshTests: XCTestCase {
         let serverRefreshSeconds = Ad.MINIMUM_REFRESH_TIME_SECONDS
         let requestsBeforeRefresh = await displayAd(withRefreshTimeSeconds: serverRefreshSeconds)
 
-        await sleep(seconds: Double(serverRefreshSeconds) / 2)
-        XCTAssertEqual(
-            requestsBeforeRefresh,
-            AdZonePresenterRefreshTests.testAdAdapter.requestCount,
-            "Should not have refreshed before the server's refresh time elapsed"
-        )
+        let elapsed = await sleep(seconds: Double(serverRefreshSeconds) / 2)
+        if elapsed < Double(serverRefreshSeconds) {
+            XCTAssertEqual(
+                requestsBeforeRefresh,
+                AdZonePresenterRefreshTests.testAdAdapter.requestCount,
+                "Should not have refreshed before the server's refresh time elapsed"
+            )
+        }
 
-        await awaitCondition(timeout: Double(serverRefreshSeconds) + 5.0) {
+        await awaitCondition(timeout: Double(serverRefreshSeconds) + TestWait.headroom) {
             AdZonePresenterRefreshTests.testAdAdapter.requestCount > requestsBeforeRefresh
         }
         XCTAssertGreaterThan(
@@ -82,7 +98,7 @@ class AdZonePresenterRefreshTests: XCTestCase {
         testAdZonePresenter.onBlankDisplayed()
         let requestsBeforeRefresh = adapter.requestCount
 
-        await awaitCondition(timeout: Double(serverRefreshSeconds) + 5.0) {
+        await awaitCondition(timeout: Double(serverRefreshSeconds) + TestWait.headroom) {
             adapter.requestCount > requestsBeforeRefresh
         }
         XCTAssertGreaterThan(
@@ -94,8 +110,14 @@ class AdZonePresenterRefreshTests: XCTestCase {
 
     private func assertDoesNotRefresh(withRefreshTimeSeconds refreshTimeSeconds: Int, within seconds: Double) async {
         let requestsBeforeRefresh = await displayAd(withRefreshTimeSeconds: refreshTimeSeconds)
+        let refreshIsDueAfter = Double(Ad(refreshTime: refreshTimeSeconds).refreshTimeOrDefault)
 
-        await sleep(seconds: seconds)
+        let elapsed = await sleep(seconds: seconds)
+        guard elapsed < refreshIsDueAfter else {
+            // A stalled runner overshot the window the assertion rests on, so a refresh here would
+            // be correct behavior rather than a regression
+            return
+        }
         XCTAssertEqual(
             requestsBeforeRefresh,
             AdZonePresenterRefreshTests.testAdAdapter.requestCount,
@@ -118,7 +140,12 @@ class AdZonePresenterRefreshTests: XCTestCase {
         return adapter.requestCount
     }
 
-    private func sleep(seconds: Double) async {
+    /// Returns the wall clock time actually spent, so callers can tell whether a stalled runner
+    /// slept past the refresh window their "has not refreshed yet" assertion depends on.
+    @discardableResult
+    private func sleep(seconds: Double) async -> Double {
+        let start = Date()
         try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+        return Date().timeIntervalSince(start)
     }
 }

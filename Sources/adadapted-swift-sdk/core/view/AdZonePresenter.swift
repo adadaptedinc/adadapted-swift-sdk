@@ -21,11 +21,18 @@ class AdZonePresenter: ZoneAdListener {
     private var adCompleted = false
     private var timerRunning = false
     private var timer: Timer?
+    private let makeTimer: MakeTimer
     private var webViewManager: AdWebViewManager?
     private var swiftUIWebView: WKWebView?
-    
-    init(adViewHandler: AdViewHandler) {
+
+    typealias MakeTimer = (_ repeatSeconds: Int, _ delaySeconds: Int, _ timerAction: @escaping () -> Void) -> Timer
+
+    init(
+        adViewHandler: AdViewHandler,
+        makeTimer: @escaping MakeTimer = Timer.init(repeatSeconds:delaySeconds:timerAction:)
+    ) {
         self.adViewHandler = adViewHandler
+        self.makeTimer = makeTimer
     }
     
     func initialize(zoneId: String) {
@@ -209,7 +216,7 @@ class AdZonePresenter: ZoneAdListener {
             AALogger.logDebug(message: "Zone timer starting with a refresh of \(refreshSeconds)s")
         }
         timerRunning = true
-        timer = Timer(repeatSeconds: refreshSeconds, delaySeconds: refreshSeconds, timerAction: { [weak self] in
+        timer = makeTimer(refreshSeconds, refreshSeconds, { [weak self] in
             self?.getNextAd()
         })
         timer?.startTimer()
