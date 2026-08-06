@@ -92,7 +92,10 @@ class AdZonePresenter: ZoneAdListener {
             listener: ClosureZoneAdListener(
                 onAdLoaded: { [weak self] adZoneData in
                     DispatchQueue.main.async {
-                        self?.handleAd(ad: adZoneData.ad)
+                        // Reported like the first fetch does, so a refresh that comes back a no-fill
+                        // tells the host app the zone no longer has an ad to show.
+                        self?.updateCurrentZone(adZoneData: adZoneData)
+                        self?.notifyZoneAvailable()
                     }
                 },
                 onAdLoadFailed: { [weak self] in

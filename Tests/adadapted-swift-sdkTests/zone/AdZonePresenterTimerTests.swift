@@ -94,8 +94,7 @@ class AdZonePresenterTimerTests: XCTestCase {
     }
 
     /// A refetched ad carries its own refresh time, so the already running timer has to be rebuilt
-    /// around it.  Guards `restartTimer()` living in `handleAd` - the refetch path reaches the
-    /// presenter through a closure listener, never through `updateCurrentZone`.
+    /// around it.  Guards `restartTimer()` living in `handleAd`, which every fetch path runs through.
     func testTimerIsRearmedWhenARefetchedAdCarriesADifferentRefresh() async {
         let firstRefresh = 30
         let firstAd = Ad(id: "FirstAdId", impressionId: "impressionId", actionType: AdActionType.CONTENT, refreshTime: firstRefresh)
@@ -129,6 +128,31 @@ class AdZonePresenterTimerTests: XCTestCase {
             servedRefresh,
             armedTimer?.repeatSeconds,
             "A no-fill should back off on the served refresh rather than waiting out the default"
+        )
+    }
+
+    /// A no-fill is a valid response carrying an empty ad, and the host app can only hide the zone if
+    /// the refetch reports it the way the first fetch does.
+    func testRefreshingIntoANoFillReportsTheZoneAsHavingNoAds() async {
+        let filledAd = Ad(id: "FilledAdId", refreshTime: Ad.MINIMUM_REFRESH_TIME_SECONDS)
+        let testListener = await loadZone(servingAd: filledAd)
+        var displayedAd = filledAd
+        testAdZonePresenter.onAdDisplayed(ad: &displayedAd, isAdVisible: false)
+        XCTAssertTrue(testListener.testZone.hasAd(), "The zone should start out reported as filled")
+
+        let noFillRefresh = 300
+        adapter.mockAdZoneData = AdZoneData(ad: Ad(refreshTime: noFillRefresh))
+        armedTimer?.fire()
+
+        await awaitCondition { !testListener.testZone.hasAd() }
+        XCTAssertFalse(
+            testListener.testZone.hasAd(),
+            "A no-fill on refresh should report the zone as having no ads instead of leaving the host app on the previous ad"
+        )
+        XCTAssertEqual(
+            noFillRefresh,
+            armedTimer?.repeatSeconds,
+            "The no-fill's served refresh should back off the next fetch rather than polling on the default"
         )
     }
 
