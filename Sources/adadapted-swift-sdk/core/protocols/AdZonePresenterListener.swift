@@ -4,7 +4,7 @@
 
 import Foundation
 
-protocol AdZonePresenterListener {
+protocol AdZonePresenterListener: AnyObject {
     func onZoneAvailable(adZoneData: AdZoneData)
     func onAdAvailable(ad: Ad)
     func onNoAdAvailable()

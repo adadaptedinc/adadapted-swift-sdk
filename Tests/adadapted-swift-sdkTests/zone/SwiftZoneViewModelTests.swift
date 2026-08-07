@@ -109,6 +109,32 @@ final class SwiftZoneViewModelTests: XCTestCase {
             "Presenter should be told the zone blanked so it schedules the next fetch"
         )
     }
+
+    /// The manager used to hold view models strongly, so a torn down SwiftUI zone never deallocated
+    /// and never reported itself unmounted.
+    func testDeallocatedViewModelMountsAndUnmountsItsZone() async {
+        let zoneId = "deallocatedZoneId"
+        TestEventAdapter.shared.cleanupEvents()
+
+        var deallocatingViewModel: SwiftZoneViewModel? = SwiftZoneViewModel(
+            zoneId: zoneId,
+            adContentListener: mockAdContentListener,
+            zoneViewListener: mockZoneViewListener,
+            isZoneVisible: isZoneVisible,
+            zoneContextId: zoneContextId
+        )
+        weak var weakViewModel = deallocatingViewModel
+        deallocatingViewModel = nil
+
+        XCTAssertNil(weakViewModel, "Manager should not keep a torn down view model alive")
+
+        await awaitAdapterEvent {
+            TestEventAdapter.shared.testAdEvents.contains { $0.eventType == AdEventTypes.ZONE_UNMOUNTED && $0.zoneId == zoneId }
+        }
+
+        XCTAssertTrue(TestEventAdapter.shared.testAdEvents.contains { $0.eventType == AdEventTypes.ZONE_MOUNTED && $0.zoneId == zoneId })
+        XCTAssertTrue(TestEventAdapter.shared.testAdEvents.contains { $0.eventType == AdEventTypes.ZONE_UNMOUNTED && $0.zoneId == zoneId })
+    }
 }
 
 class TestableSwiftZoneViewModel: SwiftZoneViewModel {

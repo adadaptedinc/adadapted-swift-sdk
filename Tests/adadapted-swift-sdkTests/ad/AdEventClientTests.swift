@@ -94,6 +94,19 @@ class AdEventClientTests: XCTestCase {
 
         XCTAssertEqual(mockListener.trackedEvent?.eventType, AdEventTypes.POPUP_BEGIN)
     }
+
+    /// The server reads snake_case keys. It resolves an ad event's zone from the impression id, so a
+    /// camelCase zone key went unnoticed until zone events started shipping without an impression id.
+    func testAdEventIsEncodedWithTheKeysTheServerReads() throws {
+        let encoded = try JSONEncoder().encode(AdEvent(zoneId: "102691", eventType: AdEventTypes.ZONE_MOUNTED))
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+
+        XCTAssertEqual(["ad_id", "created_at", "event_type", "impression_id", "zone_id"], json.keys.sorted())
+        XCTAssertEqual("102691", json["zone_id"] as? String)
+        XCTAssertEqual(AdEventTypes.ZONE_MOUNTED, json["event_type"] as? String)
+        XCTAssertEqual("", json["ad_id"] as? String)
+        XCTAssertEqual("", json["impression_id"] as? String)
+    }
 }
 
 class TestEventClientListener: EventClientListener {

@@ -13,7 +13,7 @@ struct AdEvent: Codable, Hashable {
     
     enum CodingKeys: String, CodingKey {
         case adId = "ad_id"
-        case zoneId
+        case zoneId = "zone_id"
         case impressionId = "impression_id"
         case eventType = "event_type"
         case createdAt = "created_at"
@@ -31,5 +31,13 @@ struct AdEvent: Codable, Hashable {
         self.impressionId = impressionId
         self.eventType = eventType
         self.createdAt = createdAt
+    }
+
+    init(ad: Ad, eventType: String) {
+        self.init(adId: ad.id, zoneId: ad.zoneId(), impressionId: ad.impressionId, eventType: eventType)
+    }
+
+    init(zoneId: String, eventType: String) {
+        self.init(adId: "", zoneId: zoneId, impressionId: "", eventType: eventType)
     }
 }

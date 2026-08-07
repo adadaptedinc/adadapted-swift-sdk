@@ -27,14 +27,7 @@ class EventClient {
         }
     }
     
-    private static func fileEvent(ad: Ad, eventType: String) {
-        let event = AdEvent(
-            adId: ad.id,
-            zoneId: ad.zoneId(),
-            impressionId: ad.impressionId,
-            eventType: eventType
-        )
-
+    private static func fileEvent(_ event: AdEvent) {
         Task {
             async let insertTask: () = adEvents.insert(event)
             async let notifyTask: () = notifyAdEventTracked(event: event)
@@ -140,23 +133,33 @@ class EventClient {
     static func trackImpression(ad: Ad) {
         AALogger.logDebug(message: "Ad Impression Tracked.")
         ad.setImpressionTracked()
-        fileEvent(ad: ad, eventType: AdEventTypes.IMPRESSION)
+        fileEvent(AdEvent(ad: ad, eventType: AdEventTypes.IMPRESSION))
     }
-    
+
     static func trackInvisibleImpression(ad: Ad) {
         AALogger.logDebug(message: "Invisible Ad Impression Tracked.")
-        fileEvent(ad: ad, eventType: AdEventTypes.INVISIBLE_IMPRESSION)
+        fileEvent(AdEvent(ad: ad, eventType: AdEventTypes.INVISIBLE_IMPRESSION))
     }
-    
+
     static func trackInteraction(ad: Ad) {
         AALogger.logDebug(message: "Ad Interaction Tracked.")
-        fileEvent(ad: ad, eventType: AdEventTypes.INTERACTION)
+        fileEvent(AdEvent(ad: ad, eventType: AdEventTypes.INTERACTION))
     }
-    
+
     static func trackPopupBegin(ad: Ad) {
-        fileEvent(ad: ad, eventType: AdEventTypes.POPUP_BEGIN)
+        fileEvent(AdEvent(ad: ad, eventType: AdEventTypes.POPUP_BEGIN))
     }
-    
+
+    static func trackZoneMounted(zoneId: String) {
+        AALogger.logDebug(message: "Zone Mounted Tracked.")
+        fileEvent(AdEvent(zoneId: zoneId, eventType: AdEventTypes.ZONE_MOUNTED))
+    }
+
+    static func trackZoneUnmounted(zoneId: String) {
+        AALogger.logDebug(message: "Zone Unmounted Tracked.")
+        fileEvent(AdEvent(zoneId: zoneId, eventType: AdEventTypes.ZONE_UNMOUNTED))
+    }
+
     static func trackRecipeContextEvent(contextId: String, zoneId: String) {
         var eventParams: [String: String] = [:]
         eventParams[ContentSources.CONTEXT_ID] = contextId

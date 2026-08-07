@@ -154,6 +154,33 @@ class AdZonePresenterTests: XCTestCase {
         XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.POPUP_AD_CLICKED })
     }
 
+    func testZoneMountedAndUnmountedAreTrackedWithoutAnAd() async {
+        let zoneId = "mountedZoneId"
+        let presenter = AdZonePresenter(adViewHandler: AdViewHandler())
+        presenter.initialize(zoneId: zoneId)
+
+        let testListener = TestAdZonePresenterListener()
+        presenter.onAttach(adZonePresenterListener: testListener)
+
+        await awaitAdapterEvent {
+            TestEventAdapter.shared.testAdEvents.contains { $0.eventType == AdEventTypes.ZONE_MOUNTED && $0.zoneId == zoneId }
+        }
+
+        XCTAssertTrue(TestEventAdapter.shared.testAdEvents.contains {
+            $0.eventType == AdEventTypes.ZONE_MOUNTED && $0.zoneId == zoneId && $0.adId.isEmpty && $0.impressionId.isEmpty
+        })
+
+        presenter.onDetach()
+
+        await awaitAdapterEvent {
+            TestEventAdapter.shared.testAdEvents.contains { $0.eventType == AdEventTypes.ZONE_UNMOUNTED && $0.zoneId == zoneId }
+        }
+
+        XCTAssertTrue(TestEventAdapter.shared.testAdEvents.contains {
+            $0.eventType == AdEventTypes.ZONE_UNMOUNTED && $0.zoneId == zoneId && $0.adId.isEmpty && $0.impressionId.isEmpty
+        })
+    }
+
     func testNullListener() {
         AdZonePresenterTests.testAdZonePresenter.initialize(zoneId: "testZoneId")
         AdZonePresenterTests.testAdZonePresenter.onAttach(adZonePresenterListener: nil)

@@ -34,7 +34,11 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
         
         initializePresenter(with: zoneId)
     }
-    
+
+    deinit {
+        onDetach()
+    }
+
     func setupWebView(webView: WKWebView) {
         presenter.setSwiftUIWebView(webView: webView)
     }

@@ -14,7 +14,7 @@ class AdZonePresenter: ZoneAdListener {
     private var zoneContextId = ""
     private var currentAdZoneData = AdZoneData()
     private var isZoneVisible = true
-    private var adZonePresenterListener: AdZonePresenterListener?
+    private weak var adZonePresenterListener: AdZonePresenterListener?
     private var attached = false
     private var zoneLoaded = false
     private var adStarted = false
@@ -58,6 +58,7 @@ class AdZonePresenter: ZoneAdListener {
         if !attached {
             attached = true
             self.adZonePresenterListener = adZonePresenterListener
+            EventClient.trackZoneMounted(zoneId: zoneId)
             if(currentAd.id.isEmpty) {
                 AdClient.fetchNewAd(zoneId: self.zoneId, listener: self, contextId: zoneContextId)
             }
@@ -70,6 +71,7 @@ class AdZonePresenter: ZoneAdListener {
             adZonePresenterListener = nil
             completeCurrentAd()
             stopTimer()
+            EventClient.trackZoneUnmounted(zoneId: zoneId)
         }
     }
     
