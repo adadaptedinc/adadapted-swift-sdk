@@ -131,6 +131,7 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
     func onNoAdAvailable() {
         DispatchQueue.main.async { [weak self] in
             self?.currentAd = nil
+            self?.presenter.onBlankDisplayed()
         }
     }
     func onAdVisibilityChanged(ad: Ad) {

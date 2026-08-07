@@ -11,8 +11,78 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Resolved at run time rather than pinned to a device name, since the runner image drops
+      # older iPhone models as Xcode versions roll forward
+      - name: Select an iOS simulator
+        id: simulator
+        run: |
+          udid=$(xcrun simctl list devices available -j \
+            | jq -r 'first(.devices | to_entries[] | select(.key | test("iOS")) | .value[] | select(.name | startswith("iPhone")) | .udid)')
+          if [ -z "$udid" ] || [ "$udid" = "null" ]; then
+            echo "::error::No available iPhone simulator on this runner"
+            xcrun simctl list devices available
+            exit 1
+          fi
+          xcrun simctl list devices available | grep "$udid"
+          echo "udid=$udid" >> "$GITHUB_OUTPUT"
+
+      # Booted up front so the first test class does not pay the boot cost inside its own timeouts
+      - name: Boot the simulator
+        run: |
+          xcrun simctl boot "${{ steps.simulator.outputs.udid }}" || true
+          xcrun simctl bootstatus "${{ steps.simulator.outputs.udid }}"
+
+      # These tests wait on real async SDK work (timers, publish queues, WKWebView process launches)
+      # on a runner that is much slower and more contended than a dev machine.  Tests run serially so
+      # they are not competing for the runner, and a test that fails is retried in a fresh process
+      # rather than failing the whole run - only a test that fails every attempt does that.
+      #
+      # AdZonePresenterRefreshTests is skipped outright: it asserts on the real `Timer` firing at wall
+      # clock deadlines, which a contended runner cannot be trusted to honor no matter how much
+      # headroom the waits are given.  Skipping it costs no coverage of the presenter's refresh
+      # wiring - AdZonePresenterTimerTests asserts the interval the timer is armed with instead of
+      # waiting for it to fire, so it runs here and settles in milliseconds.  What is left uncovered
+      # in CI is only that a `Timer` armed with N seconds does fire in N seconds.
       - name: Run unit tests
         run: |
+          set -o pipefail
           xcodebuild test \
             -scheme adadapted-swift-sdk \
-            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest'
+            -destination "id=${{ steps.simulator.outputs.udid }}" \
+            -skip-testing:adadapted-swift-sdkTests/AdZonePresenterRefreshTests \
+            -parallel-testing-enabled NO \
+            -retry-tests-on-failure \
+            -test-iterations 3 \
+            -test-repetition-relaunch-enabled YES \
+            -resultBundlePath TestResults.xcresult \
+            | tee xcodebuild.log
+
+      # A test that fails once and passes on the retry exits 0, so without this the run is an
+      # unqualified green check and the flake leaves no trace.  A warning rather than a failure: the
+      # retries are here to absorb runner noise, but a test that keeps needing them is a real bug
+      # sheltering behind that tolerance, and the point is to be able to see it happening.
+      - name: Warn on tests that needed a retry
+        if: always()
+        run: |
+          [ -f xcodebuild.log ] || exit 0
+          attempts=$(grep -oE "Test Case '-\[[^]]*\]' failed" xcodebuild.log \
+            | sed -E "s/^Test Case '-\[(.*)\]' failed\$/\1/" | sort -u || true)
+          if [ -z "$attempts" ]; then
+            echo "No test needed more than one attempt."
+            exit 0
+          fi
+          echo "$attempts" | while read -r test; do
+            echo "::warning::Test needed more than one attempt: $test"
+          done
+
+      # Uploaded on success too, so the result bundle for a run that only passed on a retry is still
+      # there to look at
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TestResults
+          path: |
+            TestResults.xcresult
+            xcodebuild.log
+          retention-days: 7

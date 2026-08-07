@@ -21,6 +21,13 @@ struct AdZoneData: Codable {
         self.portWidth = portWidth
     }
 
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.ad = try container.decodeIfPresent(Ad.self, forKey: .ad) ?? Ad()
+        self.portHeight = try container.decodeIfPresent(Int.self, forKey: .portHeight) ?? 0
+        self.portWidth = try container.decodeIfPresent(Int.self, forKey: .portWidth) ?? 0
+    }
+
     func hasAd() -> Bool {
         return !ad.id.isEmpty
     }

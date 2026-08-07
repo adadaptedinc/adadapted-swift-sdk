@@ -97,6 +97,18 @@ final class SwiftZoneViewModelTests: XCTestCase {
         viewModel.onNoAdAvailable()
         XCTAssertNil(viewModel.currentAd, "Current ad should be cleared when no ad is available")
     }
+
+    /// Nothing in SwiftUI reports the blanked web view back the way the UIKit view does, so without
+    /// this the presenter never arms its timer and a no-fill zone stops refetching for good.
+    func testOnNoAdAvailable_TellsThePresenterTheZoneWentBlank() async {
+        viewModel.onNoAdAvailable()
+
+        await awaitCondition { [self] in viewModel.mockPresenter.onBlankDisplayedCalled }
+        XCTAssertTrue(
+            viewModel.mockPresenter.onBlankDisplayedCalled,
+            "Presenter should be told the zone blanked so it schedules the next fetch"
+        )
+    }
 }
 
 class TestableSwiftZoneViewModel: SwiftZoneViewModel {
@@ -116,6 +128,7 @@ class TestableSwiftZoneViewModel: SwiftZoneViewModel {
         var removeZoneContextCalled = false
         var onAdDisplayedCalled = false
         var onAdDisplayFailedCalled = false
+        var onBlankDisplayedCalled = false
         var onAdClickCalled = false
         var onReportAdClickedCalled = false
         
@@ -128,6 +141,7 @@ class TestableSwiftZoneViewModel: SwiftZoneViewModel {
         override func removeZoneContext() { removeZoneContextCalled = true }
         override func onAdDisplayed(ad: inout Ad, isAdVisible: Bool) { onAdDisplayedCalled = true }
         override func onAdDisplayFailed() { onAdDisplayFailedCalled = true }
+        override func onBlankDisplayed() { onBlankDisplayedCalled = true }
         override func onAdClicked(ad: Ad) { onAdClickCalled = true }
         override func onReportAdClicked(adId: String, udid: String) { onReportAdClickedCalled = true }
     }
