@@ -160,6 +160,11 @@ class EventClient {
         fileEvent(AdEvent(zoneId: zoneId, eventType: AdEventTypes.ZONE_UNMOUNTED))
     }
 
+    static func trackZoneUnfilled(zoneId: String, reason: String) {
+        AALogger.logDebug(message: "Zone Unfilled Tracked: \(reason)")
+        fileEvent(AdEvent(zoneId: zoneId, eventType: AdEventTypes.ZONE_UNFILLED, eventName: reason))
+    }
+
     static func trackRecipeContextEvent(contextId: String, zoneId: String) {
         var eventParams: [String: String] = [:]
         eventParams[ContentSources.CONTEXT_ID] = contextId

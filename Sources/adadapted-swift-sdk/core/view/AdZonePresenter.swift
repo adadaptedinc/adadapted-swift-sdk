@@ -17,6 +17,7 @@ class AdZonePresenter: ZoneAdListener {
     private weak var adZonePresenterListener: AdZonePresenterListener?
     private var attached = false
     private var zoneLoaded = false
+    private var unfilledReported = false
     private var adStarted = false
     private var adCompleted = false
     private var timerRunning = false
@@ -60,7 +61,7 @@ class AdZonePresenter: ZoneAdListener {
             self.adZonePresenterListener = adZonePresenterListener
             EventClient.trackZoneMounted(zoneId: zoneId)
             if(currentAd.id.isEmpty) {
-                AdClient.fetchNewAd(zoneId: self.zoneId, listener: self, contextId: zoneContextId)
+                fetchAd(listener: self)
             }
         }
     }
@@ -89,27 +90,35 @@ class AdZonePresenter: ZoneAdListener {
         if (!zoneLoaded) { return }
         completeCurrentAd()
         
-        AdClient.fetchNewAd(
-            zoneId: zoneId,
-            listener: ClosureZoneAdListener(
-                onAdLoaded: { [weak self] adZoneData in
-                    DispatchQueue.main.async {
-                        // Reported like the first fetch does, so a refresh that comes back a no-fill
-                        // tells the host app the zone no longer has an ad to show.
-                        self?.updateCurrentZone(adZoneData: adZoneData)
-                        self?.notifyZoneAvailable()
-                    }
-                },
-                onAdLoadFailed: { [weak self] in
-                    DispatchQueue.main.async {
-                        self?.handleAd(ad: Ad())
-                    }
+        fetchAd(listener: ClosureZoneAdListener(
+            onAdLoaded: { [weak self] adZoneData in
+                DispatchQueue.main.async {
+                    // Reported like the first fetch does, so a refresh that comes back a no-fill
+                    // tells the host app the zone no longer has an ad to show.
+                    self?.updateCurrentZone(adZoneData: adZoneData)
+                    self?.notifyZoneAvailable()
                 }
-            ),
-            contextId: zoneContextId
-        )
+            },
+            onAdLoadFailed: { [weak self] in
+                DispatchQueue.main.async {
+                    self?.reportZoneUnfilled(reason: ZoneUnfilledReasons.REQUEST_FAILED)
+                    self?.handleAd(ad: Ad())
+                }
+            }
+        ))
     }
-    
+
+    private func fetchAd(listener: ZoneAdListener) {
+        unfilledReported = false
+        AdClient.fetchNewAd(zoneId: zoneId, listener: listener, contextId: zoneContextId)
+    }
+
+    private func reportZoneUnfilled(reason: String) {
+        guard !unfilledReported, attached, isZoneVisible else { return }
+        unfilledReported = true
+        EventClient.trackZoneUnfilled(zoneId: zoneId, reason: reason)
+    }
+
     private func handleAd(ad: Ad) {
         currentAd = ad
         adStarted = false
@@ -120,6 +129,7 @@ class AdZonePresenter: ZoneAdListener {
     
     private func displayAd() {
         if currentAd.isEmpty() {
+            reportZoneUnfilled(reason: ZoneUnfilledReasons.NO_AD)
             notifyNoAdAvailable()
         } else {
             notifyAdAvailable(ad: currentAd)
@@ -152,6 +162,7 @@ class AdZonePresenter: ZoneAdListener {
     }
     
     func onAdDisplayFailed() {
+        reportZoneUnfilled(reason: ZoneUnfilledReasons.RENDER_FAILED)
         clearAdAndStartTimer()
     }
     
@@ -289,6 +300,7 @@ class AdZonePresenter: ZoneAdListener {
     func onAdLoadFailed() {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
+            reportZoneUnfilled(reason: ZoneUnfilledReasons.REQUEST_FAILED)
             updateCurrentZone(adZoneData: AdZoneData())
             notifyNoAdAvailable()
         }
