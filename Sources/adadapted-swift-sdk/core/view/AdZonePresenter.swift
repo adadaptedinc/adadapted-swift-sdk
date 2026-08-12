@@ -15,33 +15,39 @@ class AdZonePresenter: ZoneAdListener {
     private var zoneContextId = ""
     private var currentAdZoneData = AdZoneData()
     private var isZoneVisible = true
+    private var isAppInForeground = true
+    private var isInWindow = true
     private weak var adZonePresenterListener: AdZonePresenterListener?
     private var attached = false
     private var zoneLoaded = false
     private var unfilledReported = false
-    private var adStarted = false
-    private var adCompleted = false
+    private var adFetchedAt = 0
+    private var secondsLeftOnRefresh = 0
+    private var countdownResumedAt = 0
     private var timerRunning = false
     private var timer: Timer?
     private let makeTimer: MakeTimer
+    private let now: () -> Int
     private var webViewManager: AdWebViewManager?
     private var swiftUIWebView: WKWebView?
-    private var appBackgroundObserver: NSObjectProtocol?
+    private var appLifecycleObservers: [NSObjectProtocol] = []
 
     typealias MakeTimer = (_ repeatSeconds: Int, _ delaySeconds: Int, _ timerAction: @escaping () -> Void) -> Timer
 
     init(
         adViewHandler: AdViewHandler,
-        makeTimer: @escaping MakeTimer = Timer.init(repeatSeconds:delaySeconds:timerAction:)
+        makeTimer: @escaping MakeTimer = Timer.init(repeatSeconds:delaySeconds:timerAction:),
+        now: @escaping () -> Int = { Int(Date().timeIntervalSince1970) }
     ) {
         self.adViewHandler = adViewHandler
         self.makeTimer = makeTimer
+        self.now = now
     }
 
-    //A host that drops a zone without stopping it never reaches onDetach, and the observer it
+    //A host that drops a zone without stopping it never reaches onDetach, and the observers it
     //registered would outlive the presenter on the notification center
     deinit {
-        stopObservingAppBackgrounding()
+        stopObservingAppLifecycle()
     }
     
     func initialize(zoneId: String) {
@@ -67,23 +73,48 @@ class AdZonePresenter: ZoneAdListener {
         if !attached {
             attached = true
             self.adZonePresenterListener = adZonePresenterListener
-            observeAppBackgrounding()
+            observeAppLifecycle()
             EventClient.trackZoneMounted(zoneId: zoneId)
             if(currentAd.id.isEmpty) {
                 fetchAd(listener: self)
             }
+            resumeTimer()
         }
     }
-    
+
     func onDetach() {
         if attached {
             attached = false
             adZonePresenterListener = nil
-            stopObservingAppBackgrounding()
-            completeCurrentAd()
-            stopTimer()
+            stopObservingAppLifecycle()
+            endImpression()
+            pauseTimer()
             EventClient.trackZoneUnmounted(zoneId: zoneId)
         }
+    }
+
+    func onAppForegrounded() {
+        isAppInForeground = true
+        resumeTimer()
+    }
+
+    func onAppBackgrounded() {
+        isAppInForeground = false
+        endImpression()
+        pauseTimer()
+    }
+
+    func onEnteredWindow() {
+        isInWindow = true
+        resumeTimer()
+    }
+
+    //A zone can leave the hierarchy without ever going invisible or being stopped - a recycled cell,
+    //a torn down view controller - and it is showing an ad to no one either way
+    func onExitedWindow() {
+        isInWindow = false
+        endImpression()
+        pauseTimer()
     }
     
     func setZoneContext(contextId: String) {
@@ -98,8 +129,8 @@ class AdZonePresenter: ZoneAdListener {
     private func getNextAd() {
         restartTimer()
         if (!zoneLoaded) { return }
-        completeCurrentAd()
-        
+        endImpression() //Rotated out, the ad the zone was showing is done
+
         fetchAd(listener: ClosureZoneAdListener(
             onAdLoaded: { [weak self] adZoneData in
                 DispatchQueue.main.async {
@@ -131,9 +162,7 @@ class AdZonePresenter: ZoneAdListener {
 
     private func handleAd(ad: Ad) {
         currentAd = ad
-        adStarted = false
-        adCompleted = false
-        restartTimer()
+        restartTimer() //Pick up the new Ad's refresh time
         displayAd()
     }
     
@@ -146,49 +175,41 @@ class AdZonePresenter: ZoneAdListener {
         }
     }
     
-    private func completeCurrentAd() {
-        endImpression() //Rotated out or detached, whichever got here first
-        if !currentAd.isEmpty() && adStarted && !adCompleted {
-            if !currentAd.impressionWasTracked() && !isZoneVisible {
-                EventClient.trackInvisibleImpression(ad: currentAd)
-            }
-            adCompleted = true
-        }
-    }
-    
     func onAdDisplayed(ad: inout Ad, isAdVisible: Bool) {
         isZoneVisible = isAdVisible
         if (ad.id != currentAd.id) {
             currentAd = ad
         }
-        startZoneTimer() //Must stay after the currentAd sync above, or the timer picks up the previous Ad's refresh time
-        adStarted = true
+        isAdVisible ? resumeTimer() : pauseTimer()
         trackAdImpression(ad: &currentAd, isAdVisible: isAdVisible)
     }
-    
+
     func onAdVisibilityChanged(isAdVisible: Bool) {
         isZoneVisible = isAdVisible
         adZonePresenterListener?.onAdVisibilityChanged(ad: currentAd)
         trackAdImpression(ad: &currentAd, isAdVisible: isAdVisible)
-        if !isAdVisible {
+        if isAdVisible {
+            resumeTimer()
+        } else {
             endImpression()
+            pauseTimer()
         }
     }
     
     func onAdDisplayFailed() {
         reportZoneUnfilled(reason: ZoneUnfilledReasons.RENDER_FAILED)
-        clearAdAndStartTimer()
-    }
-    
-    func onBlankDisplayed() {
-        clearAdAndStartTimer()
+        clearCurrentAd()
     }
 
-    private func clearAdAndStartTimer() {
+    func onBlankDisplayed() {
+        clearCurrentAd()
+    }
+
+    //The served refresh is kept so a no-fill backs off the way the server asked it to
+    private func clearCurrentAd() {
         endImpression() //The ad being cleared is off screen, and its impression goes with it
-        adStarted = true
         currentAd = Ad(refreshTime: currentAd.refreshTime)
-        startZoneTimer()
+        resumeTimer()
     }
     
     func onAdClicked(ad: Ad) {
@@ -235,21 +256,23 @@ class AdZonePresenter: ZoneAdListener {
         EventClient.trackImpressionEnd(ad: currentAd)
     }
 
-    private func observeAppBackgrounding() {
-        appBackgroundObserver = NotificationCenter.default.addObserver(
-            forName: UIApplication.didEnterBackgroundNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            self?.endImpression()
-        }
+    //Observed only while attached, so a zone the host app stopped is not left on the notification
+    //center. The zone's own window callbacks cover it leaving the screen while the app stays up.
+    private func observeAppLifecycle() {
+        let center = NotificationCenter.default
+        appLifecycleObservers = [
+            center.addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main) { [weak self] _ in
+                self?.onAppBackgrounded()
+            },
+            center.addObserver(forName: UIApplication.willEnterForegroundNotification, object: nil, queue: .main) { [weak self] _ in
+                self?.onAppForegrounded()
+            }
+        ]
     }
 
-    private func stopObservingAppBackgrounding() {
-        if let appBackgroundObserver = appBackgroundObserver {
-            NotificationCenter.default.removeObserver(appBackgroundObserver)
-            self.appBackgroundObserver = nil
-        }
+    private func stopObservingAppLifecycle() {
+        appLifecycleObservers.forEach { NotificationCenter.default.removeObserver($0) }
+        appLifecycleObservers = []
     }
 
     private func callPixelTrackingJavaScript() {
@@ -258,36 +281,56 @@ class AdZonePresenter: ZoneAdListener {
         AALogger.logDebug(message: "Calling pixel tracking javascript")
     }
     
-    private func startZoneTimer() {
-        if !zoneLoaded || timerRunning {
-            return
-        }
-        let refreshSeconds = currentAd.refreshTimeOrDefault
+    //The countdown only runs while the zone is on screen in a foregrounded app
+    private func canRunTimer() -> Bool {
+        return attached && isZoneVisible && isAppInForeground && isInWindow
+    }
+
+    //Arms the countdown fresh from the current Ad's refresh time
+    private func restartTimer() {
+        cancelTimer()
+        adFetchedAt = now()
+        secondsLeftOnRefresh = currentAd.refreshTimeOrDefault
         if currentAd.refreshTimeWasRejected {
-            AALogger.logError(message: "Ad refresh time of \(currentAd.refreshTime)s was served but not honored. Using \(refreshSeconds)s")
-        } else {
-            AALogger.logDebug(message: "Zone timer starting with a refresh of \(refreshSeconds)s")
+            AALogger.logError(message: "Ad refresh time of \(currentAd.refreshTime)s was served but not honored. Using \(secondsLeftOnRefresh)s")
         }
+        startTimer()
+    }
+
+    //Freezes what is left of the countdown, so a zone off screen or an app in the background neither
+    //refreshes nor fetches
+    private func pauseTimer() {
+        if !timerRunning { return }
+        secondsLeftOnRefresh = max(secondsLeftOnRefresh - (now() - countdownResumedAt), 0)
+        cancelTimer()
+        AALogger.logDebug(message: "Zone timer paused with \(secondsLeftOnRefresh)s left")
+    }
+
+    //An Ad that outlived its own refresh time while the countdown was frozen is refetched instead of
+    //being shown for the leftover time it never spent on screen
+    private func resumeTimer() {
+        if timerRunning || !canRunTimer() { return }
+        if zoneLoaded && now() - adFetchedAt >= currentAd.refreshTimeOrDefault {
+            getNextAd()
+        } else {
+            startTimer()
+        }
+    }
+
+    private func startTimer() {
+        if !zoneLoaded || timerRunning || !canRunTimer() { return }
+        AALogger.logDebug(message: "Zone timer starting with \(secondsLeftOnRefresh)s left of a \(currentAd.refreshTimeOrDefault)s refresh")
         timerRunning = true
-        timer = makeTimer(refreshSeconds, refreshSeconds, { [weak self] in
-            self?.getNextAd()
+        countdownResumedAt = now()
+        timer = makeTimer(0, secondsLeftOnRefresh, { [weak self] in
+            DispatchQueue.main.async { self?.getNextAd() }
         })
         timer?.startTimer()
     }
-    
-    private func restartTimer() {
-        if (timer != nil) {
-            timer?.stopTimer()
-            timerRunning = false
-            startZoneTimer()
-        }
-    }
-    
-    private func stopTimer() {
-        if (timer != nil) {
-            timer?.stopTimer()
-            timerRunning = false
-        }
+
+    private func cancelTimer() {
+        timer?.stopTimer()
+        timerRunning = false
     }
     
     private func handleContentAction(ad: Ad) {

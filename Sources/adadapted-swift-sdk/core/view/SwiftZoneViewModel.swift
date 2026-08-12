@@ -87,11 +87,12 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
     // MARK: - Start & Stop Handling
     func onStart() {
         isStopped = false
+        presenter.onEnteredWindow()
     }
-    
+
     func onStop() {
         isStopped = true
-        presenter.endImpression()
+        presenter.onExitedWindow()
     }
     
     func onAttach() {

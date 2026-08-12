@@ -161,18 +161,22 @@ class AdZonePresenterImpressionEndTests: XCTestCase {
         XCTAssertEqual(racedAds.count, ends, "Every impression should have closed exactly once")
     }
 
-    /// An ad the user never saw has no dwell to report, so there is nothing to end.
-    func testAnInvisibleImpressionNeverEnds() async {
+    /// An ad the user never saw is not an impression, so there is nothing to report and nothing to
+    /// end. The zone's unmount is what proves the pipeline ran, since an impression would have been
+    /// published alongside it.
+    func testAnAdRenderedWhileTheZoneIsNotVisibleReportsNoImpressionAtAll() async {
         var servedAd = await serveAnAd(id: "InvisibleAdId", impressionId: "\(zoneId):456")
         testAdZonePresenter.onAdDisplayed(ad: &servedAd, isAdVisible: false) //Rendered off screen
 
         testAdZonePresenter.onDetach()
 
-        await awaitAdapterEvent { self.adEvents(ofType: AdEventTypes.INVISIBLE_IMPRESSION).count == 1 }
+        await awaitAdapterEvent { self.adEvents(ofType: AdEventTypes.ZONE_UNMOUNTED).count == 1 }
 
+        XCTAssertTrue(adEvents(ofType: AdEventTypes.IMPRESSION).isEmpty, "An ad rendered off screen was never impressed")
         XCTAssertTrue(impressionEndEvents().isEmpty, "An impression that never fired has no end to report")
     }
 
+    @discardableResult
     private func displayAVisibleAd(actionType: String = "") async -> Ad {
         var servedAd = await serveAnAd(id: "ImpressionEndAdId", impressionId: "\(zoneId):123", actionType: actionType)
         testAdZonePresenter.onAdDisplayed(ad: &servedAd, isAdVisible: true)

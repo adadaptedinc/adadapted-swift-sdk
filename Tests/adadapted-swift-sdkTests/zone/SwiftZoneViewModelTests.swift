@@ -64,11 +64,16 @@ final class SwiftZoneViewModelTests: XCTestCase {
         XCTAssertTrue(viewModel.mockPresenter.removeZoneContextCalled, "Presenter should remove context when contextId is empty")
     }
 
-    /// SwiftUI takes a zone off screen by making it disappear rather than by detaching it, so the
-    /// impression it was showing has to end here or it would run until the ad rotated out.
-    func testOnStop_EndsTheImpression() {
+    /// SwiftUI takes a zone off screen by making it disappear rather than by detaching it, so this is
+    /// where a zone the host navigated away from ends its impression and freezes its refresh.
+    func testOnStop_ReportsTheZoneOutOfTheWindow() {
         viewModel.onStop()
-        XCTAssertTrue(viewModel.mockPresenter.endImpressionCalled, "A zone that disappeared is no longer showing its ad")
+        XCTAssertTrue(viewModel.mockPresenter.onExitedWindowCalled, "A zone that disappeared is no longer showing its ad")
+    }
+
+    func testOnStart_ReportsTheZoneBackInTheWindow() {
+        viewModel.onStart()
+        XCTAssertTrue(viewModel.mockPresenter.onEnteredWindowCalled, "A zone that appeared should pick its refresh back up")
     }
 
     func testOnStart_AttachesPresenter() {
@@ -165,6 +170,8 @@ class TestableSwiftZoneViewModel: SwiftZoneViewModel {
         var onAdClickCalled = false
         var onReportAdClickedCalled = false
         var endImpressionCalled = false
+        var onEnteredWindowCalled = false
+        var onExitedWindowCalled = false
 
         override func onAttach(adZonePresenterListener: AdZonePresenterListener?) {
             onAttachCalled = true
@@ -179,6 +186,8 @@ class TestableSwiftZoneViewModel: SwiftZoneViewModel {
         override func onAdClicked(ad: Ad) { onAdClickCalled = true }
         override func onReportAdClicked(adId: String, udid: String) { onReportAdClickedCalled = true }
         override func endImpression() { endImpressionCalled = true }
+        override func onEnteredWindow() { onEnteredWindowCalled = true }
+        override func onExitedWindow() { onExitedWindowCalled = true }
     }
 }
 

@@ -155,11 +155,6 @@ class EventClient {
         fileEvent(AdEvent(ad: ad, eventType: AdEventTypes.IMPRESSION_END))
     }
 
-    static func trackInvisibleImpression(ad: Ad) {
-        AALogger.logDebug(message: "Invisible Ad Impression Tracked.")
-        fileEvent(AdEvent(ad: ad, eventType: AdEventTypes.INVISIBLE_IMPRESSION))
-    }
-
     static func trackInteraction(ad: Ad) {
         AALogger.logDebug(message: "Ad Interaction Tracked.")
         fileEvent(AdEvent(ad: ad, eventType: AdEventTypes.INTERACTION))
