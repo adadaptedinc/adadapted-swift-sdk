@@ -91,6 +91,7 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
     
     func onStop() {
         isStopped = true
+        presenter.endImpression()
     }
     
     func onAttach() {

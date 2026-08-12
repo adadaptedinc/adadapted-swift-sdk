@@ -69,6 +69,7 @@ public final class SessionClient: NSObject {
             backgroundTime = Date().timeIntervalSince1970
         }
         trackEvent(EventStrings.SESSION_BACKGROUNDED)
+        EventClient.getInstance()?.onPublishEvents()
     }
 
     private static func trackEvent(_ event: String) {

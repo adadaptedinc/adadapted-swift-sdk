@@ -175,6 +175,33 @@ class AaZoneViewTests: XCTestCase {
         XCTAssertEqual(testListener.adLoaded, true)
     }
 
+    /// A zone can leave the view hierarchy without ever being hidden or stopped - a recycled cell, a
+    /// torn down view controller - and the impression it was showing has ended either way.
+    ///
+    /// The zone is never started, so the ad under test is the one handed to the web view rather than
+    /// one a fetch could replace while the test is waiting on the impression.
+    func testAZoneTakenOutOfTheWindowEndsTheImpressionItWasShowing() async {
+        let zoneId = "windowZoneId"
+        var servedAd = Ad(id: "DetachedAdId", impressionId: "\(zoneId):789")
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 320, height: 50))
+        testAaZoneView.initialize(zoneId: zoneId)
+        window.addSubview(testAaZoneView)
+        testAaZoneView.onAdLoadedInWebView(ad: &servedAd) //The impression only fires once the creative is up
+
+        await awaitAdapterEvent { self.adEvents(ofType: AdEventTypes.IMPRESSION, forZone: zoneId).count == 1 }
+
+        testAaZoneView.removeFromSuperview()
+
+        await awaitAdapterEvent { self.adEvents(ofType: AdEventTypes.IMPRESSION_END, forZone: zoneId).count == 1 }
+
+        XCTAssertEqual(1, adEvents(ofType: AdEventTypes.IMPRESSION_END, forZone: zoneId).count)
+    }
+
+    /// Scoped to the zone under test, since `TestEventAdapter` is shared with every other suite
+    private func adEvents(ofType eventType: String, forZone zoneId: String) -> [AdEvent] {
+        TestEventAdapter.shared.testAdEvents.filter { $0.eventType == eventType && $0.zoneId == zoneId }
+    }
+
     func testOnAdClicked() async {
         let testListener = TestAaZoneViewListener()
         var testAd = Ad(id: "NewAdId", actionType: "c")

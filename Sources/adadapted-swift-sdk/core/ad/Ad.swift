@@ -27,7 +27,8 @@ class Ad: Codable, Equatable {
     }
     
     private var isImpressionTracked: Bool = false
-    
+    private var isImpressionEndTracked: Bool = false
+
     init(
         id: String = "",
         impressionId: String = "",
@@ -98,7 +99,15 @@ class Ad: Codable, Equatable {
     func impressionWasTracked() -> Bool {
         return isImpressionTracked
     }
-    
+
+    func setImpressionEndTracked() {
+        isImpressionEndTracked = true
+    }
+
+    func impressionEndWasTracked() -> Bool {
+        return isImpressionEndTracked
+    }
+
     func zoneId() -> String {
         return impressionId.split(separator: ":").map(String.init).first ?? ""
     }

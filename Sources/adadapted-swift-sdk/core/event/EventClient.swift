@@ -11,6 +11,7 @@ class EventClient {
     private static var adEvents = SafeSet<AdEvent>()
     private static var sdkEvents = SafeSet<SdkEvent>()
     private static var sdkErrors = SafeSet<SdkError>()
+    private static let impressionEndLock = NSLock()
     private var eventTimer: Timer?
     private var eventTimerRunning: Bool = false
     
@@ -134,6 +135,24 @@ class EventClient {
         AALogger.logDebug(message: "Ad Impression Tracked.")
         ad.setImpressionTracked()
         fileEvent(AdEvent(ad: ad, eventType: AdEventTypes.IMPRESSION))
+    }
+
+    /// Ends an impression that actually fired, once per ad. The event is stamped where it is built,
+    /// so the batching delay before it publishes cannot corrupt the dwell it closes out.
+    ///
+    /// The zone timer rotates an ad out on a background queue while the view hides it on the main
+    /// one, so the check and the set have to happen as one step or one impression can end twice.
+    static func trackImpressionEnd(ad: Ad) {
+        impressionEndLock.lock()
+        let impressionIsEnding = ad.impressionWasTracked() && !ad.impressionEndWasTracked()
+        if impressionIsEnding {
+            ad.setImpressionEndTracked()
+        }
+        impressionEndLock.unlock()
+
+        guard impressionIsEnding else { return }
+        AALogger.logDebug(message: "Ad Impression End Tracked.")
+        fileEvent(AdEvent(ad: ad, eventType: AdEventTypes.IMPRESSION_END))
     }
 
     static func trackInvisibleImpression(ad: Ad) {

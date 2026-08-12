@@ -115,6 +115,15 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
     func shutdown() {
         onStop()
     }
+
+    /// A zone taken out of the window is not showing an ad either, whether or not the host app got
+    /// around to stopping it.
+    public override func didMoveToWindow() {
+        super.didMoveToWindow()
+        if window == nil {
+            presenter.endImpression()
+        }
+    }
     
     // MARK: - AdZonePresenterListener
     

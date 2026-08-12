@@ -64,6 +64,13 @@ final class SwiftZoneViewModelTests: XCTestCase {
         XCTAssertTrue(viewModel.mockPresenter.removeZoneContextCalled, "Presenter should remove context when contextId is empty")
     }
 
+    /// SwiftUI takes a zone off screen by making it disappear rather than by detaching it, so the
+    /// impression it was showing has to end here or it would run until the ad rotated out.
+    func testOnStop_EndsTheImpression() {
+        viewModel.onStop()
+        XCTAssertTrue(viewModel.mockPresenter.endImpressionCalled, "A zone that disappeared is no longer showing its ad")
+    }
+
     func testOnStart_AttachesPresenter() {
         viewModel.onAttach()
         XCTAssertTrue(viewModel.mockPresenter.onAttachCalled, "Presenter should attach when onStart is called")
@@ -157,7 +164,8 @@ class TestableSwiftZoneViewModel: SwiftZoneViewModel {
         var onBlankDisplayedCalled = false
         var onAdClickCalled = false
         var onReportAdClickedCalled = false
-        
+        var endImpressionCalled = false
+
         override func onAttach(adZonePresenterListener: AdZonePresenterListener?) {
             onAttachCalled = true
         }
@@ -170,6 +178,7 @@ class TestableSwiftZoneViewModel: SwiftZoneViewModel {
         override func onBlankDisplayed() { onBlankDisplayedCalled = true }
         override func onAdClicked(ad: Ad) { onAdClickCalled = true }
         override func onReportAdClicked(adId: String, udid: String) { onReportAdClickedCalled = true }
+        override func endImpression() { endImpressionCalled = true }
     }
 }
 

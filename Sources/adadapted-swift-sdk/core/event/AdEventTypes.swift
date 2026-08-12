@@ -6,6 +6,7 @@ import Foundation
 
 class AdEventTypes {
     static let IMPRESSION = "impression"
+    static let IMPRESSION_END = "impression_end"
     static let INVISIBLE_IMPRESSION = "invisible_impression"
     static let INTERACTION = "interaction"
     static let POPUP_BEGIN = "popup_begin"

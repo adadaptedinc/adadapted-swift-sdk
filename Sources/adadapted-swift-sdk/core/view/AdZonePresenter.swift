@@ -3,6 +3,7 @@
 //
 
 import Foundation
+import UIKit
 import WebKit
 
 class AdZonePresenter: ZoneAdListener {
@@ -25,6 +26,7 @@ class AdZonePresenter: ZoneAdListener {
     private let makeTimer: MakeTimer
     private var webViewManager: AdWebViewManager?
     private var swiftUIWebView: WKWebView?
+    private var appBackgroundObserver: NSObjectProtocol?
 
     typealias MakeTimer = (_ repeatSeconds: Int, _ delaySeconds: Int, _ timerAction: @escaping () -> Void) -> Timer
 
@@ -34,6 +36,12 @@ class AdZonePresenter: ZoneAdListener {
     ) {
         self.adViewHandler = adViewHandler
         self.makeTimer = makeTimer
+    }
+
+    //A host that drops a zone without stopping it never reaches onDetach, and the observer it
+    //registered would outlive the presenter on the notification center
+    deinit {
+        stopObservingAppBackgrounding()
     }
     
     func initialize(zoneId: String) {
@@ -59,6 +67,7 @@ class AdZonePresenter: ZoneAdListener {
         if !attached {
             attached = true
             self.adZonePresenterListener = adZonePresenterListener
+            observeAppBackgrounding()
             EventClient.trackZoneMounted(zoneId: zoneId)
             if(currentAd.id.isEmpty) {
                 fetchAd(listener: self)
@@ -70,6 +79,7 @@ class AdZonePresenter: ZoneAdListener {
         if attached {
             attached = false
             adZonePresenterListener = nil
+            stopObservingAppBackgrounding()
             completeCurrentAd()
             stopTimer()
             EventClient.trackZoneUnmounted(zoneId: zoneId)
@@ -137,6 +147,7 @@ class AdZonePresenter: ZoneAdListener {
     }
     
     private func completeCurrentAd() {
+        endImpression() //Rotated out or detached, whichever got here first
         if !currentAd.isEmpty() && adStarted && !adCompleted {
             if !currentAd.impressionWasTracked() && !isZoneVisible {
                 EventClient.trackInvisibleImpression(ad: currentAd)
@@ -159,6 +170,9 @@ class AdZonePresenter: ZoneAdListener {
         isZoneVisible = isAdVisible
         adZonePresenterListener?.onAdVisibilityChanged(ad: currentAd)
         trackAdImpression(ad: &currentAd, isAdVisible: isAdVisible)
+        if !isAdVisible {
+            endImpression()
+        }
     }
     
     func onAdDisplayFailed() {
@@ -171,6 +185,7 @@ class AdZonePresenter: ZoneAdListener {
     }
 
     private func clearAdAndStartTimer() {
+        endImpression() //The ad being cleared is off screen, and its impression goes with it
         adStarted = true
         currentAd = Ad(refreshTime: currentAd.refreshTime)
         startZoneTimer()
@@ -215,6 +230,28 @@ class AdZonePresenter: ZoneAdListener {
         callPixelTrackingJavaScript()
     }
     
+    /// Only fires once, and only if a real impression was tracked.
+    func endImpression() {
+        EventClient.trackImpressionEnd(ad: currentAd)
+    }
+
+    private func observeAppBackgrounding() {
+        appBackgroundObserver = NotificationCenter.default.addObserver(
+            forName: UIApplication.didEnterBackgroundNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.endImpression()
+        }
+    }
+
+    private func stopObservingAppBackgrounding() {
+        if let appBackgroundObserver = appBackgroundObserver {
+            NotificationCenter.default.removeObserver(appBackgroundObserver)
+            self.appBackgroundObserver = nil
+        }
+    }
+
     private func callPixelTrackingJavaScript() {
         webViewManager?.evaluateJavaScript(js: PIXEL_TRACKING_JS)
         swiftUIWebView?.evaluateJavaScript(PIXEL_TRACKING_JS)
