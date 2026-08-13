@@ -2,6 +2,7 @@
 //  Created by Brett Clifton on 6/18/26.
 //
 
+import UIKit
 import XCTest
 @testable import adadapted_swift_sdk
 
@@ -44,14 +45,18 @@ final class HttpConnectorTests: XCTestCase {
         return URLSession(configuration: config)
     }
 
+    private let assertions = SpyBackgroundAssertions()
+
     override func setUp() {
         super.setUp()
         MockURLProtocol.reset()
         HttpConnector.session = Self.makeMockSession()
+        assertions.install()
     }
 
     override func tearDown() {
         HttpConnector.session = .shared
+        assertions.uninstall()
         super.tearDown()
     }
 
@@ -205,5 +210,75 @@ final class HttpConnectorTests: XCTestCase {
         }
 
         wait(for: [expectation], timeout: 15)
+    }
+
+    // MARK: - background assertion tests
+
+    /// A request in flight when the app is backgrounded is held under an assertion, or iOS suspends the
+    /// app and the request lands whenever the user comes back. One never handed back is worse than none:
+    /// the watchdog takes it back by killing the app.
+
+    func testAnAwaitedRequestHandsItsAssertionBackAfterFailingEveryRetry() async {
+        MockURLProtocol.requestHandler = { _ in throw URLError(.notConnectedToInternet) }
+
+        _ = try? await HttpConnector.data(for: URLRequest(url: URL(string: "https://test.com")!))
+
+        XCTAssertEqual(1, assertions.begun, "The request should have been held under an assertion")
+        XCTAssertEqual(1, assertions.ended, "And a request that failed still has to hand it back")
+    }
+
+    /// One assertion for the whole retry chain, since the point of holding it is to keep the app alive
+    /// through the delays between attempts.
+    func testACallbackRequestHoldsOneAssertionAcrossItsRetriesAndHandsItBack() {
+        var attempt = 0
+        MockURLProtocol.requestHandler = { _ in
+            attempt += 1
+            if attempt < 3 { throw URLError(.networkConnectionLost) }
+            let response = HTTPURLResponse(url: URL(string: "https://test.com")!, statusCode: 200, httpVersion: nil, headerFields: nil)!
+            return (response, Data("{\"ok\":true}".utf8))
+        }
+
+        let expectation = XCTestExpectation(description: "dataTask completes")
+        HttpConnector.dataTask(with: URLRequest(url: URL(string: "https://test.com")!)) { _, _, _ in
+            expectation.fulfill()
+        }
+        wait(for: [expectation], timeout: 15)
+
+        XCTAssertEqual(3, attempt)
+        XCTAssertEqual(1, assertions.begun, "The retries are one piece of work, not three")
+        XCTAssertEqual(1, assertions.ended)
+    }
+}
+
+/// Stands in for `UIApplication`'s background assertions, which a test runner has no business being
+/// asked to hold, and counts them so an unbalanced one shows up as a failure.
+private final class SpyBackgroundAssertions {
+    private let lock = NSLock()
+    private var _begun = 0
+    private var _ended = 0
+
+    var begun: Int { lock.lock(); defer { lock.unlock() }; return _begun }
+    var ended: Int { lock.lock(); defer { lock.unlock() }; return _ended }
+
+    func install() {
+        BackgroundActivityAssertion.beginTask = { [weak self] _, _ in
+            guard let self = self else { return .invalid }
+            self.lock.lock(); defer { self.lock.unlock() }
+            self._begun += 1
+            return UIBackgroundTaskIdentifier(rawValue: self._begun)
+        }
+        BackgroundActivityAssertion.endTask = { [weak self] _ in
+            guard let self = self else { return }
+            self.lock.lock(); self._ended += 1; self.lock.unlock()
+        }
+    }
+
+    func uninstall() {
+        BackgroundActivityAssertion.beginTask = { name, onExpiration in
+            UIApplication.shared.beginBackgroundTask(withName: name, expirationHandler: onExpiration)
+        }
+        BackgroundActivityAssertion.endTask = { identifier in
+            UIApplication.shared.endBackgroundTask(identifier)
+        }
     }
 }

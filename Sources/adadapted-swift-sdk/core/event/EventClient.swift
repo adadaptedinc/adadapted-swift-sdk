@@ -8,7 +8,8 @@ class EventClient {
     
     private static var eventAdapter: EventAdapter? = nil
     private static var listeners = SafeArray<EventClientListener>()
-    private static var adEvents = SafeSet<AdEvent>()
+    private static var adEvents = Set<AdEvent>()
+    private static let adEventsLock = NSLock()
     private static var sdkEvents = SafeSet<SdkEvent>()
     private static var sdkErrors = SafeSet<SdkError>()
     private static let impressionEndLock = NSLock()
@@ -29,13 +30,15 @@ class EventClient {
     }
     
     private static func fileEvent(_ event: AdEvent) {
+        adEventsLock.lock()
+        adEvents.insert(event)
+        adEventsLock.unlock()
+
         Task {
-            async let insertTask: () = adEvents.insert(event)
-            async let notifyTask: () = notifyAdEventTracked(event: event)
-            _ = await (insertTask, notifyTask)
+            await notifyAdEventTracked(event: event)
         }
     }
-    
+
     private static func performPublishSdkErrors() {
         Task {
             guard let adapter = eventAdapter else {
@@ -68,9 +71,12 @@ class EventClient {
                 return
             }
 
-            let currentAdEvents = await adEvents.copyAndClear()
+            adEventsLock.lock()
+            let currentAdEvents = Array(adEvents)
+            adEvents.removeAll()
+            adEventsLock.unlock()
             guard !currentAdEvents.isEmpty else { return }
-            
+
             adapter.publishAdEvents(sessionId: SessionClient.getSessionId(), deviceInfo: DeviceInfoClient.getCachedDeviceInfo(), adEvents: currentAdEvents)
         }
     }
@@ -105,6 +111,11 @@ class EventClient {
         eventTimer?.startTimer()
     }
     
+    internal func stopPublishTimer() {
+        eventTimer?.stopTimer()
+        eventTimerRunning = false
+    }
+
     func onPublishEvents() {
         EventClient.performPublishAdEvents()
         EventClient.performPublishSdkEvents()
@@ -153,6 +164,15 @@ class EventClient {
         guard impressionIsEnding else { return }
         AALogger.logDebug(message: "Ad Impression End Tracked.")
         fileEvent(AdEvent(ad: ad, eventType: AdEventTypes.IMPRESSION_END))
+    }
+
+    /// Ends an impression the app is being backgrounded out from under. The batch is published here
+    /// because the publish timer cannot tick while the app is suspended - anything left in it, this end
+    /// or one filed a moment earlier when the zone went off screen, would only reach the server when the
+    /// user next opened the app.
+    static func trackImpressionEndAndPublish(ad: Ad) {
+        trackImpressionEnd(ad: ad)
+        performPublishAdEvents()
     }
 
     static func trackInteraction(ad: Ad) {

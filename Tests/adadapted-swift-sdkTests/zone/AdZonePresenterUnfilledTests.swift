@@ -115,6 +115,38 @@ class AdZonePresenterUnfilledTests: XCTestCase {
         XCTAssertEqual([], unfilledEvents().map { $0.eventName })
     }
 
+    /// A backgrounded app is as good as an off screen zone - the host app never told the zone it went
+    /// invisible, but no one saw the ad that failed to arrive.
+    func testAZoneInABackgroundedAppDoesNotReportItselfUnfilled() async {
+        adapter.mockAdZoneData = AdZoneData(ad: Ad(id: "TestAdId"))
+        let testListener = TestAdZonePresenterListener()
+        testAdZonePresenter.onAttach(adZonePresenterListener: testListener)
+        await awaitCondition { testListener.testAd.id == "TestAdId" }
+
+        testAdZonePresenter.onAppBackgrounded()
+        testAdZonePresenter.onAdLoadFailed() //The fetch that was in flight comes back with nothing
+
+        await awaitAdapterEvent { self.adEvents(ofType: AdEventTypes.ZONE_MOUNTED).count == 1 }
+
+        XCTAssertEqual([], unfilledEvents().map { $0.eventName })
+    }
+
+    /// A zone that left the view hierarchy - a recycled cell, a torn down controller - is off screen
+    /// whether or not the host app reported it invisible.
+    func testAZoneOutOfTheWindowDoesNotReportItselfUnfilled() async {
+        adapter.mockAdZoneData = AdZoneData(ad: Ad(id: "TestAdId"))
+        let testListener = TestAdZonePresenterListener()
+        testAdZonePresenter.onAttach(adZonePresenterListener: testListener)
+        await awaitCondition { testListener.testAd.id == "TestAdId" }
+
+        testAdZonePresenter.onExitedWindow()
+        testAdZonePresenter.onAdLoadFailed()
+
+        await awaitAdapterEvent { self.adEvents(ofType: AdEventTypes.ZONE_MOUNTED).count == 1 }
+
+        XCTAssertEqual([], unfilledEvents().map { $0.eventName })
+    }
+
     /// One report per fetch attempt, not one per zone. A zone that refetches into another no-fill is
     /// unfilled again.
     func testEveryFetchThatFillsNothingReportsItsOwnUnfilledEvent() async {

@@ -7,11 +7,15 @@ import Foundation
 class HttpConnector {
     private static let maxRetries = 3
     private static let initialDelaySeconds: TimeInterval = 1.0
+    private static let assertionName = "AdAdaptedRequest"
     static var session: URLSession = .shared
 
     private init() {}
 
     static func data(for request: URLRequest) async throws -> (Data, URLResponse) {
+        let assertion = BackgroundActivityAssertion.begin(name: assertionName)
+        defer { assertion.end() }
+
         var lastError: Error = URLError(.unknown)
         for attempt in 0..<maxRetries {
             if attempt > 0 {
@@ -35,7 +39,11 @@ class HttpConnector {
     }
 
     static func dataTask(with request: URLRequest, completion: @escaping (Data?, URLResponse?, Error?) -> Void) {
-        performWithRetry(request: request, attempt: 0, completion: completion)
+        let assertion = BackgroundActivityAssertion.begin(name: assertionName)
+        performWithRetry(request: request, attempt: 0) { data, response, error in
+            assertion.end()
+            completion(data, response, error)
+        }
     }
 
     private static func performWithRetry(request: URLRequest, attempt: Int, completion: @escaping (Data?, URLResponse?, Error?) -> Void) {

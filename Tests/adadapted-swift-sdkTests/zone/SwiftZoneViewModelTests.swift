@@ -147,6 +147,46 @@ final class SwiftZoneViewModelTests: XCTestCase {
         XCTAssertTrue(TestEventAdapter.shared.testAdEvents.contains { $0.eventType == AdEventTypes.ZONE_MOUNTED && $0.zoneId == zoneId })
         XCTAssertTrue(TestEventAdapter.shared.testAdEvents.contains { $0.eventType == AdEventTypes.ZONE_UNMOUNTED && $0.zoneId == zoneId })
     }
+
+    /// A zone id holds one view model. When two for the same id are built at once, one of them has to
+    /// come out detached, or the id runs a duplicate pair that both fetch and both report impressions.
+    ///
+    /// The manager used to replace and register in two separate critical sections, so both could pass
+    /// the cleanup that was supposed to drop the other. Repeated because an interleave that needs two
+    /// threads inside the same window does not land on every run.
+    func testTwoViewModelsBuiltAtOnceForOneZoneLeaveOnlyOneAttached() {
+        for trial in 0..<200 {
+            let built = Locked<[DetachCountingViewModel]>([])
+
+            DispatchQueue.concurrentPerform(iterations: 2) { [self] _ in
+                //Hidden, so building one does not kick off a real fetch
+                let viewModel = DetachCountingViewModel(
+                    zoneId: "concurrentZone\(trial)",
+                    adContentListener: mockAdContentListener,
+                    zoneViewListener: mockZoneViewListener,
+                    isZoneVisible: .constant(false),
+                    zoneContextId: .constant("")
+                )
+                built.value = built.value + [viewModel]
+            }
+
+            XCTAssertEqual(
+                1,
+                built.value.filter { $0.detachCount.value > 0 }.count,
+                "Exactly one of the two should have been detached as the other replaced it (trial \(trial))"
+            )
+        }
+    }
+}
+
+/// Counts its own replacement, since the manager's collection is private
+private class DetachCountingViewModel: SwiftZoneViewModel {
+    let detachCount = Locked(0)
+
+    override func onDetach() {
+        detachCount.value = detachCount.value + 1
+        super.onDetach()
+    }
 }
 
 class TestableSwiftZoneViewModel: SwiftZoneViewModel {
@@ -185,7 +225,7 @@ class TestableSwiftZoneViewModel: SwiftZoneViewModel {
         override func onBlankDisplayed() { onBlankDisplayedCalled = true }
         override func onAdClicked(ad: Ad) { onAdClickCalled = true }
         override func onReportAdClicked(adId: String, udid: String) { onReportAdClickedCalled = true }
-        override func endImpression() { endImpressionCalled = true }
+        override func endImpression(publishImmediately: Bool) { endImpressionCalled = true }
         override func onEnteredWindow() { onEnteredWindowCalled = true }
         override func onExitedWindow() { onExitedWindowCalled = true }
     }

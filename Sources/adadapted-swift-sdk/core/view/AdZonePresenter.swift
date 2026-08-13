@@ -100,7 +100,7 @@ class AdZonePresenter: ZoneAdListener {
 
     func onAppBackgrounded() {
         isAppInForeground = false
-        endImpression()
+        endImpression(publishImmediately: true) //Nothing publishes again until the app is back
         pauseTimer()
     }
 
@@ -109,8 +109,6 @@ class AdZonePresenter: ZoneAdListener {
         resumeTimer()
     }
 
-    //A zone can leave the hierarchy without ever going invisible or being stopped - a recycled cell,
-    //a torn down view controller - and it is showing an ad to no one either way
     func onExitedWindow() {
         isInWindow = false
         endImpression()
@@ -129,13 +127,11 @@ class AdZonePresenter: ZoneAdListener {
     private func getNextAd() {
         restartTimer()
         if (!zoneLoaded) { return }
-        endImpression() //Rotated out, the ad the zone was showing is done
+        endImpression()
 
         fetchAd(listener: ClosureZoneAdListener(
             onAdLoaded: { [weak self] adZoneData in
                 DispatchQueue.main.async {
-                    // Reported like the first fetch does, so a refresh that comes back a no-fill
-                    // tells the host app the zone no longer has an ad to show.
                     self?.updateCurrentZone(adZoneData: adZoneData)
                     self?.notifyZoneAvailable()
                 }
@@ -155,14 +151,14 @@ class AdZonePresenter: ZoneAdListener {
     }
 
     private func reportZoneUnfilled(reason: String) {
-        guard !unfilledReported, attached, isZoneVisible else { return }
+        guard !unfilledReported, isZoneOnScreen() else { return }
         unfilledReported = true
         EventClient.trackZoneUnfilled(zoneId: zoneId, reason: reason)
     }
 
     private func handleAd(ad: Ad) {
         currentAd = ad
-        restartTimer() //Pick up the new Ad's refresh time
+        restartTimer()
         displayAd()
     }
     
@@ -205,9 +201,8 @@ class AdZonePresenter: ZoneAdListener {
         clearCurrentAd()
     }
 
-    //The served refresh is kept so a no-fill backs off the way the server asked it to
     private func clearCurrentAd() {
-        endImpression() //The ad being cleared is off screen, and its impression goes with it
+        endImpression()
         currentAd = Ad(refreshTime: currentAd.refreshTime)
         resumeTimer()
     }
@@ -252,12 +247,12 @@ class AdZonePresenter: ZoneAdListener {
     }
     
     /// Only fires once, and only if a real impression was tracked.
-    func endImpression() {
-        EventClient.trackImpressionEnd(ad: currentAd)
+    func endImpression(publishImmediately: Bool = false) {
+        publishImmediately
+            ? EventClient.trackImpressionEndAndPublish(ad: currentAd)
+            : EventClient.trackImpressionEnd(ad: currentAd)
     }
 
-    //Observed only while attached, so a zone the host app stopped is not left on the notification
-    //center. The zone's own window callbacks cover it leaving the screen while the app stays up.
     private func observeAppLifecycle() {
         let center = NotificationCenter.default
         appLifecycleObservers = [
@@ -281,12 +276,10 @@ class AdZonePresenter: ZoneAdListener {
         AALogger.logDebug(message: "Calling pixel tracking javascript")
     }
     
-    //The countdown only runs while the zone is on screen in a foregrounded app
-    private func canRunTimer() -> Bool {
+    private func isZoneOnScreen() -> Bool {
         return attached && isZoneVisible && isAppInForeground && isInWindow
     }
 
-    //Arms the countdown fresh from the current Ad's refresh time
     private func restartTimer() {
         cancelTimer()
         adFetchedAt = now()
@@ -297,8 +290,6 @@ class AdZonePresenter: ZoneAdListener {
         startTimer()
     }
 
-    //Freezes what is left of the countdown, so a zone off screen or an app in the background neither
-    //refreshes nor fetches
     private func pauseTimer() {
         if !timerRunning { return }
         secondsLeftOnRefresh = max(secondsLeftOnRefresh - (now() - countdownResumedAt), 0)
@@ -306,10 +297,8 @@ class AdZonePresenter: ZoneAdListener {
         AALogger.logDebug(message: "Zone timer paused with \(secondsLeftOnRefresh)s left")
     }
 
-    //An Ad that outlived its own refresh time while the countdown was frozen is refetched instead of
-    //being shown for the leftover time it never spent on screen
     private func resumeTimer() {
-        if timerRunning || !canRunTimer() { return }
+        if timerRunning || !isZoneOnScreen() { return }
         if zoneLoaded && now() - adFetchedAt >= currentAd.refreshTimeOrDefault {
             getNextAd()
         } else {
@@ -318,7 +307,7 @@ class AdZonePresenter: ZoneAdListener {
     }
 
     private func startTimer() {
-        if !zoneLoaded || timerRunning || !canRunTimer() { return }
+        if !zoneLoaded || timerRunning || !isZoneOnScreen() { return }
         AALogger.logDebug(message: "Zone timer starting with \(secondsLeftOnRefresh)s left of a \(currentAd.refreshTimeOrDefault)s refresh")
         timerRunning = true
         countdownResumedAt = now()
