@@ -47,6 +47,10 @@ struct AdWebViewRepresentable: UIViewRepresentable {
     @Binding var currentAd: Ad?
     @Binding var isStopped: Bool
     var webViewHandler: (WKWebView) -> Void
+
+    private static let blankDocument = """
+        <html><head><meta name="viewport" content="width=device-width, user-scalable=no" /></head><body></body></html>
+        """
     
     func makeUIView(context: Context) -> WKWebView {
         let configuration = WKWebViewConfiguration()
@@ -54,6 +58,7 @@ struct AdWebViewRepresentable: UIViewRepresentable {
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.isOpaque = false
         webView.backgroundColor = .clear
+        webView.scrollView.bounces = false
         
         // Setup tap gesture
         let tapGesture = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleTap))
@@ -76,8 +81,7 @@ struct AdWebViewRepresentable: UIViewRepresentable {
                 uiView.load(URLRequest(url: url))
             }
         } else {
-            // Load blank HTML if no ad is available
-            uiView.loadHTMLString("<html><body></body></html>", baseURL: nil)
+            uiView.loadHTMLString(AdWebViewRepresentable.blankDocument, baseURL: nil)
         }
     }
     
