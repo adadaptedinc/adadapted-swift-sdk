@@ -160,6 +160,76 @@ class AdZonePresenterFreezeTests: XCTestCase {
         XCTAssertEqual(true, armedTimer?.isRunning, "Coming back to the foreground should start it up again")
     }
 
+    /// The countdown fires on a background queue and hops to the main one to do its work, so a zone
+    /// that leaves the screen in between cancels the timer but not the refresh already queued behind
+    /// it.  That stale refresh would fetch an ad for a zone nobody is looking at and stamp the
+    /// countdown as freshly started, throwing away the remainder the freeze just banked.
+    func testARefreshAlreadyQueuedWhenTheZoneFreezesIsDropped() async {
+        let refreshSeconds = 300
+        await displayAVisibleAd(refreshSeconds: refreshSeconds)
+        let requestsBeforeTheDeadline = adapter.requestCount
+
+        advanceClock(bySeconds: refreshSeconds)
+        let queuedRefreshRan = expectation(description: "The refresh the timer queued has run")
+        DispatchQueue.main.async { [self] in
+            armedTimer?.fire() //Queues the refresh behind this block, the way the real timer would
+            testAdZonePresenter.onAppBackgrounded()
+            DispatchQueue.main.async { queuedRefreshRan.fulfill() }
+        }
+        await fulfillment(of: [queuedRefreshRan], timeout: TestWait.timeout)
+        await Task.yield()
+
+        XCTAssertEqual(
+            requestsBeforeTheDeadline,
+            adapter.requestCount,
+            "A refresh that landed after the app backgrounded should not have fetched anything"
+        )
+
+        testAdZonePresenter.onAppForegrounded()
+
+        await awaitCondition { [self] in adapter.requestCount > requestsBeforeTheDeadline }
+        XCTAssertEqual(
+            requestsBeforeTheDeadline + 1,
+            adapter.requestCount,
+            "The ad was already past its refresh when the app left, so coming back should refetch it"
+        )
+    }
+
+    /// `NotificationCenter` has nothing to replay, so a zone attached while the app is already in the
+    /// background never hears that it is there.  It would count down and rotate through ads nobody can
+    /// see until the next background transition - which for an app launched into the background is the
+    /// next time the user actually opens it.  Android reads this off `ProcessLifecycleOwner` when the
+    /// observer registers; here it is read on the way in.
+    func testAZoneAttachedWhileTheAppIsAlreadyBackgroundedDoesNotStartItsRefresh() async {
+        let backgroundedPresenter = AdZonePresenter(
+            adViewHandler: AdViewHandler(),
+            makeTimer: { [lastArmedTimer] repeatSeconds, delaySeconds, action in
+                let timer = SpyTimer(repeatSeconds: repeatSeconds, delaySeconds: delaySeconds, action: action)
+                lastArmedTimer.value = timer
+                return timer
+            },
+            now: { [fakeClockSeconds] in fakeClockSeconds.value },
+            appIsInForeground: { false }
+        )
+        backgroundedPresenter.initialize(zoneId: zoneId)
+        defer { backgroundedPresenter.onDetach() }
+
+        let servedAd = Ad(id: "BackgroundedAttachAdId", impressionId: "\(zoneId):1", refreshTime: 300)
+        adapter.mockAdZoneData = AdZoneData(ad: servedAd)
+        let testListener = TestAdZonePresenterListener()
+
+        backgroundedPresenter.onAttach(adZonePresenterListener: testListener)
+        await awaitCondition { testListener.testAd.id == servedAd.id }
+
+        XCTAssertNil(armedTimer, "A zone attached into a backgrounded app should not have armed a countdown at all")
+
+        //And it is not stuck off: the app coming back is what it was waiting for
+        backgroundedPresenter.onAppForegrounded()
+
+        XCTAssertEqual(300, armedTimer?.delaySeconds, "Coming to the foreground should start the ad's own refresh")
+        XCTAssertEqual(true, armedTimer?.isRunning, "And it should be running")
+    }
+
     private func displayAVisibleAd(refreshSeconds: Int) async {
         let servedAd = Ad(id: "FreezeAdId", impressionId: "\(zoneId):1", refreshTime: refreshSeconds)
         adapter.mockAdZoneData = AdZoneData(ad: servedAd)

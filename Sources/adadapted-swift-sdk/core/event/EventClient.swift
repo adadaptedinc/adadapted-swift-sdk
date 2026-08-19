@@ -8,11 +8,11 @@ class EventClient {
     
     private static var eventAdapter: EventAdapter? = nil
     private static var listeners = SafeArray<EventClientListener>()
-    private static var adEvents = Set<AdEvent>()
+    private static var adEvents = [AdEvent]()
     private static let adEventsLock = NSLock()
     private static var sdkEvents = SafeSet<SdkEvent>()
     private static var sdkErrors = SafeSet<SdkError>()
-    private static let impressionEndLock = NSLock()
+    private static let backgroundFlushAssertionName = "AdAdaptedBackgroundEventFlush"
     private var eventTimer: Timer?
     private var eventTimerRunning: Bool = false
     
@@ -31,7 +31,7 @@ class EventClient {
     
     private static func fileEvent(_ event: AdEvent) {
         adEventsLock.lock()
-        adEvents.insert(event)
+        adEvents.append(event)
         adEventsLock.unlock()
 
         Task {
@@ -65,14 +65,15 @@ class EventClient {
         }
     }
     
-    private static func performPublishAdEvents() {
+    private static func performPublishAdEvents(onHandedOff: (() -> Void)? = nil) {
         Task {
+            defer { onHandedOff?() }
             guard let adapter = eventAdapter else {
                 return
             }
 
             adEventsLock.lock()
-            let currentAdEvents = Array(adEvents)
+            let currentAdEvents = adEvents
             adEvents.removeAll()
             adEventsLock.unlock()
             guard !currentAdEvents.isEmpty else { return }
@@ -148,31 +149,16 @@ class EventClient {
         fileEvent(AdEvent(ad: ad, eventType: AdEventTypes.IMPRESSION))
     }
 
-    /// Ends an impression that actually fired, once per ad. The event is stamped where it is built,
-    /// so the batching delay before it publishes cannot corrupt the dwell it closes out.
-    ///
-    /// The zone timer rotates an ad out on a background queue while the view hides it on the main
-    /// one, so the check and the set have to happen as one step or one impression can end twice.
     static func trackImpressionEnd(ad: Ad) {
-        impressionEndLock.lock()
-        let impressionIsEnding = ad.impressionWasTracked() && !ad.impressionEndWasTracked()
-        if impressionIsEnding {
-            ad.setImpressionEndTracked()
-        }
-        impressionEndLock.unlock()
-
-        guard impressionIsEnding else { return }
+        guard ad.claimImpressionEnd() else { return }
         AALogger.logDebug(message: "Ad Impression End Tracked.")
         fileEvent(AdEvent(ad: ad, eventType: AdEventTypes.IMPRESSION_END))
     }
 
-    /// Ends an impression the app is being backgrounded out from under. The batch is published here
-    /// because the publish timer cannot tick while the app is suspended - anything left in it, this end
-    /// or one filed a moment earlier when the zone went off screen, would only reach the server when the
-    /// user next opened the app.
     static func trackImpressionEndAndPublish(ad: Ad) {
         trackImpressionEnd(ad: ad)
-        performPublishAdEvents()
+        let assertion = BackgroundActivityAssertion.begin(name: backgroundFlushAssertionName)
+        performPublishAdEvents { assertion.end() }
     }
 
     static func trackInteraction(ad: Ad) {

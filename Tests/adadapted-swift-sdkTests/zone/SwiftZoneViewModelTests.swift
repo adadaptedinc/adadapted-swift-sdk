@@ -7,7 +7,7 @@
 
 import XCTest
 import SwiftUI
-@testable import adadapted_swift_sdk
+@preconcurrency @testable import adadapted_swift_sdk
 
 final class SwiftZoneViewModelTests: XCTestCase {
     class MockAdContentListener: AdContentListener {
@@ -16,9 +16,13 @@ final class SwiftZoneViewModelTests: XCTestCase {
     }
     class MockZoneViewListener: ZoneViewListener {
         var zoneHasAdsCalled = false
+        var zoneHasAdsOnMainThread = false
         var adLoadFailedCalled = false
         func onAdLoaded() {}
-        func onZoneHasAds(hasAds: Bool) { zoneHasAdsCalled = true }
+        func onZoneHasAds(hasAds: Bool) {
+            zoneHasAdsCalled = true
+            zoneHasAdsOnMainThread = Thread.isMainThread
+        }
         func onAdLoadFailed() { adLoadFailedCalled = true }
     }
     
@@ -105,6 +109,37 @@ final class SwiftZoneViewModelTests: XCTestCase {
         XCTAssertTrue(mockZoneViewListener.zoneHasAdsCalled, "Listener should be notified when zone is available with ads")
     }
 
+    /// The docs tell clients they can collapse or restore the zone's space straight from this callback,
+    /// so it has to arrive on the main queue no matter which thread reported the zone.
+    func testOnZoneAvailable_NotifiesOnTheMainQueueWhenReportedOffMain() async {
+        let zone = AdZoneData(ad: Ad())
+        let zoneViewModel: SwiftZoneViewModel = viewModel
+        let listener = mockZoneViewListener!
+
+        //A Thread rather than a queue hop, so reporting off main does not need a @Sendable closure
+        let reporter = Thread { zoneViewModel.onZoneAvailable(adZoneData: zone) }
+        reporter.start()
+
+        await awaitCondition { listener.zoneHasAdsCalled }
+        XCTAssertTrue(
+            listener.zoneHasAdsOnMainThread,
+            "onZoneHasAds should reach the client on the main queue so it is safe to touch layout in it"
+        )
+    }
+
+    /// Hopping unconditionally would defer this behind the onAdAvailable hop and reorder the two
+    /// callbacks, so a zone reported from main has to stay synchronous.
+    func testOnZoneAvailable_StaysSynchronousWhenAlreadyOnMain() {
+        let zone = AdZoneData(ad: Ad())
+
+        viewModel.onZoneAvailable(adZoneData: zone)
+
+        XCTAssertTrue(
+            mockZoneViewListener.zoneHasAdsCalled,
+            "A zone reported on main should notify before returning, keeping onZoneHasAds ahead of onAdLoaded"
+        )
+    }
+
     func testOnNoAdAvailable_ClearsCurrentAd() {
         viewModel.onNoAdAvailable()
         XCTAssertNil(viewModel.currentAd, "Current ad should be cleared when no ad is available")
@@ -167,7 +202,7 @@ final class SwiftZoneViewModelTests: XCTestCase {
                     isZoneVisible: .constant(false),
                     zoneContextId: .constant("")
                 )
-                built.value = built.value + [viewModel]
+                built.mutate { $0.append(viewModel) }
             }
 
             XCTAssertEqual(

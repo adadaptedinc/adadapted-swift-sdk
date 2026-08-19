@@ -110,6 +110,38 @@ class AdZonePresenterBackgroundFlushTests: XCTestCase {
         XCTAssertEqual(1, impressionEndEvents(inZone: secondZoneId).count, "The second zone's impression end")
     }
 
+    /// Getting the end filed is only half of it - it still has to survive the trip out.  The publish
+    /// hops onto a `Task` and the request only takes an assertion of its own once it reaches
+    /// `HttpConnector`, so nothing holds the app up across that hop, which is where a suspension would
+    /// strand the batch.  Asserted from inside the publish, since what matters is the state the flush
+    /// is happening in, not what it left behind.
+    func testTheBackgroundFlushHoldsTheAppAwakeUntilTheBatchIsHandedToTheRequest() async {
+        let assertions = SpyBackgroundAssertions()
+        assertions.install()
+        defer { assertions.uninstall() }
+
+        await displayAVisibleAd(in: testAdZonePresenter, adId: "assertedFlushAdId", zoneId: zoneId)
+
+        let assertionsHeldDuringPublish = Locked(0)
+        TestEventAdapter.shared.onPublishAdEvents = { [assertions] _ in
+            assertionsHeldDuringPublish.value = assertions.held
+        }
+
+        testAdZonePresenter.onAppBackgrounded()
+
+        await awaitCondition { [self] in impressionEndEvents(inZone: zoneId).count == 1 }
+
+        XCTAssertEqual(
+            1,
+            assertionsHeldDuringPublish.value,
+            "The app should still be held awake while the flush is being handed to the request"
+        )
+
+        await awaitCondition { assertions.held == 0 }
+        XCTAssertEqual(0, assertions.held, "And released once it is, rather than left running")
+        XCTAssertEqual(1, assertions.begun, "The flush is one piece of work, not one per event")
+    }
+
     private func makePresenter(forZone presenterZoneId: String) -> AdZonePresenter {
         let presenter = AdZonePresenter(
             adViewHandler: AdViewHandler(),

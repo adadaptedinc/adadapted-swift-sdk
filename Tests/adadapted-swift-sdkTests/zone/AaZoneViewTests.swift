@@ -27,6 +27,51 @@ class AaZoneViewTests: XCTestCase {
         super.tearDown()
     }
 
+    /// Nothing can be reported on the way out by a view that is never released, so this comes first.
+    /// The zone view hands itself to its web view as the click listener, and that reference used to be
+    /// a strong one pointing back at the view - a cycle the host cannot break by letting go.
+    func testAZoneViewIsReleasedWhenItsHostDropsIt() {
+        weak var droppedView: AaZoneView?
+
+        autoreleasepool {
+            let view = AaZoneView()
+            droppedView = view
+            view.initialize(zoneId: "releasedZoneId")
+            view.onStart(listener: TestAaZoneViewListener())
+        }
+
+        XCTAssertNil(droppedView, "A zone view its host has let go of should not be keeping itself alive")
+    }
+
+    /// A UIKit host that drops its view without calling `onStop()` never reaches the presenter's
+    /// detach, so the `zone_mounted` it already reported is left with no pair.  `didMoveToWindow`
+    /// covers the impression on that path; nothing covered the mount.
+    func testAZoneDroppedWithoutBeingStoppedStillReportsItsUnmount() async {
+        let zoneId = "droppedWithoutStoppingZoneId"
+
+        //On main because building the view builds a WKWebView, and an async test body is not there
+        await MainActor.run {
+            autoreleasepool {
+                let droppedView = AaZoneView()
+                droppedView.initialize(zoneId: zoneId)
+                droppedView.onStart(listener: TestAaZoneViewListener())
+            }
+        }
+
+        await awaitAdapterEvent { [self] in unmounts(inZone: zoneId).count == 1 }
+        XCTAssertEqual(
+            1,
+            unmounts(inZone: zoneId).count,
+            "A zone that reported a mount owes an unmount, whether or not the host stopped it"
+        )
+    }
+
+    private func unmounts(inZone zoneId: String) -> [AdEvent] {
+        TestEventAdapter.shared.testAdEvents.filter {
+            $0.eventType == AdEventTypes.ZONE_UNMOUNTED && $0.zoneId == zoneId
+        }
+    }
+
     func testStart() {
         let testListener = TestAaZoneViewListener()
         var testAd = Ad(id:"NewAdId")

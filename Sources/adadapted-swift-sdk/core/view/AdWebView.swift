@@ -7,7 +7,7 @@ import WebKit
 
 class AdWebView: WKWebView, WKNavigationDelegate {
 
-    var listener: AdWebViewListener?
+    weak var listener: AdWebViewListener?
     var currentAd: Ad = Ad()
     private var loaded: Bool = false
 

@@ -106,6 +106,7 @@ class TestEventAdapter: EventAdapter {
     private var _testAdEvents = [AdEvent]()
     private var _testSdkEvents = [SdkEvent]()
     private var _testSdkErrors = [SdkError]()
+    private var _onPublishAdEvents: (([AdEvent]) -> Void)?
 
     var testAdEvents: [AdEvent] {
         get { lock.lock(); defer { lock.unlock() }; return _testAdEvents }
@@ -120,12 +121,21 @@ class TestEventAdapter: EventAdapter {
         set { lock.lock(); _testSdkErrors = newValue; lock.unlock() }
     }
 
+    /// Runs as the batch is handed over, for a test that has to observe the state the publish is
+    /// happening in rather than what it left behind.
+    var onPublishAdEvents: (([AdEvent]) -> Void)? {
+        get { lock.lock(); defer { lock.unlock() }; return _onPublishAdEvents }
+        set { lock.lock(); _onPublishAdEvents = newValue; lock.unlock() }
+    }
+
     private init() {}
 
     func publishAdEvents(sessionId: String, deviceInfo:DeviceInfo, adEvents: [AdEvent]) {
         lock.lock()
         _testAdEvents.append(contentsOf: adEvents)
+        let observer = _onPublishAdEvents
         lock.unlock()
+        observer?(adEvents)
     }
 
     func publishSdkEvents(sessionId: String, deviceInfo:DeviceInfo, events: [SdkEvent]) {
@@ -142,6 +152,7 @@ class TestEventAdapter: EventAdapter {
 
     func cleanupEvents() {
         lock.lock()
+        _onPublishAdEvents = nil
         _testAdEvents = []
         _testSdkEvents = []
         _testSdkErrors = []

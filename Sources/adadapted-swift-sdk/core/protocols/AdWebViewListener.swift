@@ -4,7 +4,7 @@
 
 import Foundation
 
-protocol AdWebViewListener {
+protocol AdWebViewListener: AnyObject {
     func onAdLoadedInWebView(ad: inout Ad)
     func onAdLoadInWebViewFailed()
     func onAdInWebViewClicked(ad: Ad)

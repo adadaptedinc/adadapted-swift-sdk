@@ -7,6 +7,16 @@ import XCTest
 
 final class AdWebViewManagerTests: XCTestCase {
 
+    /// The web view holds its listener weakly, so the thing that keeps it reachable is the owner
+    /// holding on - which is what a zone view does with itself. A listener that quietly went nil would
+    /// take ad clicks with it and nothing else here would notice.
+    func testTheWebViewKeepsItsListenerWhileTheOwnerHoldsOnToIt() {
+        let listener = MockAdWebViewListener()
+        let manager = AdWebViewManager(frame: .zero, listener: listener)
+
+        XCTAssertTrue(manager.webView?.listener === listener, "A listener its owner is still holding should stay reachable")
+    }
+
     func testTapGestureRecognizerIsAddedToView() {
         let manager = AdWebViewManager(frame: .zero, listener: MockAdWebViewListener())
         let gestures = manager.gestureRecognizers ?? []
@@ -29,7 +39,8 @@ final class AdWebViewManagerTests: XCTestCase {
     }
     
     func testHandleTapCallsNotifyAdClickedWhenAdHasId() {
-        let manager = AdWebViewManager(frame: .zero, listener: MockAdWebViewListener())
+        let listener = MockAdWebViewListener()
+        let manager = AdWebViewManager(frame: .zero, listener: listener)
         let mockWebView = MockAdWebView()
         mockWebView.currentAd = Ad(id: "valid_id")
         manager.webView = mockWebView
@@ -40,7 +51,8 @@ final class AdWebViewManagerTests: XCTestCase {
     }
     
     func testHandleTapDoesNotCallNotifyAdClickedWhenNoAdId() {
-        let manager = AdWebViewManager(frame: .zero, listener: MockAdWebViewListener())
+        let listener = MockAdWebViewListener()
+        let manager = AdWebViewManager(frame: .zero, listener: listener)
         let mockWebView = MockAdWebView()
         mockWebView.currentAd = Ad(id: "")
         manager.webView = mockWebView

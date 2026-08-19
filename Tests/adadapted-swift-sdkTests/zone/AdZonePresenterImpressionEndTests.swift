@@ -22,6 +22,7 @@ class AdZonePresenterImpressionEndTests: XCTestCase {
     private var testAdZonePresenter: AdZonePresenter!
     private let zoneId = "impressionEndZoneId"
     private let raceZoneId = "impressionEndRaceZoneId"
+    private let trackAndEndRaceZoneId = "impressionTrackAndEndRaceZoneId"
 
     override class func setUp() {
         super.setUp()
@@ -161,6 +162,46 @@ class AdZonePresenterImpressionEndTests: XCTestCase {
         XCTAssertEqual(racedAds.count, ends, "Every impression should have closed exactly once")
     }
 
+    /// The other half of the same latch. The impression is tracked on whichever thread the view
+    /// reports from and ended on whichever thread rotates the ad out - the timer, the detach, the
+    /// background hook - so the flag is written on one thread and read on another. A stale read
+    /// costs the end for good on the paths where nothing comes back to retry it.
+    ///
+    /// Asserts what has to hold however the threads land, since a harness that sequenced the two
+    /// calls would hand the code the ordering it is missing. Under the thread sanitizer this is also
+    /// what catches the latch being unguarded in the first place.
+    func testTrackingAnImpressionWhileOtherThreadsEndItStaysConsistent() async {
+        let racedAds = (0..<300).map { index in
+            Ad(id: "trackAndEndRaceAd\(index)", impressionId: "\(trackAndEndRaceZoneId):\(index)")
+        }
+
+        let recorder = FiledAdEventRecorder(zoneId: trackAndEndRaceZoneId)
+        EventClient.addListener(listener: recorder)
+        try? await Task.sleep(nanoseconds: 200_000_000) //addListener runs on a Task of its own
+
+        DispatchQueue.concurrentPerform(iterations: 8) { iteration in
+            if iteration == 0 {
+                racedAds.forEach { EventClient.trackImpression(ad: $0) }
+            } else {
+                racedAds.forEach { EventClient.trackImpressionEnd(ad: $0) }
+            }
+        }
+
+        await awaitCondition { recorder.events(ofType: AdEventTypes.IMPRESSION).count == racedAds.count }
+        try? await Task.sleep(nanoseconds: 500_000_000) //Leaves a late end the same window to show up
+        EventClient.removeListener(listener: recorder)
+
+        let impressedAdIds = Set(recorder.events(ofType: AdEventTypes.IMPRESSION).map { $0.adId })
+        let ends = recorder.events(ofType: AdEventTypes.IMPRESSION_END)
+
+        XCTAssertEqual(racedAds.count, impressedAdIds.count, "Every ad should have been impressed once")
+        XCTAssertEqual(ends.count, Set(ends.map { $0.adId }).count, "No impression should have closed twice")
+        XCTAssertTrue(
+            Set(ends.map { $0.adId }).isSubset(of: impressedAdIds),
+            "An ad whose impression never fired has no end to report"
+        )
+    }
+
     /// An ad the user never saw is not an impression, so there is nothing to report and nothing to
     /// end. The zone's unmount is what proves the pipeline ran, since an impression would have been
     /// published alongside it.
@@ -206,16 +247,16 @@ class AdZonePresenterImpressionEndTests: XCTestCase {
         expecting expected: Int = 1,
         _ block: () -> Void
     ) async -> Int {
-        let counter = ImpressionEndCounter(zoneId: counterZoneId ?? zoneId)
-        EventClient.addListener(listener: counter)
+        let recorder = FiledAdEventRecorder(zoneId: counterZoneId ?? zoneId)
+        EventClient.addListener(listener: recorder)
         try? await Task.sleep(nanoseconds: 200_000_000) //addListener runs on a Task of its own
         block()
 
-        await awaitCondition { counter.filed >= expected }
+        await awaitCondition { recorder.events(ofType: AdEventTypes.IMPRESSION_END).count >= expected }
         try? await Task.sleep(nanoseconds: 500_000_000)
 
-        EventClient.removeListener(listener: counter)
-        return counter.filed
+        EventClient.removeListener(listener: recorder)
+        return recorder.events(ofType: AdEventTypes.IMPRESSION_END).count
     }
 
     private func impressionEndEvents() -> [AdEvent] {
@@ -228,23 +269,23 @@ class AdZonePresenterImpressionEndTests: XCTestCase {
     }
 }
 
-/// Counts impression ends for one zone as they are filed, before the event batch can collapse two
-/// identical ones into a single published event.
-private class ImpressionEndCounter: EventClientListener {
+/// Records events for one zone as they are filed, before the batch can collapse identical ones.
+private class FiledAdEventRecorder: EventClientListener {
     private let lock = NSLock()
     private let zoneId: String
-    private var _filed = 0
-
-    var filed: Int {
-        lock.lock(); defer { lock.unlock() }; return _filed
-    }
+    private var _events: [AdEvent] = []
 
     init(zoneId: String) {
         self.zoneId = zoneId
     }
 
+    func events(ofType eventType: String) -> [AdEvent] {
+        lock.lock(); defer { lock.unlock() }
+        return _events.filter { $0.eventType == eventType }
+    }
+
     func onAdEventTracked(event: AdEvent?) {
-        guard event?.eventType == AdEventTypes.IMPRESSION_END, event?.zoneId == zoneId else { return }
-        lock.lock(); _filed += 1; lock.unlock()
+        guard let event = event, event.zoneId == zoneId else { return }
+        lock.lock(); _events.append(event); lock.unlock()
     }
 }

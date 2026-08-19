@@ -1,3 +1,4 @@
+import UIKit
 import XCTest
 @testable import adadapted_swift_sdk
 
@@ -30,6 +31,13 @@ final class Locked<Value> {
     var value: Value {
         get { lock.lock(); defer { lock.unlock() }; return _value }
         set { lock.lock(); _value = newValue; lock.unlock() }
+    }
+
+    /// Reads and writes under one lock. `locked.value = locked.value + x` takes the lock twice, so two
+    /// threads can both read the old value and one of the writes is lost.
+    func mutate(_ change: (inout Value) -> Void) {
+        lock.lock(); defer { lock.unlock() }
+        change(&_value)
     }
 }
 
@@ -95,5 +103,53 @@ extension XCTestCase {
             },
             condition: condition
         )
+    }
+}
+
+/// Stands in for `UIApplication`'s background assertions, which a test runner has no business being
+/// asked to hold, and counts them so an unbalanced one shows up as a failure. Tokens are numbered
+/// from 1 in the order they were issued.
+final class SpyBackgroundAssertions {
+    private let lock = NSLock()
+    private var _begun = 0
+    private var _ended = 0
+    private var _endedIdentifiers: [UIBackgroundTaskIdentifier] = []
+
+    var begun: Int { lock.lock(); defer { lock.unlock() }; return _begun }
+    var ended: Int { lock.lock(); defer { lock.unlock() }; return _ended }
+    var held: Int { lock.lock(); defer { lock.unlock() }; return _begun - _ended }
+    var endedIdentifiers: [UIBackgroundTaskIdentifier] {
+        lock.lock(); defer { lock.unlock() }; return _endedIdentifiers
+    }
+
+    /// `onBegin` runs inside `beginTask` with the expiration handler, for a test that needs it to
+    /// fire before the token has been handed back.
+    func install(onBegin: @escaping (@escaping () -> Void) -> Void = { _ in }) {
+        BackgroundActivityAssertion.beginTask = { [weak self] _, onExpiration in
+            guard let self = self else { return .invalid }
+            self.lock.lock()
+            self._begun += 1
+            let issued = UIBackgroundTaskIdentifier(rawValue: self._begun)
+            self.lock.unlock()
+
+            onBegin(onExpiration)
+            return issued
+        }
+        BackgroundActivityAssertion.endTask = { [weak self] identifier in
+            guard let self = self else { return }
+            self.lock.lock()
+            self._ended += 1
+            self._endedIdentifiers.append(identifier)
+            self.lock.unlock()
+        }
+    }
+
+    func uninstall() {
+        BackgroundActivityAssertion.beginTask = { name, onExpiration in
+            UIApplication.shared.beginBackgroundTask(withName: name, expirationHandler: onExpiration)
+        }
+        BackgroundActivityAssertion.endTask = { identifier in
+            UIApplication.shared.endBackgroundTask(identifier)
+        }
     }
 }

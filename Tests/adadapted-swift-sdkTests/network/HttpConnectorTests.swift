@@ -249,36 +249,3 @@ final class HttpConnectorTests: XCTestCase {
         XCTAssertEqual(1, assertions.ended)
     }
 }
-
-/// Stands in for `UIApplication`'s background assertions, which a test runner has no business being
-/// asked to hold, and counts them so an unbalanced one shows up as a failure.
-private final class SpyBackgroundAssertions {
-    private let lock = NSLock()
-    private var _begun = 0
-    private var _ended = 0
-
-    var begun: Int { lock.lock(); defer { lock.unlock() }; return _begun }
-    var ended: Int { lock.lock(); defer { lock.unlock() }; return _ended }
-
-    func install() {
-        BackgroundActivityAssertion.beginTask = { [weak self] _, _ in
-            guard let self = self else { return .invalid }
-            self.lock.lock(); defer { self.lock.unlock() }
-            self._begun += 1
-            return UIBackgroundTaskIdentifier(rawValue: self._begun)
-        }
-        BackgroundActivityAssertion.endTask = { [weak self] _ in
-            guard let self = self else { return }
-            self.lock.lock(); self._ended += 1; self.lock.unlock()
-        }
-    }
-
-    func uninstall() {
-        BackgroundActivityAssertion.beginTask = { name, onExpiration in
-            UIApplication.shared.beginBackgroundTask(withName: name, expirationHandler: onExpiration)
-        }
-        BackgroundActivityAssertion.endTask = { identifier in
-            UIApplication.shared.endBackgroundTask(identifier)
-        }
-    }
-}

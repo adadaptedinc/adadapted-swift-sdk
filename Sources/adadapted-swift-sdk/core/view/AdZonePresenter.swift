@@ -25,9 +25,11 @@ class AdZonePresenter: ZoneAdListener {
     private var secondsLeftOnRefresh = 0
     private var countdownResumedAt = 0
     private var timerRunning = false
+    private var timerGeneration = 0
     private var timer: Timer?
     private let makeTimer: MakeTimer
     private let now: () -> Int
+    private let appIsInForeground: () -> Bool
     private var webViewManager: AdWebViewManager?
     private var swiftUIWebView: WKWebView?
     private var appLifecycleObservers: [NSObjectProtocol] = []
@@ -37,17 +39,17 @@ class AdZonePresenter: ZoneAdListener {
     init(
         adViewHandler: AdViewHandler,
         makeTimer: @escaping MakeTimer = Timer.init(repeatSeconds:delaySeconds:timerAction:),
-        now: @escaping () -> Int = { Int(Date().timeIntervalSince1970) }
+        now: @escaping () -> Int = { Int(ProcessInfo.processInfo.systemUptime) },
+        appIsInForeground: @escaping () -> Bool = { UIApplication.shared.applicationState != .background }
     ) {
         self.adViewHandler = adViewHandler
         self.makeTimer = makeTimer
         self.now = now
+        self.appIsInForeground = appIsInForeground
     }
 
-    //A host that drops a zone without stopping it never reaches onDetach, and the observers it
-    //registered would outlive the presenter on the notification center
     deinit {
-        stopObservingAppLifecycle()
+        onDetach()
     }
     
     func initialize(zoneId: String) {
@@ -254,6 +256,8 @@ class AdZonePresenter: ZoneAdListener {
     }
 
     private func observeAppLifecycle() {
+        isAppInForeground = appIsInForeground()
+
         let center = NotificationCenter.default
         appLifecycleObservers = [
             center.addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main) { [weak self] _ in
@@ -311,10 +315,17 @@ class AdZonePresenter: ZoneAdListener {
         AALogger.logDebug(message: "Zone timer starting with \(secondsLeftOnRefresh)s left of a \(currentAd.refreshTimeOrDefault)s refresh")
         timerRunning = true
         countdownResumedAt = now()
+        timerGeneration += 1
+        let generation = timerGeneration
         timer = makeTimer(0, secondsLeftOnRefresh, { [weak self] in
-            DispatchQueue.main.async { self?.getNextAd() }
+            DispatchQueue.main.async { self?.refreshIfCountdownIsStillCurrent(generation: generation) }
         })
         timer?.startTimer()
+    }
+
+    private func refreshIfCountdownIsStillCurrent(generation: Int) {
+        guard timerRunning, generation == timerGeneration else { return }
+        getNextAd()
     }
 
     private func cancelTimer() {

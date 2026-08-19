@@ -17,19 +17,33 @@ final class BackgroundActivityAssertion {
 
     private let lock = NSLock()
     private var identifier: UIBackgroundTaskIdentifier = .invalid
+    private var wasEnded = false
 
     private init() {}
 
     static func begin(name: String) -> BackgroundActivityAssertion {
         let assertion = BackgroundActivityAssertion()
-        assertion.identifier = beginTask(name) { assertion.end() }
+        assertion.adopt(beginTask(name) { assertion.end() })
         return assertion
+    }
+
+    private func adopt(_ issuedIdentifier: UIBackgroundTaskIdentifier) {
+        lock.lock()
+        let endedBeforeItWasAdopted = wasEnded
+        if !endedBeforeItWasAdopted {
+            identifier = issuedIdentifier
+        }
+        lock.unlock()
+
+        guard endedBeforeItWasAdopted, issuedIdentifier != .invalid else { return }
+        Self.endTask(issuedIdentifier)
     }
 
     func end() {
         lock.lock()
         let identifierToEnd = identifier
         identifier = .invalid
+        wasEnded = true
         lock.unlock()
 
         guard identifierToEnd != .invalid else { return }
