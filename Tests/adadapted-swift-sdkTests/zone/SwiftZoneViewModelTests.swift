@@ -244,7 +244,6 @@ class TestableSwiftZoneViewModel: SwiftZoneViewModel {
         var onBlankDisplayedCalled = false
         var onAdClickCalled = false
         var onReportAdClickedCalled = false
-        var endImpressionCalled = false
         var onEnteredWindowCalled = false
         var onExitedWindowCalled = false
 
@@ -260,7 +259,6 @@ class TestableSwiftZoneViewModel: SwiftZoneViewModel {
         override func onBlankDisplayed() { onBlankDisplayedCalled = true }
         override func onAdClicked(ad: Ad) { onAdClickCalled = true }
         override func onReportAdClicked(adId: String, udid: String) { onReportAdClickedCalled = true }
-        override func endImpression(publishImmediately: Bool) { endImpressionCalled = true }
         override func onEnteredWindow() { onEnteredWindowCalled = true }
         override func onExitedWindow() { onExitedWindowCalled = true }
     }

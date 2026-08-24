@@ -39,6 +39,15 @@ class EventClient {
         }
     }
 
+    private static func copyAndClearAdEvents() -> [AdEvent] {
+        adEventsLock.lock()
+        defer { adEventsLock.unlock() }
+
+        let currentAdEvents = adEvents
+        adEvents.removeAll()
+        return currentAdEvents
+    }
+
     private static func performPublishSdkErrors() {
         Task {
             guard let adapter = eventAdapter else {
@@ -72,10 +81,7 @@ class EventClient {
                 return
             }
 
-            adEventsLock.lock()
-            let currentAdEvents = adEvents
-            adEvents.removeAll()
-            adEventsLock.unlock()
+            let currentAdEvents = copyAndClearAdEvents()
             guard !currentAdEvents.isEmpty else { return }
 
             adapter.publishAdEvents(sessionId: SessionClient.getSessionId(), deviceInfo: DeviceInfoClient.getCachedDeviceInfo(), adEvents: currentAdEvents)

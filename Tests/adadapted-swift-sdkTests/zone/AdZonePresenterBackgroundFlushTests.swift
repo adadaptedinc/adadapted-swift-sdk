@@ -126,6 +126,7 @@ class AdZonePresenterBackgroundFlushTests: XCTestCase {
         TestEventAdapter.shared.onPublishAdEvents = { [assertions] _ in
             assertionsHeldDuringPublish.value = assertions.held
         }
+        defer { TestEventAdapter.shared.onPublishAdEvents = nil } //Shared with every other suite
 
         testAdZonePresenter.onAppBackgrounded()
 

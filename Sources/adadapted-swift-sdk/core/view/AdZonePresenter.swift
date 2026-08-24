@@ -39,7 +39,7 @@ class AdZonePresenter: ZoneAdListener {
     init(
         adViewHandler: AdViewHandler,
         makeTimer: @escaping MakeTimer = Timer.init(repeatSeconds:delaySeconds:timerAction:),
-        now: @escaping () -> Int = { Int(ProcessInfo.processInfo.systemUptime) },
+        now: @escaping () -> Int = { Int(clock_gettime_nsec_np(CLOCK_MONOTONIC) / NSEC_PER_SEC) },
         appIsInForeground: @escaping () -> Bool = { UIApplication.shared.applicationState != .background }
     ) {
         self.adViewHandler = adViewHandler
@@ -78,7 +78,7 @@ class AdZonePresenter: ZoneAdListener {
             observeAppLifecycle()
             EventClient.trackZoneMounted(zoneId: zoneId)
             if(currentAd.id.isEmpty) {
-                fetchAd(listener: self)
+                fetchAd()
             }
             resumeTimer()
         }
@@ -130,26 +130,12 @@ class AdZonePresenter: ZoneAdListener {
         restartTimer()
         if (!zoneLoaded) { return }
         endImpression()
-
-        fetchAd(listener: ClosureZoneAdListener(
-            onAdLoaded: { [weak self] adZoneData in
-                DispatchQueue.main.async {
-                    self?.updateCurrentZone(adZoneData: adZoneData)
-                    self?.notifyZoneAvailable()
-                }
-            },
-            onAdLoadFailed: { [weak self] in
-                DispatchQueue.main.async {
-                    self?.reportZoneUnfilled(reason: ZoneUnfilledReasons.REQUEST_FAILED)
-                    self?.handleAd(ad: Ad())
-                }
-            }
-        ))
+        fetchAd()
     }
 
-    private func fetchAd(listener: ZoneAdListener) {
+    private func fetchAd() {
         unfilledReported = false
-        AdClient.fetchNewAd(zoneId: zoneId, listener: listener, contextId: zoneContextId)
+        AdClient.fetchNewAd(zoneId: zoneId, listener: self, contextId: zoneContextId)
     }
 
     private func reportZoneUnfilled(reason: String) {
@@ -249,7 +235,7 @@ class AdZonePresenter: ZoneAdListener {
     }
     
     /// Only fires once, and only if a real impression was tracked.
-    func endImpression(publishImmediately: Bool = false) {
+    private func endImpression(publishImmediately: Bool = false) {
         publishImmediately
             ? EventClient.trackImpressionEndAndPublish(ad: currentAd)
             : EventClient.trackImpressionEnd(ad: currentAd)
@@ -377,12 +363,13 @@ class AdZonePresenter: ZoneAdListener {
         }
     }
 
+    /// The empty zone it falls back to reports the no ad through `displayAd`, so this does not notify
+    /// on its own.
     func onAdLoadFailed() {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             reportZoneUnfilled(reason: ZoneUnfilledReasons.REQUEST_FAILED)
             updateCurrentZone(adZoneData: AdZoneData())
-            notifyNoAdAvailable()
         }
     }
 }

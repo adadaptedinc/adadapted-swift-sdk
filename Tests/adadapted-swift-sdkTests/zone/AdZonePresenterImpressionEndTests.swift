@@ -10,9 +10,9 @@ import XCTest
 /// the zone is detached, or when the app is backgrounded, whichever comes first - and the event
 /// names the impression it closes so dwell can be computed as end minus impression.
 ///
-/// The once-only cases count ends as they are filed rather than after publishing: two identical
-/// events stamped in the same whole second collapse into one inside the event batch, so a published
-/// count would hide a second end instead of proving there was not one.
+/// The once-only cases count ends off a listener installed for the block under test rather than off
+/// `TestEventAdapter`, which is shared with every other suite and accumulates from setUp onwards - a
+/// second end has to be one this block filed, not one that was already sitting there.
 ///
 /// Runs against a `SpyTimer` so the rotation case fires on demand instead of on the wall clock.
 class AdZonePresenterImpressionEndTests: XCTestCase {

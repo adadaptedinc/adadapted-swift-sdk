@@ -145,11 +145,7 @@ final class SpyBackgroundAssertions {
     }
 
     func uninstall() {
-        BackgroundActivityAssertion.beginTask = { name, onExpiration in
-            UIApplication.shared.beginBackgroundTask(withName: name, expirationHandler: onExpiration)
-        }
-        BackgroundActivityAssertion.endTask = { identifier in
-            UIApplication.shared.endBackgroundTask(identifier)
-        }
+        BackgroundActivityAssertion.beginTask = BackgroundActivityAssertion.systemBeginTask
+        BackgroundActivityAssertion.endTask = BackgroundActivityAssertion.systemEndTask
     }
 }
