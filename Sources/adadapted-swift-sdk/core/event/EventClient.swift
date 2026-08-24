@@ -8,9 +8,11 @@ class EventClient {
     
     private static var eventAdapter: EventAdapter? = nil
     private static var listeners = SafeArray<EventClientListener>()
-    private static var adEvents = SafeSet<AdEvent>()
+    private static var adEvents = [AdEvent]()
+    private static let adEventsLock = NSLock()
     private static var sdkEvents = SafeSet<SdkEvent>()
     private static var sdkErrors = SafeSet<SdkError>()
+    private static let backgroundFlushAssertionName = "AdAdaptedBackgroundEventFlush"
     private var eventTimer: Timer?
     private var eventTimerRunning: Bool = false
     
@@ -27,21 +29,25 @@ class EventClient {
         }
     }
     
-    private static func fileEvent(ad: Ad, eventType: String) {
-        let event = AdEvent(
-            adId: ad.id,
-            zoneId: ad.zoneId(),
-            impressionId: ad.impressionId,
-            eventType: eventType
-        )
+    private static func fileEvent(_ event: AdEvent) {
+        adEventsLock.lock()
+        adEvents.append(event)
+        adEventsLock.unlock()
 
         Task {
-            async let insertTask: () = adEvents.insert(event)
-            async let notifyTask: () = notifyAdEventTracked(event: event)
-            _ = await (insertTask, notifyTask)
+            await notifyAdEventTracked(event: event)
         }
     }
-    
+
+    private static func copyAndClearAdEvents() -> [AdEvent] {
+        adEventsLock.lock()
+        defer { adEventsLock.unlock() }
+
+        let currentAdEvents = adEvents
+        adEvents.removeAll()
+        return currentAdEvents
+    }
+
     private static func performPublishSdkErrors() {
         Task {
             guard let adapter = eventAdapter else {
@@ -68,15 +74,16 @@ class EventClient {
         }
     }
     
-    private static func performPublishAdEvents() {
+    private static func performPublishAdEvents(onHandedOff: (() -> Void)? = nil) {
         Task {
+            defer { onHandedOff?() }
             guard let adapter = eventAdapter else {
                 return
             }
 
-            let currentAdEvents = await adEvents.copyAndClear()
+            let currentAdEvents = copyAndClearAdEvents()
             guard !currentAdEvents.isEmpty else { return }
-            
+
             adapter.publishAdEvents(sessionId: SessionClient.getSessionId(), deviceInfo: DeviceInfoClient.getCachedDeviceInfo(), adEvents: currentAdEvents)
         }
     }
@@ -111,6 +118,11 @@ class EventClient {
         eventTimer?.startTimer()
     }
     
+    internal func stopPublishTimer() {
+        eventTimer?.stopTimer()
+        eventTimerRunning = false
+    }
+
     func onPublishEvents() {
         EventClient.performPublishAdEvents()
         EventClient.performPublishSdkEvents()
@@ -140,23 +152,45 @@ class EventClient {
     static func trackImpression(ad: Ad) {
         AALogger.logDebug(message: "Ad Impression Tracked.")
         ad.setImpressionTracked()
-        fileEvent(ad: ad, eventType: AdEventTypes.IMPRESSION)
+        fileEvent(AdEvent(ad: ad, eventType: AdEventTypes.IMPRESSION))
     }
-    
-    static func trackInvisibleImpression(ad: Ad) {
-        AALogger.logDebug(message: "Invisible Ad Impression Tracked.")
-        fileEvent(ad: ad, eventType: AdEventTypes.INVISIBLE_IMPRESSION)
+
+    static func trackImpressionEnd(ad: Ad) {
+        guard ad.claimImpressionEnd() else { return }
+        AALogger.logDebug(message: "Ad Impression End Tracked.")
+        fileEvent(AdEvent(ad: ad, eventType: AdEventTypes.IMPRESSION_END))
     }
-    
+
+    static func trackImpressionEndAndPublish(ad: Ad) {
+        trackImpressionEnd(ad: ad)
+        let assertion = BackgroundActivityAssertion.begin(name: backgroundFlushAssertionName)
+        performPublishAdEvents { assertion.end() }
+    }
+
     static func trackInteraction(ad: Ad) {
         AALogger.logDebug(message: "Ad Interaction Tracked.")
-        fileEvent(ad: ad, eventType: AdEventTypes.INTERACTION)
+        fileEvent(AdEvent(ad: ad, eventType: AdEventTypes.INTERACTION))
     }
-    
+
     static func trackPopupBegin(ad: Ad) {
-        fileEvent(ad: ad, eventType: AdEventTypes.POPUP_BEGIN)
+        fileEvent(AdEvent(ad: ad, eventType: AdEventTypes.POPUP_BEGIN))
     }
-    
+
+    static func trackZoneMounted(zoneId: String) {
+        AALogger.logDebug(message: "Zone Mounted Tracked.")
+        fileEvent(AdEvent(zoneId: zoneId, eventType: AdEventTypes.ZONE_MOUNTED))
+    }
+
+    static func trackZoneUnmounted(zoneId: String) {
+        AALogger.logDebug(message: "Zone Unmounted Tracked.")
+        fileEvent(AdEvent(zoneId: zoneId, eventType: AdEventTypes.ZONE_UNMOUNTED))
+    }
+
+    static func trackZoneUnfilled(zoneId: String, reason: String) {
+        AALogger.logDebug(message: "Zone Unfilled Tracked: \(reason)")
+        fileEvent(AdEvent(zoneId: zoneId, eventType: AdEventTypes.ZONE_UNFILLED, eventName: reason))
+    }
+
     static func trackRecipeContextEvent(contextId: String, zoneId: String) {
         var eventParams: [String: String] = [:]
         eventParams[ContentSources.CONTEXT_ID] = contextId

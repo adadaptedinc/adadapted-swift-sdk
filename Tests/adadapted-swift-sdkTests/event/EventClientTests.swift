@@ -62,6 +62,40 @@ class EventClientTests: XCTestCase {
         XCTAssertEqual("testTrackError", error?.message)
     }
 
+    /// Zone events carry no ad id and no impression id, so two mounts of the same zone inside the
+    /// same second are identical in every field the event has - the only thing telling them apart is
+    /// that both actually happened.  A pending batch that dedupes on the event itself drops the
+    /// second one, and a zone rebuilt in place (`ZoneViewModelManager` replacing a view model)
+    /// mounts twice in that window, so the re-mount would never reach the server.
+    func testARezonedMountInTheSameSecondIsNotDroppedFromTheBatch() async {
+        let zoneId = "remountedZoneId"
+        await waitForTheStartOfASecond()
+
+        EventClient.trackZoneMounted(zoneId: zoneId)
+        EventClient.trackZoneUnmounted(zoneId: zoneId)
+        EventClient.trackZoneMounted(zoneId: zoneId)
+
+        await awaitAdapterEvent { [self] in mounts(forZone: zoneId).count == 2 }
+        XCTAssertEqual(
+            2,
+            mounts(forZone: zoneId).count,
+            "Both mounts happened, so both belong on the wire"
+        )
+    }
+
+    private func mounts(forZone zoneId: String) -> [AdEvent] {
+        TestEventAdapter.shared.testAdEvents.filter { $0.eventType == AdEventTypes.ZONE_MOUNTED && $0.zoneId == zoneId }
+    }
+
+    /// Events are stamped at one second granularity, so a test that needs two of them to collide has
+    /// to file them at the top of a second rather than trust that they land either side of a tick.
+    private func waitForTheStartOfASecond() async {
+        let startingSecond = Int(Date().timeIntervalSince1970)
+        while Int(Date().timeIntervalSince1970) == startingSecond {
+            try? await Task.sleep(nanoseconds: 1_000_000)
+        }
+    }
+
     func testThreadSafetyOfSafeSets() async {
         let adSet = SafeSet<AdEvent>()
         let sdkSet = SafeSet<SdkEvent>()

@@ -12,7 +12,7 @@ class Timer {
     private var timerAction: (() -> Void)?
 
     init(repeatSeconds: Int, delaySeconds: Int = 0, timerAction: @escaping () -> Void) {
-        self.repeatInterval = .seconds(repeatSeconds)
+        self.repeatInterval = repeatSeconds > 0 ? .seconds(repeatSeconds) : .never
         self.delay = .seconds(delaySeconds)
         self.timerAction = timerAction
     }

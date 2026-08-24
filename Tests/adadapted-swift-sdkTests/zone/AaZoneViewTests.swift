@@ -27,6 +27,51 @@ class AaZoneViewTests: XCTestCase {
         super.tearDown()
     }
 
+    /// Nothing can be reported on the way out by a view that is never released, so this comes first.
+    /// The zone view hands itself to its web view as the click listener, and that reference used to be
+    /// a strong one pointing back at the view - a cycle the host cannot break by letting go.
+    func testAZoneViewIsReleasedWhenItsHostDropsIt() {
+        weak var droppedView: AaZoneView?
+
+        autoreleasepool {
+            let view = AaZoneView()
+            droppedView = view
+            view.initialize(zoneId: "releasedZoneId")
+            view.onStart(listener: TestAaZoneViewListener())
+        }
+
+        XCTAssertNil(droppedView, "A zone view its host has let go of should not be keeping itself alive")
+    }
+
+    /// A UIKit host that drops its view without calling `onStop()` never reaches the presenter's
+    /// detach, so the `zone_mounted` it already reported is left with no pair.  `didMoveToWindow`
+    /// covers the impression on that path; nothing covered the mount.
+    func testAZoneDroppedWithoutBeingStoppedStillReportsItsUnmount() async {
+        let zoneId = "droppedWithoutStoppingZoneId"
+
+        //On main because building the view builds a WKWebView, and an async test body is not there
+        await MainActor.run {
+            autoreleasepool {
+                let droppedView = AaZoneView()
+                droppedView.initialize(zoneId: zoneId)
+                droppedView.onStart(listener: TestAaZoneViewListener())
+            }
+        }
+
+        await awaitAdapterEvent { [self] in unmounts(inZone: zoneId).count == 1 }
+        XCTAssertEqual(
+            1,
+            unmounts(inZone: zoneId).count,
+            "A zone that reported a mount owes an unmount, whether or not the host stopped it"
+        )
+    }
+
+    private func unmounts(inZone zoneId: String) -> [AdEvent] {
+        TestEventAdapter.shared.testAdEvents.filter {
+            $0.eventType == AdEventTypes.ZONE_UNMOUNTED && $0.zoneId == zoneId
+        }
+    }
+
     func testStart() {
         let testListener = TestAaZoneViewListener()
         var testAd = Ad(id:"NewAdId")
@@ -173,6 +218,33 @@ class AaZoneViewTests: XCTestCase {
         testAaZoneView.onAdLoadedInWebView(ad: &ad)
 
         XCTAssertEqual(testListener.adLoaded, true)
+    }
+
+    /// A zone can leave the view hierarchy without ever being hidden or stopped - a recycled cell, a
+    /// torn down view controller - and the impression it was showing has ended either way.
+    ///
+    /// The zone is never started, so the ad under test is the one handed to the web view rather than
+    /// one a fetch could replace while the test is waiting on the impression.
+    func testAZoneTakenOutOfTheWindowEndsTheImpressionItWasShowing() async {
+        let zoneId = "windowZoneId"
+        var servedAd = Ad(id: "DetachedAdId", impressionId: "\(zoneId):789")
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 320, height: 50))
+        testAaZoneView.initialize(zoneId: zoneId)
+        window.addSubview(testAaZoneView)
+        testAaZoneView.onAdLoadedInWebView(ad: &servedAd) //The impression only fires once the creative is up
+
+        await awaitAdapterEvent { self.adEvents(ofType: AdEventTypes.IMPRESSION, forZone: zoneId).count == 1 }
+
+        testAaZoneView.removeFromSuperview()
+
+        await awaitAdapterEvent { self.adEvents(ofType: AdEventTypes.IMPRESSION_END, forZone: zoneId).count == 1 }
+
+        XCTAssertEqual(1, adEvents(ofType: AdEventTypes.IMPRESSION_END, forZone: zoneId).count)
+    }
+
+    /// Scoped to the zone under test, since `TestEventAdapter` is shared with every other suite
+    private func adEvents(ofType eventType: String, forZone zoneId: String) -> [AdEvent] {
+        TestEventAdapter.shared.testAdEvents.filter { $0.eventType == eventType && $0.zoneId == zoneId }
     }
 
     func testOnAdClicked() async {

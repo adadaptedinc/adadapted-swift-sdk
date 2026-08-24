@@ -77,20 +77,27 @@ class AdZonePresenterTimerTests: XCTestCase {
         super.tearDown()
     }
 
-    /// The view can report a newer ad than the one the presenter last handled, so the timer has to
-    /// arm from the ad actually on screen.  Guards the `currentAd` sync staying ahead of
-    /// `startZoneTimer()` in `onAdDisplayed`.
-    func testTimerArmsWithTheDisplayedAdsRefreshRatherThanThePreviousOnes() async {
-        await loadZone(servingAd: Ad(id: "PreviousAdId", refreshTime: Ad.NO_REFRESH_TIME))
+    /// The view can report a newer ad than the one the presenter last handled, and the impression
+    /// belongs to whatever is actually on screen.  Guards the `currentAd` sync in `onAdDisplayed`,
+    /// which the countdown no longer arms from - every fetch arms it in `handleAd` instead.
+    func testTheImpressionIsReportedForTheAdTheZoneActuallyDisplayed() async {
+        await loadZone(servingAd: Ad(id: "PreviousAdId", impressionId: "timerZoneId:1"))
 
-        var displayedAd = Ad(id: "DisplayedAdId", refreshTime: Ad.MINIMUM_REFRESH_TIME_SECONDS)
-        testAdZonePresenter.onAdDisplayed(ad: &displayedAd, isAdVisible: false)
+        var displayedAd = Ad(id: "DisplayedAdId", impressionId: "timerZoneId:2")
+        testAdZonePresenter.onAdDisplayed(ad: &displayedAd, isAdVisible: true)
+
+        await awaitAdapterEvent { self.impressions(forAdId: "DisplayedAdId").count == 1 }
 
         XCTAssertEqual(
-            Ad.MINIMUM_REFRESH_TIME_SECONDS,
-            armedTimer?.repeatSeconds,
-            "Timer should arm from the ad being displayed, not the one it replaced"
+            ["timerZoneId:2"],
+            impressions(forAdId: "DisplayedAdId").map { $0.impressionId },
+            "The impression should name the ad the zone displayed, not the one it replaced"
         )
+        XCTAssertEqual([], impressions(forAdId: "PreviousAdId"), "The replaced ad was never on screen")
+    }
+
+    private func impressions(forAdId adId: String) -> [AdEvent] {
+        TestEventAdapter.shared.testAdEvents.filter { $0.eventType == AdEventTypes.IMPRESSION && $0.adId == adId }
     }
 
     /// A refetched ad carries its own refresh time, so the already running timer has to be rebuilt
@@ -101,8 +108,8 @@ class AdZonePresenterTimerTests: XCTestCase {
         let testListener = await loadZone(servingAd: firstAd)
 
         var displayedAd = firstAd
-        testAdZonePresenter.onAdDisplayed(ad: &displayedAd, isAdVisible: false)
-        XCTAssertEqual(firstRefresh, armedTimer?.repeatSeconds, "Timer should start on the first ad's refresh")
+        testAdZonePresenter.onAdDisplayed(ad: &displayedAd, isAdVisible: true)
+        XCTAssertEqual(firstRefresh, armedTimer?.delaySeconds, "Timer should start on the first ad's refresh")
 
         let secondRefresh = Ad.MINIMUM_REFRESH_TIME_SECONDS
         adapter.mockAdZoneData = AdZoneData(ad: Ad(id: "SecondAdId", refreshTime: secondRefresh))
@@ -111,13 +118,13 @@ class AdZonePresenterTimerTests: XCTestCase {
         await awaitCondition { testListener.testAd.id == "SecondAdId" }
         XCTAssertEqual(
             secondRefresh,
-            armedTimer?.repeatSeconds,
+            armedTimer?.delaySeconds,
             "Timer should be rearmed on the refetched ad's refresh instead of staying on the previous one"
         )
     }
 
     /// A no-fill carries the server's backoff on an otherwise empty Ad, so clearing the ad must not
-    /// throw that backoff away.  Guards `clearAdAndStartTimer` preserving `currentAd.refreshTime`.
+    /// throw that backoff away.  Guards `clearCurrentAd` preserving `currentAd.refreshTime`.
     func testTimerKeepsTheServedRefreshWhenTheZoneGoesBlank() async {
         let servedRefresh = Ad.MINIMUM_REFRESH_TIME_SECONDS
         await loadZone(servingAd: Ad(refreshTime: servedRefresh))
@@ -126,7 +133,7 @@ class AdZonePresenterTimerTests: XCTestCase {
 
         XCTAssertEqual(
             servedRefresh,
-            armedTimer?.repeatSeconds,
+            armedTimer?.delaySeconds,
             "A no-fill should back off on the served refresh rather than waiting out the default"
         )
     }
@@ -137,7 +144,7 @@ class AdZonePresenterTimerTests: XCTestCase {
         let filledAd = Ad(id: "FilledAdId", refreshTime: Ad.MINIMUM_REFRESH_TIME_SECONDS)
         let testListener = await loadZone(servingAd: filledAd)
         var displayedAd = filledAd
-        testAdZonePresenter.onAdDisplayed(ad: &displayedAd, isAdVisible: false)
+        testAdZonePresenter.onAdDisplayed(ad: &displayedAd, isAdVisible: true)
         XCTAssertTrue(testListener.testZone.hasAd(), "The zone should start out reported as filled")
 
         let noFillRefresh = 300
@@ -151,7 +158,7 @@ class AdZonePresenterTimerTests: XCTestCase {
         )
         XCTAssertEqual(
             noFillRefresh,
-            armedTimer?.repeatSeconds,
+            armedTimer?.delaySeconds,
             "The no-fill's served refresh should back off the next fetch rather than polling on the default"
         )
     }
@@ -164,7 +171,7 @@ class AdZonePresenterTimerTests: XCTestCase {
 
         XCTAssertEqual(
             servedRefresh,
-            armedTimer?.repeatSeconds,
+            armedTimer?.delaySeconds,
             "A display failure should back off on the served refresh rather than waiting out the default"
         )
     }
@@ -174,7 +181,7 @@ class AdZonePresenterTimerTests: XCTestCase {
 
         XCTAssertEqual(
             Ad.MINIMUM_REFRESH_TIME_SECONDS,
-            armedTimer?.repeatSeconds,
+            armedTimer?.delaySeconds,
             "A served refresh under the floor should be raised to it"
         )
     }
@@ -184,14 +191,10 @@ class AdZonePresenterTimerTests: XCTestCase {
 
         XCTAssertEqual(
             Config.DEFAULT_AD_REFRESH_SECONDS,
-            armedTimer?.repeatSeconds,
+            armedTimer?.delaySeconds,
             "An ad with no served refresh should fall back to the default"
         )
-        XCTAssertEqual(
-            Config.DEFAULT_AD_REFRESH_SECONDS,
-            armedTimer?.delaySeconds,
-            "The first refresh should be a full interval out rather than immediate"
-        )
+        XCTAssertEqual(0, armedTimer?.repeatSeconds, "The countdown is one shot, rearmed by whatever the next fetch serves")
     }
 
     func testTimerIsStartedWhenArmedAndStoppedOnDetach() async {
@@ -219,7 +222,7 @@ class AdZonePresenterTimerTests: XCTestCase {
         )
     }
 
-    /// Drives the zone through a real fetch so `zoneLoaded` is set - `startZoneTimer` is a no-op
+    /// Drives the zone through a real fetch so `zoneLoaded` is set - the countdown does not arm
     /// until it is.
     @discardableResult
     private func loadZone(servingAd ad: Ad) async -> TestAdZonePresenterListener {
@@ -238,6 +241,6 @@ class AdZonePresenterTimerTests: XCTestCase {
         await loadZone(servingAd: ad)
 
         var displayedAd = ad
-        testAdZonePresenter.onAdDisplayed(ad: &displayedAd, isAdVisible: false)
+        testAdZonePresenter.onAdDisplayed(ad: &displayedAd, isAdVisible: true)
     }
 }

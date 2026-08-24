@@ -26,8 +26,10 @@ class Ad: Codable, Equatable {
         case refreshTime = "refresh_time"
     }
     
+    private let impressionLock = NSLock()
     private var isImpressionTracked: Bool = false
-    
+    private var isImpressionEndTracked: Bool = false
+
     init(
         id: String = "",
         impressionId: String = "",
@@ -92,13 +94,22 @@ class Ad: Codable, Equatable {
     }
     
     func setImpressionTracked() {
+        impressionLock.lock(); defer { impressionLock.unlock() }
         isImpressionTracked = true
     }
     
     func impressionWasTracked() -> Bool {
+        impressionLock.lock(); defer { impressionLock.unlock() }
         return isImpressionTracked
     }
-    
+
+    func claimImpressionEnd() -> Bool {
+        impressionLock.lock(); defer { impressionLock.unlock() }
+        guard isImpressionTracked, !isImpressionEndTracked else { return false }
+        isImpressionEndTracked = true
+        return true
+    }
+
     func zoneId() -> String {
         return impressionId.split(separator: ":").map(String.init).first ?? ""
     }

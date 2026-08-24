@@ -50,12 +50,15 @@ class AdZonePresenterTests: XCTestCase {
         XCTAssertNil(testAdEventListener.testAdEvent)
     }
 
-    func testAdNotCompletedBecauseThereIsOnlyOne() async {
+    /// An ad rendered while the zone is not visible was never seen, so nothing about it is reported -
+    /// not when it renders, and not when a click rotates it out. Scoped to the ad, since the zone's
+    /// own mount is reported either way.
+    func testAnAdRenderedWhileNotVisibleReportsNothingEvenWhenClicked() async {
         AdZonePresenterTests.testAdZonePresenter.initialize(zoneId: "testZoneId")
-        var testAd = Ad(id: "TestAdId")
+        var testAd = Ad(id: "UnseenClickedAdId", impressionId: "unseenZoneId:1")
 
-        let testAdEventListener = TestAdEventClientListener()
-        EventClient.addListener(listener: testAdEventListener)
+        let adEventRecorder = AdEventsForOneAdRecorder(adId: testAd.id)
+        EventClient.addListener(listener: adEventRecorder)
 
         // Let addListener Task complete
         try? await Task.sleep(nanoseconds: 200_000_000)
@@ -70,11 +73,10 @@ class AdZonePresenterTests: XCTestCase {
         AdZonePresenterTests.testAdZonePresenter.onAdDisplayed(ad: &testAd, isAdVisible: false)
         AdZonePresenterTests.testAdZonePresenter.onAdClicked(ad: testAd)
 
-        await awaitCondition {
-            testAdEventListener.testAdEvent?.eventType == AdEventTypes.INVISIBLE_IMPRESSION
-        }
+        try? await Task.sleep(nanoseconds: 500_000_000)
+        EventClient.removeListener(listener: adEventRecorder)
 
-        XCTAssertEqual(AdEventTypes.INVISIBLE_IMPRESSION, testAdEventListener.testAdEvent?.eventType)
+        XCTAssertEqual([], adEventRecorder.recordedEventTypes, "An ad nobody saw should report no events of its own")
     }
 
     func testOnAdClickedContent() async {
@@ -154,6 +156,33 @@ class AdZonePresenterTests: XCTestCase {
         XCTAssertTrue(TestEventAdapter.shared.testSdkEvents.contains { $0.name == EventStrings.POPUP_AD_CLICKED })
     }
 
+    func testZoneMountedAndUnmountedAreTrackedWithoutAnAd() async {
+        let zoneId = "mountedZoneId"
+        let presenter = AdZonePresenter(adViewHandler: AdViewHandler())
+        presenter.initialize(zoneId: zoneId)
+
+        let testListener = TestAdZonePresenterListener()
+        presenter.onAttach(adZonePresenterListener: testListener)
+
+        await awaitAdapterEvent {
+            TestEventAdapter.shared.testAdEvents.contains { $0.eventType == AdEventTypes.ZONE_MOUNTED && $0.zoneId == zoneId }
+        }
+
+        XCTAssertTrue(TestEventAdapter.shared.testAdEvents.contains {
+            $0.eventType == AdEventTypes.ZONE_MOUNTED && $0.zoneId == zoneId && $0.adId.isEmpty && $0.impressionId.isEmpty
+        })
+
+        presenter.onDetach()
+
+        await awaitAdapterEvent {
+            TestEventAdapter.shared.testAdEvents.contains { $0.eventType == AdEventTypes.ZONE_UNMOUNTED && $0.zoneId == zoneId }
+        }
+
+        XCTAssertTrue(TestEventAdapter.shared.testAdEvents.contains {
+            $0.eventType == AdEventTypes.ZONE_UNMOUNTED && $0.zoneId == zoneId && $0.adId.isEmpty && $0.impressionId.isEmpty
+        })
+    }
+
     func testNullListener() {
         AdZonePresenterTests.testAdZonePresenter.initialize(zoneId: "testZoneId")
         AdZonePresenterTests.testAdZonePresenter.onAttach(adZonePresenterListener: nil)
@@ -187,6 +216,27 @@ class TestAdZonePresenterListener: AdZonePresenterListener {
 
     func onAdVisibilityChanged(ad: Ad) {
         lock.lock(); _testAd = ad; lock.unlock()
+    }
+}
+
+/// Records the events filed against one ad, ignoring the zone level ones every zone reports and the
+/// traffic from whichever other suite is sharing `EventClient`.
+class AdEventsForOneAdRecorder: EventClientListener {
+    private let lock = NSLock()
+    private let adId: String
+    private var _recordedEventTypes: [String] = []
+
+    var recordedEventTypes: [String] {
+        lock.lock(); defer { lock.unlock() }; return _recordedEventTypes
+    }
+
+    init(adId: String) {
+        self.adId = adId
+    }
+
+    func onAdEventTracked(event: AdEvent?) {
+        guard let event, event.adId == adId else { return }
+        lock.lock(); _recordedEventTypes.append(event.eventType); lock.unlock()
     }
 }
 

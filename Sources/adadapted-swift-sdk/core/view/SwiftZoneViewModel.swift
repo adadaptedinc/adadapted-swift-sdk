@@ -34,7 +34,11 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
         
         initializePresenter(with: zoneId)
     }
-    
+
+    deinit {
+        onDetach()
+    }
+
     func setupWebView(webView: WKWebView) {
         presenter.setSwiftUIWebView(webView: webView)
     }
@@ -83,10 +87,12 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
     // MARK: - Start & Stop Handling
     func onStart() {
         isStopped = false
+        presenter.onEnteredWindow()
     }
-    
+
     func onStop() {
         isStopped = true
+        presenter.onExitedWindow()
     }
     
     func onAttach() {
@@ -119,7 +125,14 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
     
     // MARK: - AdZonePresenterListener Protocol Methods
     func onZoneAvailable(adZoneData: AdZoneData) {
-        notifyClientZoneHasAds(hasAds: adZoneData.hasAd())
+        let hasAds = adZoneData.hasAd()
+        if Thread.isMainThread {
+            notifyClientZoneHasAds(hasAds: hasAds)
+        } else {
+            DispatchQueue.main.async { [weak self] in
+                self?.notifyClientZoneHasAds(hasAds: hasAds)
+            }
+        }
     }
 
     func onAdAvailable(ad: Ad) {

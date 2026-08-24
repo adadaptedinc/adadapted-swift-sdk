@@ -7,7 +7,7 @@
 
 import XCTest
 import SwiftUI
-@testable import adadapted_swift_sdk
+@preconcurrency @testable import adadapted_swift_sdk
 
 final class SwiftZoneViewModelTests: XCTestCase {
     class MockAdContentListener: AdContentListener {
@@ -16,9 +16,13 @@ final class SwiftZoneViewModelTests: XCTestCase {
     }
     class MockZoneViewListener: ZoneViewListener {
         var zoneHasAdsCalled = false
+        var zoneHasAdsOnMainThread = false
         var adLoadFailedCalled = false
         func onAdLoaded() {}
-        func onZoneHasAds(hasAds: Bool) { zoneHasAdsCalled = true }
+        func onZoneHasAds(hasAds: Bool) {
+            zoneHasAdsCalled = true
+            zoneHasAdsOnMainThread = Thread.isMainThread
+        }
         func onAdLoadFailed() { adLoadFailedCalled = true }
     }
     
@@ -64,6 +68,18 @@ final class SwiftZoneViewModelTests: XCTestCase {
         XCTAssertTrue(viewModel.mockPresenter.removeZoneContextCalled, "Presenter should remove context when contextId is empty")
     }
 
+    /// SwiftUI takes a zone off screen by making it disappear rather than by detaching it, so this is
+    /// where a zone the host navigated away from ends its impression and freezes its refresh.
+    func testOnStop_ReportsTheZoneOutOfTheWindow() {
+        viewModel.onStop()
+        XCTAssertTrue(viewModel.mockPresenter.onExitedWindowCalled, "A zone that disappeared is no longer showing its ad")
+    }
+
+    func testOnStart_ReportsTheZoneBackInTheWindow() {
+        viewModel.onStart()
+        XCTAssertTrue(viewModel.mockPresenter.onEnteredWindowCalled, "A zone that appeared should pick its refresh back up")
+    }
+
     func testOnStart_AttachesPresenter() {
         viewModel.onAttach()
         XCTAssertTrue(viewModel.mockPresenter.onAttachCalled, "Presenter should attach when onStart is called")
@@ -93,6 +109,37 @@ final class SwiftZoneViewModelTests: XCTestCase {
         XCTAssertTrue(mockZoneViewListener.zoneHasAdsCalled, "Listener should be notified when zone is available with ads")
     }
 
+    /// The docs tell clients they can collapse or restore the zone's space straight from this callback,
+    /// so it has to arrive on the main queue no matter which thread reported the zone.
+    func testOnZoneAvailable_NotifiesOnTheMainQueueWhenReportedOffMain() async {
+        let zone = AdZoneData(ad: Ad())
+        let zoneViewModel: SwiftZoneViewModel = viewModel
+        let listener = mockZoneViewListener!
+
+        //A Thread rather than a queue hop, so reporting off main does not need a @Sendable closure
+        let reporter = Thread { zoneViewModel.onZoneAvailable(adZoneData: zone) }
+        reporter.start()
+
+        await awaitCondition { listener.zoneHasAdsCalled }
+        XCTAssertTrue(
+            listener.zoneHasAdsOnMainThread,
+            "onZoneHasAds should reach the client on the main queue so it is safe to touch layout in it"
+        )
+    }
+
+    /// Hopping unconditionally would defer this behind the onAdAvailable hop and reorder the two
+    /// callbacks, so a zone reported from main has to stay synchronous.
+    func testOnZoneAvailable_StaysSynchronousWhenAlreadyOnMain() {
+        let zone = AdZoneData(ad: Ad())
+
+        viewModel.onZoneAvailable(adZoneData: zone)
+
+        XCTAssertTrue(
+            mockZoneViewListener.zoneHasAdsCalled,
+            "A zone reported on main should notify before returning, keeping onZoneHasAds ahead of onAdLoaded"
+        )
+    }
+
     func testOnNoAdAvailable_ClearsCurrentAd() {
         viewModel.onNoAdAvailable()
         XCTAssertNil(viewModel.currentAd, "Current ad should be cleared when no ad is available")
@@ -108,6 +155,72 @@ final class SwiftZoneViewModelTests: XCTestCase {
             viewModel.mockPresenter.onBlankDisplayedCalled,
             "Presenter should be told the zone blanked so it schedules the next fetch"
         )
+    }
+
+    /// The manager used to hold view models strongly, so a torn down SwiftUI zone never deallocated
+    /// and never reported itself unmounted.
+    func testDeallocatedViewModelMountsAndUnmountsItsZone() async {
+        let zoneId = "deallocatedZoneId"
+        TestEventAdapter.shared.cleanupEvents()
+
+        var deallocatingViewModel: SwiftZoneViewModel? = SwiftZoneViewModel(
+            zoneId: zoneId,
+            adContentListener: mockAdContentListener,
+            zoneViewListener: mockZoneViewListener,
+            isZoneVisible: isZoneVisible,
+            zoneContextId: zoneContextId
+        )
+        weak var weakViewModel = deallocatingViewModel
+        deallocatingViewModel = nil
+
+        XCTAssertNil(weakViewModel, "Manager should not keep a torn down view model alive")
+
+        await awaitAdapterEvent {
+            TestEventAdapter.shared.testAdEvents.contains { $0.eventType == AdEventTypes.ZONE_UNMOUNTED && $0.zoneId == zoneId }
+        }
+
+        XCTAssertTrue(TestEventAdapter.shared.testAdEvents.contains { $0.eventType == AdEventTypes.ZONE_MOUNTED && $0.zoneId == zoneId })
+        XCTAssertTrue(TestEventAdapter.shared.testAdEvents.contains { $0.eventType == AdEventTypes.ZONE_UNMOUNTED && $0.zoneId == zoneId })
+    }
+
+    /// A zone id holds one view model. When two for the same id are built at once, one of them has to
+    /// come out detached, or the id runs a duplicate pair that both fetch and both report impressions.
+    ///
+    /// The manager used to replace and register in two separate critical sections, so both could pass
+    /// the cleanup that was supposed to drop the other. Repeated because an interleave that needs two
+    /// threads inside the same window does not land on every run.
+    func testTwoViewModelsBuiltAtOnceForOneZoneLeaveOnlyOneAttached() {
+        for trial in 0..<200 {
+            let built = Locked<[DetachCountingViewModel]>([])
+
+            DispatchQueue.concurrentPerform(iterations: 2) { [self] _ in
+                //Hidden, so building one does not kick off a real fetch
+                let viewModel = DetachCountingViewModel(
+                    zoneId: "concurrentZone\(trial)",
+                    adContentListener: mockAdContentListener,
+                    zoneViewListener: mockZoneViewListener,
+                    isZoneVisible: .constant(false),
+                    zoneContextId: .constant("")
+                )
+                built.mutate { $0.append(viewModel) }
+            }
+
+            XCTAssertEqual(
+                1,
+                built.value.filter { $0.detachCount.value > 0 }.count,
+                "Exactly one of the two should have been detached as the other replaced it (trial \(trial))"
+            )
+        }
+    }
+}
+
+/// Counts its own replacement, since the manager's collection is private
+private class DetachCountingViewModel: SwiftZoneViewModel {
+    let detachCount = Locked(0)
+
+    override func onDetach() {
+        detachCount.value = detachCount.value + 1
+        super.onDetach()
     }
 }
 
@@ -131,7 +244,9 @@ class TestableSwiftZoneViewModel: SwiftZoneViewModel {
         var onBlankDisplayedCalled = false
         var onAdClickCalled = false
         var onReportAdClickedCalled = false
-        
+        var onEnteredWindowCalled = false
+        var onExitedWindowCalled = false
+
         override func onAttach(adZonePresenterListener: AdZonePresenterListener?) {
             onAttachCalled = true
         }
@@ -144,6 +259,8 @@ class TestableSwiftZoneViewModel: SwiftZoneViewModel {
         override func onBlankDisplayed() { onBlankDisplayedCalled = true }
         override func onAdClicked(ad: Ad) { onAdClickCalled = true }
         override func onReportAdClicked(adId: String, udid: String) { onReportAdClickedCalled = true }
+        override func onEnteredWindow() { onEnteredWindowCalled = true }
+        override func onExitedWindow() { onExitedWindowCalled = true }
     }
 }
 

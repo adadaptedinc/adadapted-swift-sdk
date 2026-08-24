@@ -3,6 +3,7 @@
 //
 
 import Foundation
+import UIKit
 import WebKit
 
 class AdZonePresenter: ZoneAdListener {
@@ -14,25 +15,41 @@ class AdZonePresenter: ZoneAdListener {
     private var zoneContextId = ""
     private var currentAdZoneData = AdZoneData()
     private var isZoneVisible = true
-    private var adZonePresenterListener: AdZonePresenterListener?
+    private var isAppInForeground = true
+    private var isInWindow = true
+    private weak var adZonePresenterListener: AdZonePresenterListener?
     private var attached = false
     private var zoneLoaded = false
-    private var adStarted = false
-    private var adCompleted = false
+    private var unfilledReported = false
+    private var adFetchedAt = 0
+    private var secondsLeftOnRefresh = 0
+    private var countdownResumedAt = 0
     private var timerRunning = false
+    private var timerGeneration = 0
     private var timer: Timer?
     private let makeTimer: MakeTimer
+    private let now: () -> Int
+    private let appIsInForeground: () -> Bool
     private var webViewManager: AdWebViewManager?
     private var swiftUIWebView: WKWebView?
+    private var appLifecycleObservers: [NSObjectProtocol] = []
 
     typealias MakeTimer = (_ repeatSeconds: Int, _ delaySeconds: Int, _ timerAction: @escaping () -> Void) -> Timer
 
     init(
         adViewHandler: AdViewHandler,
-        makeTimer: @escaping MakeTimer = Timer.init(repeatSeconds:delaySeconds:timerAction:)
+        makeTimer: @escaping MakeTimer = Timer.init(repeatSeconds:delaySeconds:timerAction:),
+        now: @escaping () -> Int = { Int(clock_gettime_nsec_np(CLOCK_MONOTONIC) / NSEC_PER_SEC) },
+        appIsInForeground: @escaping () -> Bool = { UIApplication.shared.applicationState != .background }
     ) {
         self.adViewHandler = adViewHandler
         self.makeTimer = makeTimer
+        self.now = now
+        self.appIsInForeground = appIsInForeground
+    }
+
+    deinit {
+        onDetach()
     }
     
     func initialize(zoneId: String) {
@@ -58,19 +75,46 @@ class AdZonePresenter: ZoneAdListener {
         if !attached {
             attached = true
             self.adZonePresenterListener = adZonePresenterListener
+            observeAppLifecycle()
+            EventClient.trackZoneMounted(zoneId: zoneId)
             if(currentAd.id.isEmpty) {
-                AdClient.fetchNewAd(zoneId: self.zoneId, listener: self, contextId: zoneContextId)
+                fetchAd()
             }
+            resumeTimer()
         }
     }
-    
+
     func onDetach() {
         if attached {
             attached = false
             adZonePresenterListener = nil
-            completeCurrentAd()
-            stopTimer()
+            stopObservingAppLifecycle()
+            endImpression()
+            pauseTimer()
+            EventClient.trackZoneUnmounted(zoneId: zoneId)
         }
+    }
+
+    func onAppForegrounded() {
+        isAppInForeground = true
+        resumeTimer()
+    }
+
+    func onAppBackgrounded() {
+        isAppInForeground = false
+        endImpression(publishImmediately: true) //Nothing publishes again until the app is back
+        pauseTimer()
+    }
+
+    func onEnteredWindow() {
+        isInWindow = true
+        resumeTimer()
+    }
+
+    func onExitedWindow() {
+        isInWindow = false
+        endImpression()
+        pauseTimer()
     }
     
     func setZoneContext(contextId: String) {
@@ -85,51 +129,33 @@ class AdZonePresenter: ZoneAdListener {
     private func getNextAd() {
         restartTimer()
         if (!zoneLoaded) { return }
-        completeCurrentAd()
-        
-        AdClient.fetchNewAd(
-            zoneId: zoneId,
-            listener: ClosureZoneAdListener(
-                onAdLoaded: { [weak self] adZoneData in
-                    DispatchQueue.main.async {
-                        // Reported like the first fetch does, so a refresh that comes back a no-fill
-                        // tells the host app the zone no longer has an ad to show.
-                        self?.updateCurrentZone(adZoneData: adZoneData)
-                        self?.notifyZoneAvailable()
-                    }
-                },
-                onAdLoadFailed: { [weak self] in
-                    DispatchQueue.main.async {
-                        self?.handleAd(ad: Ad())
-                    }
-                }
-            ),
-            contextId: zoneContextId
-        )
+        endImpression()
+        fetchAd()
     }
-    
+
+    private func fetchAd() {
+        unfilledReported = false
+        AdClient.fetchNewAd(zoneId: zoneId, listener: self, contextId: zoneContextId)
+    }
+
+    private func reportZoneUnfilled(reason: String) {
+        guard !unfilledReported, isZoneOnScreen() else { return }
+        unfilledReported = true
+        EventClient.trackZoneUnfilled(zoneId: zoneId, reason: reason)
+    }
+
     private func handleAd(ad: Ad) {
         currentAd = ad
-        adStarted = false
-        adCompleted = false
         restartTimer()
         displayAd()
     }
     
     private func displayAd() {
         if currentAd.isEmpty() {
+            reportZoneUnfilled(reason: ZoneUnfilledReasons.NO_AD)
             notifyNoAdAvailable()
         } else {
             notifyAdAvailable(ad: currentAd)
-        }
-    }
-    
-    private func completeCurrentAd() {
-        if !currentAd.isEmpty() && adStarted && !adCompleted {
-            if !currentAd.impressionWasTracked() && !isZoneVisible {
-                EventClient.trackInvisibleImpression(ad: currentAd)
-            }
-            adCompleted = true
         }
     }
     
@@ -138,29 +164,35 @@ class AdZonePresenter: ZoneAdListener {
         if (ad.id != currentAd.id) {
             currentAd = ad
         }
-        startZoneTimer() //Must stay after the currentAd sync above, or the timer picks up the previous Ad's refresh time
-        adStarted = true
+        isAdVisible ? resumeTimer() : pauseTimer()
         trackAdImpression(ad: &currentAd, isAdVisible: isAdVisible)
     }
-    
+
     func onAdVisibilityChanged(isAdVisible: Bool) {
         isZoneVisible = isAdVisible
         adZonePresenterListener?.onAdVisibilityChanged(ad: currentAd)
         trackAdImpression(ad: &currentAd, isAdVisible: isAdVisible)
+        if isAdVisible {
+            resumeTimer()
+        } else {
+            endImpression()
+            pauseTimer()
+        }
     }
     
     func onAdDisplayFailed() {
-        clearAdAndStartTimer()
-    }
-    
-    func onBlankDisplayed() {
-        clearAdAndStartTimer()
+        reportZoneUnfilled(reason: ZoneUnfilledReasons.RENDER_FAILED)
+        clearCurrentAd()
     }
 
-    private func clearAdAndStartTimer() {
-        adStarted = true
+    func onBlankDisplayed() {
+        clearCurrentAd()
+    }
+
+    private func clearCurrentAd() {
+        endImpression()
         currentAd = Ad(refreshTime: currentAd.refreshTime)
-        startZoneTimer()
+        resumeTimer()
     }
     
     func onAdClicked(ad: Ad) {
@@ -202,42 +234,89 @@ class AdZonePresenter: ZoneAdListener {
         callPixelTrackingJavaScript()
     }
     
+    /// Only fires once, and only if a real impression was tracked.
+    private func endImpression(publishImmediately: Bool = false) {
+        publishImmediately
+            ? EventClient.trackImpressionEndAndPublish(ad: currentAd)
+            : EventClient.trackImpressionEnd(ad: currentAd)
+    }
+
+    private func observeAppLifecycle() {
+        isAppInForeground = appIsInForeground()
+
+        let center = NotificationCenter.default
+        appLifecycleObservers = [
+            center.addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main) { [weak self] _ in
+                self?.onAppBackgrounded()
+            },
+            center.addObserver(forName: UIApplication.willEnterForegroundNotification, object: nil, queue: .main) { [weak self] _ in
+                self?.onAppForegrounded()
+            }
+        ]
+    }
+
+    private func stopObservingAppLifecycle() {
+        appLifecycleObservers.forEach { NotificationCenter.default.removeObserver($0) }
+        appLifecycleObservers = []
+    }
+
     private func callPixelTrackingJavaScript() {
         webViewManager?.evaluateJavaScript(js: PIXEL_TRACKING_JS)
         swiftUIWebView?.evaluateJavaScript(PIXEL_TRACKING_JS)
         AALogger.logDebug(message: "Calling pixel tracking javascript")
     }
     
-    private func startZoneTimer() {
-        if !zoneLoaded || timerRunning {
-            return
-        }
-        let refreshSeconds = currentAd.refreshTimeOrDefault
+    private func isZoneOnScreen() -> Bool {
+        return attached && isZoneVisible && isAppInForeground && isInWindow
+    }
+
+    private func restartTimer() {
+        cancelTimer()
+        adFetchedAt = now()
+        secondsLeftOnRefresh = currentAd.refreshTimeOrDefault
         if currentAd.refreshTimeWasRejected {
-            AALogger.logError(message: "Ad refresh time of \(currentAd.refreshTime)s was served but not honored. Using \(refreshSeconds)s")
-        } else {
-            AALogger.logDebug(message: "Zone timer starting with a refresh of \(refreshSeconds)s")
+            AALogger.logError(message: "Ad refresh time of \(currentAd.refreshTime)s was served but not honored. Using \(secondsLeftOnRefresh)s")
         }
+        startTimer()
+    }
+
+    private func pauseTimer() {
+        if !timerRunning { return }
+        secondsLeftOnRefresh = max(secondsLeftOnRefresh - (now() - countdownResumedAt), 0)
+        cancelTimer()
+        AALogger.logDebug(message: "Zone timer paused with \(secondsLeftOnRefresh)s left")
+    }
+
+    private func resumeTimer() {
+        if timerRunning || !isZoneOnScreen() { return }
+        if zoneLoaded && now() - adFetchedAt >= currentAd.refreshTimeOrDefault {
+            getNextAd()
+        } else {
+            startTimer()
+        }
+    }
+
+    private func startTimer() {
+        if !zoneLoaded || timerRunning || !isZoneOnScreen() { return }
+        AALogger.logDebug(message: "Zone timer starting with \(secondsLeftOnRefresh)s left of a \(currentAd.refreshTimeOrDefault)s refresh")
         timerRunning = true
-        timer = makeTimer(refreshSeconds, refreshSeconds, { [weak self] in
-            self?.getNextAd()
+        countdownResumedAt = now()
+        timerGeneration += 1
+        let generation = timerGeneration
+        timer = makeTimer(0, secondsLeftOnRefresh, { [weak self] in
+            DispatchQueue.main.async { self?.refreshIfCountdownIsStillCurrent(generation: generation) }
         })
         timer?.startTimer()
     }
-    
-    private func restartTimer() {
-        if (timer != nil) {
-            timer?.stopTimer()
-            timerRunning = false
-            startZoneTimer()
-        }
+
+    private func refreshIfCountdownIsStillCurrent(generation: Int) {
+        guard timerRunning, generation == timerGeneration else { return }
+        getNextAd()
     }
-    
-    private func stopTimer() {
-        if (timer != nil) {
-            timer?.stopTimer()
-            timerRunning = false
-        }
+
+    private func cancelTimer() {
+        timer?.stopTimer()
+        timerRunning = false
     }
     
     private func handleContentAction(ad: Ad) {
@@ -284,11 +363,13 @@ class AdZonePresenter: ZoneAdListener {
         }
     }
 
+    /// The empty zone it falls back to reports the no ad through `displayAd`, so this does not notify
+    /// on its own.
     func onAdLoadFailed() {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
+            reportZoneUnfilled(reason: ZoneUnfilledReasons.REQUEST_FAILED)
             updateCurrentZone(adZoneData: AdZoneData())
-            notifyNoAdAvailable()
         }
     }
 }

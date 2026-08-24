@@ -136,7 +136,7 @@ class AdZonePresenterRefreshTests: XCTestCase {
         await awaitCondition { testListener.testAd.id == testAd.id }
 
         var displayedAd = testAd
-        testAdZonePresenter.onAdDisplayed(ad: &displayedAd, isAdVisible: false)
+        testAdZonePresenter.onAdDisplayed(ad: &displayedAd, isAdVisible: true) //An invisible zone freezes its countdown
         return adapter.requestCount
     }
 

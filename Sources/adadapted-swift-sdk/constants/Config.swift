@@ -7,7 +7,7 @@ import Foundation
 class Config {
     internal static var isProd = false
 
-    static let LIBRARY_VERSION: String = "3.1.0"
+    static let LIBRARY_VERSION: String = "4.0.0"
     static let LOG_TAG = "ADADAPTED_SWIFT_SDK"
     static let DEFAULT_EVENT_POLLING_SECONDS = 3 // Events will be pushed to the server every 3 seconds
     static let DEFAULT_AD_REFRESH_SECONDS = 60 // If an Ad does not have a refresh time it will default to 60 seconds

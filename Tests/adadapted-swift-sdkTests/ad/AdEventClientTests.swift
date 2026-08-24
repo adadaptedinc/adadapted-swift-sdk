@@ -94,6 +94,44 @@ class AdEventClientTests: XCTestCase {
 
         XCTAssertEqual(mockListener.trackedEvent?.eventType, AdEventTypes.POPUP_BEGIN)
     }
+
+    /// The server reads snake_case keys. It resolves an ad event's zone from the impression id, so a
+    /// camelCase zone key went unnoticed until zone events started shipping without an impression id.
+    func testAdEventIsEncodedWithTheKeysTheServerReads() throws {
+        let encoded = try JSONEncoder().encode(AdEvent(zoneId: "102691", eventType: AdEventTypes.ZONE_MOUNTED))
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+
+        XCTAssertEqual(["ad_id", "created_at", "event_type", "impression_id", "zone_id"], json.keys.sorted())
+        XCTAssertEqual("102691", json["zone_id"] as? String)
+        XCTAssertEqual(AdEventTypes.ZONE_MOUNTED, json["event_type"] as? String)
+        XCTAssertEqual("", json["ad_id"] as? String)
+        XCTAssertEqual("", json["impression_id"] as? String)
+    }
+
+    /// event_name is optional on the server, so it should only be on the wire when we have one to send.
+    func testAdEventOnlyEncodesEventNameWhenOneIsSet() throws {
+        let named = try JSONEncoder().encode(
+            AdEvent(ad: self.testAd, eventType: AdEventTypes.INTERACTION, eventName: "add_to_list")
+        )
+        let namedJson = try XCTUnwrap(JSONSerialization.jsonObject(with: named) as? [String: Any])
+
+        XCTAssertEqual("add_to_list", namedJson["event_name"] as? String)
+
+        let unnamed = try JSONEncoder().encode(AdEvent(ad: self.testAd, eventType: AdEventTypes.INTERACTION))
+        let unnamedJson = try XCTUnwrap(JSONSerialization.jsonObject(with: unnamed) as? [String: Any])
+
+        XCTAssertNil(unnamedJson["event_name"])
+    }
+
+    func testAdEventDecodesWithoutAnEventName() throws {
+        let json = """
+        {"ad_id":"adId","zone_id":"102691","impression_id":"impId","event_type":"impression","created_at":1700000000}
+        """
+        let event = try JSONDecoder().decode(AdEvent.self, from: XCTUnwrap(json.data(using: .utf8)))
+
+        XCTAssertNil(event.eventName)
+        XCTAssertEqual(AdEventTypes.IMPRESSION, event.eventType)
+    }
 }
 
 class TestEventClientListener: EventClientListener {
