@@ -115,6 +115,24 @@ class AdZonePresenterUnfilledTests: XCTestCase {
         XCTAssertEqual([], unfilledEvents().map { $0.eventName })
     }
 
+    func testAZoneThatComesBackIntoViewStillEmptyReportsItselfUnfilled() async {
+        adapter.mockAdZoneData = AdZoneData(ad: Ad(id: "TestAdId"))
+        let testListener = TestAdZonePresenterListener()
+        testAdZonePresenter.onAttach(adZonePresenterListener: testListener)
+        await awaitCondition { testListener.testAd.id == "TestAdId" }
+
+        testAdZonePresenter.onAdVisibilityChanged(isAdVisible: false)
+        testAdZonePresenter.onAdLoadFailed()
+        let failureLanded = expectation(description: "The failed fetch has been handled")
+        DispatchQueue.main.async { failureLanded.fulfill() }
+        await fulfillment(of: [failureLanded], timeout: TestWait.timeout)
+
+        testAdZonePresenter.onAdVisibilityChanged(isAdVisible: true)
+
+        await awaitAdapterEvent { self.unfilledEvents().count == 1 }
+        XCTAssertEqual([ZoneUnfilledReasons.REQUEST_FAILED], unfilledEvents().map { $0.eventName })
+    }
+
     /// A backgrounded app is as good as an off screen zone - the host app never told the zone it went
     /// invisible, but no one saw the ad that failed to arrive.
     func testAZoneInABackgroundedAppDoesNotReportItselfUnfilled() async {

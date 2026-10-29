@@ -68,7 +68,7 @@ class AdZonePresenterFreezeTests: XCTestCase {
     func testABackgroundedAppFreezesItsRefreshAndPicksUpTheTimeItHadLeft() async {
         await assertTheRefreshFreezesAndPicksBackUp(
             freeze: { self.testAdZonePresenter.onAppBackgrounded() },
-            unfreeze: { self.testAdZonePresenter.onAppForegrounded() }
+            unfreeze: { self.testAdZonePresenter.onAppActivated() }
         )
     }
 
@@ -76,6 +76,14 @@ class AdZonePresenterFreezeTests: XCTestCase {
         await assertTheRefreshFreezesAndPicksBackUp(
             freeze: { self.testAdZonePresenter.onExitedWindow() },
             unfreeze: { self.testAdZonePresenter.onEnteredWindow() }
+        )
+    }
+
+    /// Notification Center, the app switcher or a system alert covering the app.
+    func testAnInactiveAppFreezesItsRefreshAndPicksUpTheTimeItHadLeft() async {
+        await assertTheRefreshFreezesAndPicksBackUp(
+            freeze: { self.testAdZonePresenter.onAppDeactivated() },
+            unfreeze: { self.testAdZonePresenter.onAppActivated() }
         )
     }
 
@@ -129,6 +137,33 @@ class AdZonePresenterFreezeTests: XCTestCase {
         )
     }
 
+    /// A recycled or re-shown zone attaches again, and a no-fill leaves it with no Ad to show. Neither
+    /// is a reason to cut the server's backoff short.
+    func testReattachingAZoneDoesNotSkipTheNoFillBackoff() async {
+        let noFillRefreshSeconds = 300
+        adapter.mockAdZoneData = AdZoneData(ad: Ad(refreshTime: noFillRefreshSeconds))
+        let testListener = TestAdZonePresenterListener()
+        testAdZonePresenter.onAttach(adZonePresenterListener: testListener)
+        await awaitCondition { testListener.testAd.id == "NoAdAvail" }
+        let requestsAfterNoFill = adapter.requestCount
+
+        for _ in 0..<3 {
+            advanceClock(bySeconds: 10)
+            testAdZonePresenter.onDetach()
+            testAdZonePresenter.onAttach(adZonePresenterListener: TestAdZonePresenterListener())
+        }
+        try? await Task.sleep(nanoseconds: 200_000_000) //Lets any fetch the re-attaches dispatched land
+        XCTAssertEqual(requestsAfterNoFill, adapter.requestCount, "Re-attaching inside the backoff should not refetch")
+
+        testAdZonePresenter.onDetach()
+        advanceClock(bySeconds: noFillRefreshSeconds)
+        testAdZonePresenter.onAttach(adZonePresenterListener: TestAdZonePresenterListener())
+
+        await awaitCondition { [self] in adapter.requestCount > requestsAfterNoFill }
+        try? await Task.sleep(nanoseconds: 200_000_000) //Lets a second, duplicate fetch land if there is one
+        XCTAssertEqual(requestsAfterNoFill + 1, adapter.requestCount, "Re-attaching after the backoff should refetch exactly once")
+    }
+
     /// Backgrounding an app whose zone is also out of view must not arm anything on the way back in.
     func testAZoneOutOfViewStaysFrozenWhenTheAppComesBackToTheForeground() async {
         await displayAVisibleAd(refreshSeconds: 300)
@@ -136,7 +171,7 @@ class AdZonePresenterFreezeTests: XCTestCase {
 
         testAdZonePresenter.onAdVisibilityChanged(isAdVisible: false)
         testAdZonePresenter.onAppBackgrounded()
-        testAdZonePresenter.onAppForegrounded()
+        testAdZonePresenter.onAppActivated()
         advanceClock(bySeconds: 301)
 
         XCTAssertEqual(false, armedTimer?.isRunning, "A zone still out of view should stay frozen no matter what the app does")
@@ -154,10 +189,29 @@ class AdZonePresenterFreezeTests: XCTestCase {
         await awaitCondition { [self] in armedTimer?.isRunning == false }
         XCTAssertEqual(false, armedTimer?.isRunning, "Backgrounding the app should freeze the zone's countdown")
 
-        NotificationCenter.default.post(name: UIApplication.willEnterForegroundNotification, object: nil)
+        NotificationCenter.default.post(name: UIApplication.didBecomeActiveNotification, object: nil)
 
         await awaitCondition { [self] in armedTimer?.isRunning == true }
         XCTAssertEqual(true, armedTimer?.isRunning, "Coming back to the foreground should start it up again")
+    }
+
+    /// The order iOS posts them in on a trip to the background and back. The app is still inactive
+    /// after it re-enters the foreground, so only becoming active again starts the countdown.
+    func testTheRefreshStaysFrozenFromTheAppGoingInactiveUntilItIsActiveAgain() async {
+        await displayAVisibleAd(refreshSeconds: 300)
+
+        NotificationCenter.default.post(name: UIApplication.willResignActiveNotification, object: nil)
+        await awaitCondition { [self] in armedTimer?.isRunning == false }
+        XCTAssertEqual(false, armedTimer?.isRunning, "An inactive app should freeze the zone's countdown")
+
+        NotificationCenter.default.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
+        NotificationCenter.default.post(name: UIApplication.willEnterForegroundNotification, object: nil)
+        try? await Task.sleep(nanoseconds: 200_000_000)
+        XCTAssertEqual(false, armedTimer?.isRunning, "Back in the foreground but not active yet should stay frozen")
+
+        NotificationCenter.default.post(name: UIApplication.didBecomeActiveNotification, object: nil)
+        await awaitCondition { [self] in armedTimer?.isRunning == true }
+        XCTAssertEqual(true, armedTimer?.isRunning, "Becoming active again should start it up again")
     }
 
     /// The countdown fires on a background queue and hops to the main one to do its work, so a zone
@@ -185,7 +239,7 @@ class AdZonePresenterFreezeTests: XCTestCase {
             "A refresh that landed after the app backgrounded should not have fetched anything"
         )
 
-        testAdZonePresenter.onAppForegrounded()
+        testAdZonePresenter.onAppActivated()
 
         await awaitCondition { [self] in adapter.requestCount > requestsBeforeTheDeadline }
         XCTAssertEqual(
@@ -209,7 +263,7 @@ class AdZonePresenterFreezeTests: XCTestCase {
                 return timer
             },
             now: { [fakeClockSeconds] in fakeClockSeconds.value },
-            appIsInForeground: { false }
+            appIsActive: { false }
         )
         backgroundedPresenter.initialize(zoneId: zoneId)
         defer { backgroundedPresenter.onDetach() }
@@ -224,7 +278,7 @@ class AdZonePresenterFreezeTests: XCTestCase {
         XCTAssertNil(armedTimer, "A zone attached into a backgrounded app should not have armed a countdown at all")
 
         //And it is not stuck off: the app coming back is what it was waiting for
-        backgroundedPresenter.onAppForegrounded()
+        backgroundedPresenter.onAppActivated()
 
         XCTAssertEqual(300, armedTimer?.delaySeconds, "Coming to the foreground should start the ad's own refresh")
         XCTAssertEqual(true, armedTimer?.isRunning, "And it should be running")

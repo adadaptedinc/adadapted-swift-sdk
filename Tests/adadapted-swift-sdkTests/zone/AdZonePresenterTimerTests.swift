@@ -176,6 +176,23 @@ class AdZonePresenterTimerTests: XCTestCase {
         )
     }
 
+    func testAFailedRequestKeepsTheLongerBackoffTheServerServed() async {
+        let noFillRefresh = 300
+        await loadZone(servingAd: Ad(refreshTime: noFillRefresh))
+
+        await failTheNextRequest()
+
+        XCTAssertEqual(noFillRefresh, armedTimer?.delaySeconds, "A failing server should not be retried faster than the backoff it served")
+    }
+
+    func testAFailedRequestAfterAFastAdRetriesOnTheDefault() async {
+        await displayAd(withRefreshTime: Ad.MINIMUM_REFRESH_TIME_SECONDS)
+
+        await failTheNextRequest()
+
+        XCTAssertEqual(Config.DEFAULT_AD_REFRESH_SECONDS, armedTimer?.delaySeconds, "A fast ad's refresh is not a retry rate for a failing server")
+    }
+
     func testTimerRejectsAServedRefreshBelowTheFloor() async {
         await displayAd(withRefreshTime: 1)
 
@@ -234,6 +251,13 @@ class AdZonePresenterTimerTests: XCTestCase {
         testAdZonePresenter.onAttach(adZonePresenterListener: testListener)
         await awaitCondition { !testListener.testAd.id.isEmpty }
         return testListener
+    }
+
+    private func failTheNextRequest() async {
+        testAdZonePresenter.onAdLoadFailed()
+        let failureLanded = expectation(description: "The failed request has been handled")
+        DispatchQueue.main.async { failureLanded.fulfill() }
+        await fulfillment(of: [failureLanded], timeout: TestWait.timeout)
     }
 
     private func displayAd(withRefreshTime refreshTime: Int) async {

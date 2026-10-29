@@ -15,12 +15,14 @@ class AdZonePresenter: ZoneAdListener {
     private var zoneContextId = ""
     private var currentAdZoneData = AdZoneData()
     private var isZoneVisible = true
-    private var isAppInForeground = true
+    private var isAppActive = true
     private var isInWindow = true
     private weak var adZonePresenterListener: AdZonePresenterListener?
     private var attached = false
     private var zoneLoaded = false
+    private var isCurrentAdRendered = false
     private var unfilledReported = false
+    private var pendingUnfilledReason: String?
     private var adFetchedAt = 0
     private var secondsLeftOnRefresh = 0
     private var countdownResumedAt = 0
@@ -29,7 +31,7 @@ class AdZonePresenter: ZoneAdListener {
     private var timer: Timer?
     private let makeTimer: MakeTimer
     private let now: () -> Int
-    private let appIsInForeground: () -> Bool
+    private let appIsActive: () -> Bool
     private var webViewManager: AdWebViewManager?
     private var swiftUIWebView: WKWebView?
     private var appLifecycleObservers: [NSObjectProtocol] = []
@@ -40,12 +42,12 @@ class AdZonePresenter: ZoneAdListener {
         adViewHandler: AdViewHandler,
         makeTimer: @escaping MakeTimer = Timer.init(repeatSeconds:delaySeconds:timerAction:),
         now: @escaping () -> Int = { Int(clock_gettime_nsec_np(CLOCK_MONOTONIC) / NSEC_PER_SEC) },
-        appIsInForeground: @escaping () -> Bool = { UIApplication.shared.applicationState != .background }
+        appIsActive: @escaping () -> Bool = { UIApplication.shared.applicationState == .active }
     ) {
         self.adViewHandler = adViewHandler
         self.makeTimer = makeTimer
         self.now = now
-        self.appIsInForeground = appIsInForeground
+        self.appIsActive = appIsActive
     }
 
     deinit {
@@ -77,10 +79,11 @@ class AdZonePresenter: ZoneAdListener {
             self.adZonePresenterListener = adZonePresenterListener
             observeAppLifecycle()
             EventClient.trackZoneMounted(zoneId: zoneId)
-            if(currentAd.id.isEmpty) {
+            //First attach only. After that resumeTimer refetches once the refresh time, or a no-fill's backoff, is up
+            if !zoneLoaded {
                 fetchAd()
             }
-            resumeTimer()
+            resumeIfOnScreen()
         }
     }
 
@@ -95,20 +98,26 @@ class AdZonePresenter: ZoneAdListener {
         }
     }
 
-    func onAppForegrounded() {
-        isAppInForeground = true
-        resumeTimer()
+    func onAppActivated() {
+        isAppActive = true
+        resumeIfOnScreen()
+    }
+
+    func onAppDeactivated() {
+        isAppActive = false
+        endImpression()
+        pauseTimer()
     }
 
     func onAppBackgrounded() {
-        isAppInForeground = false
+        isAppActive = false
         endImpression(publishImmediately: true) //Nothing publishes again until the app is back
         pauseTimer()
     }
 
     func onEnteredWindow() {
         isInWindow = true
-        resumeTimer()
+        resumeIfOnScreen()
     }
 
     func onExitedWindow() {
@@ -135,17 +144,29 @@ class AdZonePresenter: ZoneAdListener {
 
     private func fetchAd() {
         unfilledReported = false
+        pendingUnfilledReason = nil
         AdClient.fetchNewAd(zoneId: zoneId, listener: self, contextId: zoneContextId)
     }
 
     private func reportZoneUnfilled(reason: String) {
-        guard !unfilledReported, isZoneOnScreen() else { return }
+        guard !unfilledReported else { return }
+        guard isZoneOnScreen(), isZoneInViewport() else {
+            pendingUnfilledReason = pendingUnfilledReason ?? reason
+            return
+        }
         unfilledReported = true
+        pendingUnfilledReason = nil
         EventClient.trackZoneUnfilled(zoneId: zoneId, reason: reason)
+    }
+
+    private func reportPendingZoneUnfilled() {
+        guard let reason = pendingUnfilledReason, currentAd.isEmpty() else { return }
+        reportZoneUnfilled(reason: reason)
     }
 
     private func handleAd(ad: Ad) {
         currentAd = ad
+        isCurrentAdRendered = false
         restartTimer()
         displayAd()
     }
@@ -164,16 +185,16 @@ class AdZonePresenter: ZoneAdListener {
         if (ad.id != currentAd.id) {
             currentAd = ad
         }
+        isCurrentAdRendered = true
         isAdVisible ? resumeTimer() : pauseTimer()
-        trackAdImpression(ad: &currentAd, isAdVisible: isAdVisible)
+        trackAdImpression()
     }
 
     func onAdVisibilityChanged(isAdVisible: Bool) {
         isZoneVisible = isAdVisible
         adZonePresenterListener?.onAdVisibilityChanged(ad: currentAd)
-        trackAdImpression(ad: &currentAd, isAdVisible: isAdVisible)
         if isAdVisible {
-            resumeTimer()
+            resumeIfOnScreen()
         } else {
             endImpression()
             pauseTimer()
@@ -189,9 +210,15 @@ class AdZonePresenter: ZoneAdListener {
         clearCurrentAd()
     }
 
+    /// A failing server keeps a longer served backoff, but is never retried faster than the default.
+    private func clearedAdBackingOffAfterFailedRequest() -> Ad {
+        Ad(refreshTime: max(currentAd.refreshTimeOrDefault, Config.DEFAULT_AD_REFRESH_SECONDS))
+    }
+
     private func clearCurrentAd() {
         endImpression()
         currentAd = Ad(refreshTime: currentAd.refreshTime)
+        isCurrentAdRendered = false
         resumeTimer()
     }
     
@@ -225,13 +252,20 @@ class AdZonePresenter: ZoneAdListener {
         adViewHandler.handleReportAd(adId: adId, udid: udid)
     }
     
-    private func trackAdImpression(ad: inout Ad, isAdVisible: Bool) {
-        guard isAdVisible, !ad.impressionWasTracked(), !ad.isEmpty() else {
+    private func trackAdImpression() {
+        guard isZoneOnScreen(), isCurrentAdRendered, !currentAd.impressionWasTracked(), !currentAd.isEmpty() else {
             return
         }
 
-        EventClient.trackImpression(ad: ad)
+        EventClient.trackImpression(ad: currentAd)
         callPixelTrackingJavaScript()
+    }
+
+    /// Also catches up on the impression and the unfilled report the zone missed while it was off screen.
+    private func resumeIfOnScreen() {
+        trackAdImpression()
+        reportPendingZoneUnfilled()
+        resumeTimer()
     }
     
     /// Only fires once, and only if a real impression was tracked.
@@ -242,15 +276,18 @@ class AdZonePresenter: ZoneAdListener {
     }
 
     private func observeAppLifecycle() {
-        isAppInForeground = appIsInForeground()
+        isAppActive = appIsActive()
 
         let center = NotificationCenter.default
         appLifecycleObservers = [
+            center.addObserver(forName: UIApplication.willResignActiveNotification, object: nil, queue: .main) { [weak self] _ in
+                self?.onAppDeactivated()
+            },
             center.addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main) { [weak self] _ in
                 self?.onAppBackgrounded()
             },
-            center.addObserver(forName: UIApplication.willEnterForegroundNotification, object: nil, queue: .main) { [weak self] _ in
-                self?.onAppForegrounded()
+            center.addObserver(forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
+                self?.onAppActivated()
             }
         ]
     }
@@ -267,7 +304,12 @@ class AdZonePresenter: ZoneAdListener {
     }
     
     private func isZoneOnScreen() -> Bool {
-        return attached && isZoneVisible && isAppInForeground && isInWindow
+        return attached && isZoneVisible && isAppActive && isInWindow
+    }
+
+    private func isZoneInViewport() -> Bool {
+        let zoneView: UIView? = webViewManager ?? swiftUIWebView
+        return zoneView?.isPositionedInViewport ?? true
     }
 
     private func restartTimer() {
@@ -369,7 +411,7 @@ class AdZonePresenter: ZoneAdListener {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             reportZoneUnfilled(reason: ZoneUnfilledReasons.REQUEST_FAILED)
-            updateCurrentZone(adZoneData: AdZoneData())
+            updateCurrentZone(adZoneData: AdZoneData(ad: clearedAdBackingOffAfterFailedRequest()))
         }
     }
 }

@@ -7,6 +7,7 @@
 
 import XCTest
 import SwiftUI
+import WebKit
 @preconcurrency @testable import adadapted_swift_sdk
 
 final class SwiftZoneViewModelTests: XCTestCase {
@@ -183,6 +184,18 @@ final class SwiftZoneViewModelTests: XCTestCase {
         XCTAssertTrue(TestEventAdapter.shared.testAdEvents.contains { $0.eventType == AdEventTypes.ZONE_UNMOUNTED && $0.zoneId == zoneId })
     }
 
+    /// The presenter decides whether a rendered ad counts, so a load that finishes while the zone is
+    /// stopped still has to reach it.
+    @MainActor
+    func testTheWebViewReportsEveryFinishedLoadToItsListener() {
+        let listener = RecordingAdWebViewListener()
+        let representable = AdWebViewRepresentable(adWebViewListener: listener, currentAd: .constant(Ad(id: "LoadedAdId")), webViewHandler: { _ in })
+
+        representable.makeCoordinator().webView(WKWebView(), didFinish: nil)
+
+        XCTAssertEqual(["LoadedAdId"], listener.loadedAdIds)
+    }
+
     /// A zone id holds one view model. When two for the same id are built at once, one of them has to
     /// come out detached, or the id runs a duplicate pair that both fetch and both report impressions.
     ///
@@ -264,3 +277,11 @@ class TestableSwiftZoneViewModel: SwiftZoneViewModel {
     }
 }
 
+private class RecordingAdWebViewListener: AdWebViewListener {
+    private(set) var loadedAdIds: [String] = []
+
+    func onAdLoadedInWebView(ad: inout Ad) { loadedAdIds.append(ad.id) }
+    func onAdLoadInWebViewFailed() {}
+    func onAdInWebViewClicked(ad: Ad) {}
+    func onBlankAdInWebViewLoaded() {}
+}

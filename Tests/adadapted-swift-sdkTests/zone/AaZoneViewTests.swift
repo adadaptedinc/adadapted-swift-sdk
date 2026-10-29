@@ -223,13 +223,16 @@ class AaZoneViewTests: XCTestCase {
     /// A zone can leave the view hierarchy without ever being hidden or stopped - a recycled cell, a
     /// torn down view controller - and the impression it was showing has ended either way.
     ///
-    /// The zone is never started, so the ad under test is the one handed to the web view rather than
-    /// one a fetch could replace while the test is waiting on the impression.
+    /// The zone's fetch is never answered, so the ad under test is the one handed to the web view rather
+    /// than one a fetch could replace while the test is waiting on the impression.
     func testAZoneTakenOutOfTheWindowEndsTheImpressionItWasShowing() async {
+        AdClient.createInstance(adapter: UnansweredAdAdapter())
+        defer { AdClient.createInstance(adapter: TestAdAdapter()) }
         let zoneId = "windowZoneId"
         var servedAd = Ad(id: "DetachedAdId", impressionId: "\(zoneId):789")
         let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 320, height: 50))
         testAaZoneView.initialize(zoneId: zoneId)
+        testAaZoneView.onStart(listener: TestAaZoneViewListener())
         window.addSubview(testAaZoneView)
         testAaZoneView.onAdLoadedInWebView(ad: &servedAd) //The impression only fires once the creative is up
 
@@ -240,6 +243,57 @@ class AaZoneViewTests: XCTestCase {
         await awaitAdapterEvent { self.adEvents(ofType: AdEventTypes.IMPRESSION_END, forZone: zoneId).count == 1 }
 
         XCTAssertEqual(1, adEvents(ofType: AdEventTypes.IMPRESSION_END, forZone: zoneId).count)
+    }
+
+    /// Prefetched below the fold before the host reported its visibility, so nobody has seen it empty yet.
+    @MainActor
+    func testAZoneBelowTheFoldReportsItselfUnfilledOnlyOnceItIsScrolledIntoView() async {
+        let noFillAdapter = MockAdAdapter()
+        noFillAdapter.shouldSucceed = true
+        noFillAdapter.mockAdZoneData = AdZoneData()
+        AdClient.createInstance(adapter: noFillAdapter)
+        defer { AdClient.createInstance(adapter: TestAdAdapter()) }
+        let zoneId = "belowTheFoldZoneId"
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 320, height: 480))
+        let scrollView = UIScrollView(frame: window.bounds)
+        scrollView.contentSize = CGSize(width: 320, height: 2000)
+        window.addSubview(scrollView)
+        testAaZoneView.frame = CGRect(x: 0, y: 1500, width: 320, height: 50)
+        scrollView.addSubview(testAaZoneView)
+        testAaZoneView.layoutIfNeeded()
+
+        let testListener = TestAaZoneViewListener()
+        testAaZoneView.initialize(zoneId: zoneId)
+        testAaZoneView.onStart(listener: testListener)
+        await awaitCondition { testListener.zoneAvailabilityReported }
+        await awaitAdapterEvent { self.adEvents(ofType: AdEventTypes.ZONE_MOUNTED, forZone: zoneId).count == 1 }
+
+        XCTAssertTrue(adEvents(ofType: AdEventTypes.ZONE_UNFILLED, forZone: zoneId).isEmpty, "Nobody has seen the zone below the fold come up empty")
+
+        scrollView.contentOffset = CGPoint(x: 0, y: 1300)
+        testAaZoneView.setAdZoneVisibility(isViewable: true)
+
+        await awaitAdapterEvent { self.adEvents(ofType: AdEventTypes.ZONE_UNFILLED, forZone: zoneId).count == 1 }
+        XCTAssertEqual(
+            [ZoneUnfilledReasons.NO_AD],
+            adEvents(ofType: AdEventTypes.ZONE_UNFILLED, forZone: zoneId).map { $0.eventName }
+        )
+    }
+
+    /// Hosts that keep the zone collapsed until it fills still have an empty zone on screen.
+    @MainActor
+    func testAZoneCollapsedOnScreenStillReportsItselfUnfilled() async {
+        let zoneId = "collapsedZoneId"
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 320, height: 480))
+        testAaZoneView.frame = CGRect(x: 0, y: 100, width: 320, height: 0)
+        window.addSubview(testAaZoneView)
+        testAaZoneView.layoutIfNeeded()
+
+        testAaZoneView.initialize(zoneId: zoneId)
+        testAaZoneView.onStart(listener: TestAaZoneViewListener())
+
+        await awaitAdapterEvent { self.adEvents(ofType: AdEventTypes.ZONE_UNFILLED, forZone: zoneId).count == 1 }
+        XCTAssertEqual(1, adEvents(ofType: AdEventTypes.ZONE_UNFILLED, forZone: zoneId).count)
     }
 
     /// Scoped to the zone under test, since `TestEventAdapter` is shared with every other suite
@@ -266,15 +320,18 @@ class AaZoneViewTests: XCTestCase {
 
 class TestAaZoneViewListener: ZoneViewListener {
     private let _zoneHasAds = Locked(false)
+    private let _zoneAvailabilityReported = Locked(false)
     private let _adLoaded = Locked(false)
     private let _adFailed = Locked(false)
 
     var zoneHasAds: Bool { _zoneHasAds.value }
+    var zoneAvailabilityReported: Bool { _zoneAvailabilityReported.value }
     var adLoaded: Bool { _adLoaded.value }
     var adFailed: Bool { _adFailed.value }
 
     func onZoneHasAds(hasAds: Bool) {
         _zoneHasAds.value = hasAds
+        _zoneAvailabilityReported.value = true
     }
 
     func onAdLoaded() {
@@ -288,4 +345,8 @@ class TestAaZoneViewListener: ZoneViewListener {
 
 class TestAdAdapter: AdAdapter {
 
+}
+
+private class UnansweredAdAdapter: AdAdapter {
+    func requestAd(zoneId: String, listener: ZoneAdListener, storeId: String, contextId: String, extra: String) async {}
 }

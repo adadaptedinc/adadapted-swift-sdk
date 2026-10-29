@@ -20,7 +20,7 @@ public struct AaZoneViewSwiftUI: View {
     // MARK: - Body
     public var body: some View {
         ZStack(alignment: .topTrailing) {
-            AdWebViewRepresentable(adWebViewListener: viewModel, currentAd: $viewModel.currentAd, isStopped: $viewModel.isStopped, webViewHandler: { webView in
+            AdWebViewRepresentable(adWebViewListener: viewModel, currentAd: $viewModel.currentAd, webViewHandler: { webView in
                 viewModel.setupWebView(webView: webView)
             })
             ReportButton(action: viewModel.reportButtonTapped).opacity(viewModel.currentAd != nil ? 1 : 0)
@@ -45,7 +45,6 @@ public struct AaZoneViewSwiftUI: View {
 struct AdWebViewRepresentable: UIViewRepresentable {
     var adWebViewListener: AdWebViewListener?
     @Binding var currentAd: Ad?
-    @Binding var isStopped: Bool
     var webViewHandler: (WKWebView) -> Void
 
     private static let blankDocument = """
@@ -86,19 +85,17 @@ struct AdWebViewRepresentable: UIViewRepresentable {
     }
     
     func makeCoordinator() -> Coordinator {
-        Coordinator(self, listener: adWebViewListener, isStopped: $isStopped)
+        Coordinator(self, listener: adWebViewListener)
     }
     
     @MainActor
     class Coordinator: NSObject, WKNavigationDelegate, UIGestureRecognizerDelegate {
         var parent: AdWebViewRepresentable
         var listener: AdWebViewListener?
-        @Binding var isStopped: Bool
         
-        init(_ parent: AdWebViewRepresentable, listener: AdWebViewListener?, isStopped: Binding<Bool>) {
+        init(_ parent: AdWebViewRepresentable, listener: AdWebViewListener?) {
             self.parent = parent
             self.listener = listener
-            self._isStopped = isStopped
         }
         
         @objc func handleTap() {
@@ -112,7 +109,7 @@ struct AdWebViewRepresentable: UIViewRepresentable {
         }
         
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-            guard !isStopped, var ad = parent.currentAd, !ad.id.isEmpty else { return }
+            guard var ad = parent.currentAd, !ad.id.isEmpty else { return }
             listener?.onAdLoadedInWebView(ad: &ad)
         }
         
