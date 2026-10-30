@@ -196,6 +196,23 @@ final class SwiftZoneViewModelTests: XCTestCase {
         XCTAssertEqual(["LoadedAdId"], listener.loadedAdIds)
     }
 
+    /// A refresh can serve the same creative again, and without a fresh load there is no finished load
+    /// to mark the new impression rendered. SwiftUI re-running the update for the same ad must not reload it.
+    @MainActor
+    func testTheWebViewReloadsAnotherServedAdEvenWhenItsCreativeIsTheSame() {
+        let webView = RecordingWebView()
+        let coordinator = AdWebViewRepresentable(adWebViewListener: nil, currentAd: .constant(nil), webViewHandler: { _ in }).makeCoordinator()
+        let firstAd = Ad(id: "SameCreativeAdId", impressionId: "zone:1", url: "https://example.com/creative")
+        let refreshedAd = Ad(id: "SameCreativeAdId", impressionId: "zone:2", url: "https://example.com/creative")
+
+        coordinator.show(firstAd, in: webView)
+        coordinator.show(firstAd, in: webView)
+        XCTAssertEqual(1, webView.loadCount, "The same served ad should not reload on every SwiftUI update")
+
+        coordinator.show(refreshedAd, in: webView)
+        XCTAssertEqual(2, webView.loadCount, "A newly served ad should reload even with the same creative URL")
+    }
+
     /// A zone id holds one view model. When two for the same id are built at once, one of them has to
     /// come out detached, or the id runs a duplicate pair that both fetch and both report impressions.
     ///
@@ -284,4 +301,13 @@ private class RecordingAdWebViewListener: AdWebViewListener {
     func onAdLoadInWebViewFailed() {}
     func onAdInWebViewClicked(ad: Ad) {}
     func onBlankAdInWebViewLoaded() {}
+}
+
+private class RecordingWebView: WKWebView {
+    private(set) var loadCount = 0
+
+    override func load(_ request: URLRequest) -> WKNavigation? {
+        loadCount += 1
+        return nil
+    }
 }

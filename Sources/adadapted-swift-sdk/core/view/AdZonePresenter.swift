@@ -253,7 +253,7 @@ class AdZonePresenter: ZoneAdListener {
     }
     
     private func trackAdImpression() {
-        guard isZoneOnScreen(), isCurrentAdRendered, !currentAd.impressionWasTracked(), !currentAd.isEmpty() else {
+        guard isZoneOnScreen(), isZoneInViewport(), isCurrentAdRendered, !currentAd.impressionWasTracked(), !currentAd.isEmpty() else {
             return
         }
 

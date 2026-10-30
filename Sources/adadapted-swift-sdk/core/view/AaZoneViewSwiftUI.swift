@@ -74,14 +74,7 @@ struct AdWebViewRepresentable: UIViewRepresentable {
     }
     
     func updateUIView(_ uiView: WKWebView, context: Context) {
-        if let ad = currentAd, let url = URL(string: ad.url) {
-            // Load ad URL only if it's different from the current URL
-            if uiView.url != url {
-                uiView.load(URLRequest(url: url))
-            }
-        } else {
-            uiView.loadHTMLString(AdWebViewRepresentable.blankDocument, baseURL: nil)
-        }
+        context.coordinator.show(currentAd, in: uiView)
     }
     
     func makeCoordinator() -> Coordinator {
@@ -92,10 +85,23 @@ struct AdWebViewRepresentable: UIViewRepresentable {
     class Coordinator: NSObject, WKNavigationDelegate, UIGestureRecognizerDelegate {
         var parent: AdWebViewRepresentable
         var listener: AdWebViewListener?
+        private var shownAd: Ad?
         
         init(_ parent: AdWebViewRepresentable, listener: AdWebViewListener?) {
             self.parent = parent
             self.listener = listener
+        }
+        
+        /// Reloads per served ad rather than per URL, so a refresh that serves the same creative still renders its impression.
+        func show(_ ad: Ad?, in webView: WKWebView) {
+            if let ad, let url = URL(string: ad.url) {
+                guard ad !== shownAd else { return }
+                shownAd = ad
+                webView.load(URLRequest(url: url))
+            } else {
+                shownAd = nil
+                webView.loadHTMLString(AdWebViewRepresentable.blankDocument, baseURL: nil)
+            }
         }
         
         @objc func handleTap() {

@@ -8,13 +8,13 @@ extension UIView {
     /// Position only, so a view collapsed to zero size still counts when it sits on screen.
     var isPositionedInViewport: Bool {
         guard let window else { return false }
-        let rect = convert(bounds, to: window)
+        var viewport = window.bounds
         var ancestor = superview
         while let view = ancestor {
-            if view.clipsToBounds && !rect.isPositioned(within: view.convert(view.bounds, to: window)) { return false }
+            if view.clipsToBounds { viewport = viewport.intersection(view.convert(view.bounds, to: window)) }
             ancestor = view.superview
         }
-        return rect.isPositioned(within: window.bounds)
+        return !viewport.isNull && convert(bounds, to: window).isPositioned(within: viewport)
     }
 }
 

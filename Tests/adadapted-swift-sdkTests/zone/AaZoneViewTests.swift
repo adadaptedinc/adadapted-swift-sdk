@@ -280,6 +280,34 @@ class AaZoneViewTests: XCTestCase {
         )
     }
 
+    /// Rendered below the fold before the host reported its visibility, so nobody has seen the creative yet.
+    @MainActor
+    func testACreativeRenderedBelowTheFoldIsImpressedOnlyOnceItIsScrolledIntoView() async {
+        AdClient.createInstance(adapter: UnansweredAdAdapter())
+        defer { AdClient.createInstance(adapter: TestAdAdapter()) }
+        let zoneId = "belowTheFoldImpressionZoneId"
+        var servedAd = Ad(id: "BelowTheFoldAdId", impressionId: "\(zoneId):790")
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 320, height: 480))
+        let scrollView = UIScrollView(frame: window.bounds)
+        scrollView.contentSize = CGSize(width: 320, height: 2000)
+        window.addSubview(scrollView)
+        testAaZoneView.frame = CGRect(x: 0, y: 1500, width: 320, height: 50)
+        scrollView.addSubview(testAaZoneView)
+        testAaZoneView.layoutIfNeeded()
+
+        testAaZoneView.initialize(zoneId: zoneId)
+        testAaZoneView.onStart(listener: TestAaZoneViewListener())
+        testAaZoneView.onAdLoadedInWebView(ad: &servedAd)
+
+        XCTAssertFalse(servedAd.impressionWasTracked(), "Nobody has seen the creative below the fold")
+
+        scrollView.contentOffset = CGPoint(x: 0, y: 1300)
+        testAaZoneView.setAdZoneVisibility(isViewable: true)
+
+        await awaitAdapterEvent { self.adEvents(ofType: AdEventTypes.IMPRESSION, forZone: zoneId).count == 1 }
+        XCTAssertEqual(1, adEvents(ofType: AdEventTypes.IMPRESSION, forZone: zoneId).count)
+    }
+
     /// Hosts that keep the zone collapsed until it fills still have an empty zone on screen.
     @MainActor
     func testAZoneCollapsedOnScreenStillReportsItselfUnfilled() async {
