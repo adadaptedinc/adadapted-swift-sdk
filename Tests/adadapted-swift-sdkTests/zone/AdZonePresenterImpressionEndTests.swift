@@ -114,19 +114,16 @@ class AdZonePresenterImpressionEndTests: XCTestCase {
         XCTAssertEqual(1, ends, "A zone attached to a backgrounded app should end the impression it was showing, once")
     }
 
-    /// Going inactive ends the impression, and the trip on to the background does not end it again.
-    func testAnImpressionEndsOnceWhenTheAppGoesInactiveAndThenToTheBackground() async {
+    /// Control Center, Notification Center or a system alert only make the app inactive, and the ad is still up under them.
+    func testAnImpressionDoesNotEndWhileTheAppIsOnlyInactive() async {
         await displayAVisibleAd()
 
-        let endsOnGoingInactive = await impressionEndsFiledDuring {
+        let ends = await impressionEndsFiledDuring(expecting: 0) {
             NotificationCenter.default.post(name: UIApplication.willResignActiveNotification, object: nil)
-        }
-        let endsOnBackgrounding = await impressionEndsFiledDuring(expecting: 0) {
-            NotificationCenter.default.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
+            NotificationCenter.default.post(name: UIApplication.didBecomeActiveNotification, object: nil)
         }
 
-        XCTAssertEqual(1, endsOnGoingInactive, "An app that is only inactive has already taken the ad off screen")
-        XCTAssertEqual(0, endsOnBackgrounding)
+        XCTAssertEqual(0, ends)
     }
 
     /// The fetch that replaces an ad can land after the zone came back and impressed it, past the end the fetch already ran.
@@ -259,10 +256,6 @@ class AdZonePresenterImpressionEndTests: XCTestCase {
         await assertAnAdRenderedOffScreenReportsNoImpression(leaveTheScreen: { self.testAdZonePresenter.onAppBackgrounded() })
     }
 
-    func testAnAdRenderedWhileTheAppIsInactiveReportsNoImpression() async {
-        await assertAnAdRenderedOffScreenReportsNoImpression(leaveTheScreen: { self.testAdZonePresenter.onAppDeactivated() })
-    }
-
     func testAnAdRenderedWhileTheZoneIsOutOfTheWindowReportsNoImpression() async {
         await assertAnAdRenderedOffScreenReportsNoImpression(leaveTheScreen: { self.testAdZonePresenter.onExitedWindow() })
     }
@@ -282,14 +275,7 @@ class AdZonePresenterImpressionEndTests: XCTestCase {
     func testAnAdRenderedWhileTheAppIsBackgroundedIsImpressedOnceTheUserComesBack() async {
         await assertAnAdRenderedOffScreenIsImpressedOnceWhenItComesBack(
             leaveTheScreen: { self.testAdZonePresenter.onAppBackgrounded() },
-            comeBack: { self.testAdZonePresenter.onAppActivated() }
-        )
-    }
-
-    func testAnAdRenderedWhileTheAppIsInactiveIsImpressedOnceTheUserComesBack() async {
-        await assertAnAdRenderedOffScreenIsImpressedOnceWhenItComesBack(
-            leaveTheScreen: { self.testAdZonePresenter.onAppDeactivated() },
-            comeBack: { self.testAdZonePresenter.onAppActivated() }
+            comeBack: { self.testAdZonePresenter.onAppForegrounded() }
         )
     }
 
@@ -314,7 +300,7 @@ class AdZonePresenterImpressionEndTests: XCTestCase {
     func testAnAdStillLoadingWhenTheUserComesBackIsNotImpressed() async {
         _ = await serveAnAd(id: "LoadingAdId", impressionId: "\(zoneId):790")
         testAdZonePresenter.onAppBackgrounded()
-        testAdZonePresenter.onAppActivated()
+        testAdZonePresenter.onAppForegrounded()
 
         testAdZonePresenter.onDetach()
 

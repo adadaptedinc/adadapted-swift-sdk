@@ -15,7 +15,7 @@ class AdZonePresenter: ZoneAdListener {
     private var zoneContextId = ""
     private var currentAdZoneData = AdZoneData()
     private var isZoneVisible = true
-    private var isAppActive = true
+    private var isAppInForeground = true
     private var isInWindow = true
     private var isShown = true
     private var fetchWaitingOnShow = false
@@ -35,7 +35,7 @@ class AdZonePresenter: ZoneAdListener {
     private var timer: Timer?
     private let makeTimer: MakeTimer
     private let now: () -> Int
-    private let appIsActive: () -> Bool
+    private let appIsInForeground: () -> Bool
     private var webViewManager: AdWebViewManager?
     private var swiftUIWebView: WKWebView?
     private var appLifecycleObservers: [NSObjectProtocol] = []
@@ -47,12 +47,12 @@ class AdZonePresenter: ZoneAdListener {
         adViewHandler: AdViewHandler,
         makeTimer: @escaping MakeTimer = Timer.init(repeatSeconds:delaySeconds:timerAction:),
         now: @escaping () -> Int = { Int(clock_gettime_nsec_np(CLOCK_MONOTONIC) / NSEC_PER_SEC) },
-        appIsActive: @escaping () -> Bool = { UIApplication.shared.applicationState == .active }
+        appIsInForeground: @escaping () -> Bool = { UIApplication.shared.applicationState != .background }
     ) {
         self.adViewHandler = adViewHandler
         self.makeTimer = makeTimer
         self.now = now
-        self.appIsActive = appIsActive
+        self.appIsInForeground = appIsInForeground
     }
 
     deinit {
@@ -104,18 +104,13 @@ class AdZonePresenter: ZoneAdListener {
         }
     }
 
-    func onAppActivated() {
-        isAppActive = true
+    func onAppForegrounded() {
+        isAppInForeground = true
         resumeIfOnScreen()
     }
 
-    func onAppDeactivated() {
-        isAppActive = false
-        leaveScreen()
-    }
-
     func onAppBackgrounded() {
-        isAppActive = false
+        isAppInForeground = false
         leaveScreen(publishImmediately: true) //Nothing publishes again until the app is back
     }
 
@@ -218,8 +213,8 @@ class AdZonePresenter: ZoneAdListener {
     }
     
     func onAdDisplayFailed() {
-        reportZoneUnfilled(reason: ZoneUnfilledReasons.RENDER_FAILED)
         clearCurrentAd()
+        reportZoneUnfilled(reason: ZoneUnfilledReasons.RENDER_FAILED)
     }
 
     func onBlankDisplayed() {
@@ -318,18 +313,15 @@ class AdZonePresenter: ZoneAdListener {
     }
 
     private func observeAppLifecycle() {
-        isAppActive = appIsActive()
+        isAppInForeground = appIsInForeground()
 
         let center = NotificationCenter.default
         appLifecycleObservers = [
-            center.addObserver(forName: UIApplication.willResignActiveNotification, object: nil, queue: .main) { [weak self] _ in
-                self?.onAppDeactivated()
-            },
             center.addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main) { [weak self] _ in
                 self?.onAppBackgrounded()
             },
-            center.addObserver(forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
-                self?.onAppActivated()
+            center.addObserver(forName: UIApplication.willEnterForegroundNotification, object: nil, queue: .main) { [weak self] _ in
+                self?.onAppForegrounded()
             }
         ]
     }
@@ -346,7 +338,7 @@ class AdZonePresenter: ZoneAdListener {
     }
     
     private func isZoneOnScreen() -> Bool {
-        return attached && isZoneVisible && isAppActive && isInWindow && isShown
+        return attached && isZoneVisible && isAppInForeground && isInWindow && isShown
     }
 
     private var zoneView: UIView? { webViewManager ?? swiftUIWebView }

@@ -307,6 +307,34 @@ class AaZoneViewTests: XCTestCase {
         XCTAssertEqual(1, adEvents(ofType: AdEventTypes.IMPRESSION, forZone: zoneId).count)
     }
 
+    @MainActor
+    func testACreativeThatFailsToRenderBelowTheFoldReportsItselfUnfilledOnceItIsScrolledIntoView() async {
+        defer { AdClient.createInstance(adapter: TestAdAdapter()) }
+        let zoneId = "renderFailedBelowTheFoldZoneId"
+        let servedAd = Ad(id: "RenderFailedAdId", impressionId: "\(zoneId):793")
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 320, height: 480))
+        let scrollView = UIScrollView(frame: window.bounds)
+        scrollView.contentSize = CGSize(width: 320, height: 2000)
+        window.addSubview(scrollView)
+        testAaZoneView.frame = CGRect(x: 0, y: 1500, width: 320, height: 50)
+        scrollView.addSubview(testAaZoneView)
+        testAaZoneView.layoutIfNeeded()
+
+        await start(testAaZoneView, inZone: zoneId, serving: servedAd)
+        testAaZoneView.onAdLoadInWebViewFailed()
+        await awaitAdapterEvent { self.adEvents(ofType: AdEventTypes.ZONE_MOUNTED, forZone: zoneId).count == 1 }
+
+        XCTAssertTrue(adEvents(ofType: AdEventTypes.ZONE_UNFILLED, forZone: zoneId).isEmpty, "Nobody has seen the zone below the fold fail to render")
+
+        scrollView.contentOffset = CGPoint(x: 0, y: 1300)
+
+        await awaitAdapterEvent { self.adEvents(ofType: AdEventTypes.ZONE_UNFILLED, forZone: zoneId).count == 1 }
+        XCTAssertEqual(
+            [ZoneUnfilledReasons.RENDER_FAILED],
+            adEvents(ofType: AdEventTypes.ZONE_UNFILLED, forZone: zoneId).map { $0.eventName }
+        )
+    }
+
     /// The host only unhides the container here, with no scroll or visibility call to report it.
     @MainActor
     func testACreativeRenderedUnderAHiddenParentIsImpressedOnlyOnceItIsShown() async {

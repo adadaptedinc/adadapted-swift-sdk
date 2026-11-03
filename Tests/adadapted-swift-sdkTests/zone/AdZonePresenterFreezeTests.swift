@@ -68,7 +68,7 @@ class AdZonePresenterFreezeTests: XCTestCase {
     func testABackgroundedAppFreezesItsRefreshAndPicksUpTheTimeItHadLeft() async {
         await assertTheRefreshFreezesAndPicksBackUp(
             freeze: { self.testAdZonePresenter.onAppBackgrounded() },
-            unfreeze: { self.testAdZonePresenter.onAppActivated() }
+            unfreeze: { self.testAdZonePresenter.onAppForegrounded() }
         )
     }
 
@@ -100,14 +100,6 @@ class AdZonePresenterFreezeTests: XCTestCase {
         await awaitCondition { !testListener.testAd.id.isEmpty }
         try? await Task.sleep(nanoseconds: 300_000_000)
         XCTAssertEqual(requestsBeforeAttaching + 1, adapter.requestCount, "Shown, it fetches its first ad, and only once")
-    }
-
-    /// Notification Center, the app switcher or a system alert covering the app.
-    func testAnInactiveAppFreezesItsRefreshAndPicksUpTheTimeItHadLeft() async {
-        await assertTheRefreshFreezesAndPicksBackUp(
-            freeze: { self.testAdZonePresenter.onAppDeactivated() },
-            unfreeze: { self.testAdZonePresenter.onAppActivated() }
-        )
     }
 
     /// The countdown is only ever armed for the time it still has to run, so what it was armed with
@@ -194,7 +186,7 @@ class AdZonePresenterFreezeTests: XCTestCase {
 
         testAdZonePresenter.onAdVisibilityChanged(isAdVisible: false)
         testAdZonePresenter.onAppBackgrounded()
-        testAdZonePresenter.onAppActivated()
+        testAdZonePresenter.onAppForegrounded()
         advanceClock(bySeconds: 301)
 
         XCTAssertEqual(false, armedTimer?.isRunning, "A zone still out of view should stay frozen no matter what the app does")
@@ -207,7 +199,7 @@ class AdZonePresenterFreezeTests: XCTestCase {
 
         testAdZonePresenter.onHidden()
         testAdZonePresenter.onAppBackgrounded()
-        testAdZonePresenter.onAppActivated()
+        testAdZonePresenter.onAppForegrounded()
         advanceClock(bySeconds: 301)
 
         XCTAssertEqual(false, armedTimer?.isRunning, "A zone still hidden should stay frozen no matter what the app does")
@@ -225,29 +217,23 @@ class AdZonePresenterFreezeTests: XCTestCase {
         await awaitCondition { [self] in armedTimer?.isRunning == false }
         XCTAssertEqual(false, armedTimer?.isRunning, "Backgrounding the app should freeze the zone's countdown")
 
-        NotificationCenter.default.post(name: UIApplication.didBecomeActiveNotification, object: nil)
+        NotificationCenter.default.post(name: UIApplication.willEnterForegroundNotification, object: nil)
 
         await awaitCondition { [self] in armedTimer?.isRunning == true }
         XCTAssertEqual(true, armedTimer?.isRunning, "Coming back to the foreground should start it up again")
     }
 
-    /// The order iOS posts them in on a trip to the background and back. The app is still inactive
-    /// after it re-enters the foreground, so only becoming active again starts the countdown.
-    func testTheRefreshStaysFrozenFromTheAppGoingInactiveUntilItIsActiveAgain() async {
+    /// Control Center, Notification Center or a system alert only make the app inactive, and the ad keeps running under them.
+    func testTheRefreshKeepsRunningWhileTheAppIsOnlyInactive() async {
         await displayAVisibleAd(refreshSeconds: 300)
+        let countdown = armedTimer
 
         NotificationCenter.default.post(name: UIApplication.willResignActiveNotification, object: nil)
-        await awaitCondition { [self] in armedTimer?.isRunning == false }
-        XCTAssertEqual(false, armedTimer?.isRunning, "An inactive app should freeze the zone's countdown")
-
-        NotificationCenter.default.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
-        NotificationCenter.default.post(name: UIApplication.willEnterForegroundNotification, object: nil)
-        try? await Task.sleep(nanoseconds: 200_000_000)
-        XCTAssertEqual(false, armedTimer?.isRunning, "Back in the foreground but not active yet should stay frozen")
-
         NotificationCenter.default.post(name: UIApplication.didBecomeActiveNotification, object: nil)
-        await awaitCondition { [self] in armedTimer?.isRunning == true }
-        XCTAssertEqual(true, armedTimer?.isRunning, "Becoming active again should start it up again")
+        try? await Task.sleep(nanoseconds: 200_000_000)
+
+        XCTAssertTrue(countdown === armedTimer, "The countdown should not have been re-armed")
+        XCTAssertEqual(true, armedTimer?.isRunning)
     }
 
     /// The countdown fires on a background queue and hops to the main one to do its work, so a zone
@@ -275,7 +261,7 @@ class AdZonePresenterFreezeTests: XCTestCase {
             "A refresh that landed after the app backgrounded should not have fetched anything"
         )
 
-        testAdZonePresenter.onAppActivated()
+        testAdZonePresenter.onAppForegrounded()
 
         await awaitCondition { [self] in adapter.requestCount > requestsBeforeTheDeadline }
         XCTAssertEqual(
@@ -299,7 +285,7 @@ class AdZonePresenterFreezeTests: XCTestCase {
                 return timer
             },
             now: { [fakeClockSeconds] in fakeClockSeconds.value },
-            appIsActive: { false }
+            appIsInForeground: { false }
         )
         backgroundedPresenter.initialize(zoneId: zoneId)
         defer { backgroundedPresenter.onDetach() }
@@ -314,7 +300,7 @@ class AdZonePresenterFreezeTests: XCTestCase {
         XCTAssertNil(armedTimer, "A zone attached into a backgrounded app should not have armed a countdown at all")
 
         //And it is not stuck off: the app coming back is what it was waiting for
-        backgroundedPresenter.onAppActivated()
+        backgroundedPresenter.onAppForegrounded()
 
         XCTAssertEqual(300, armedTimer?.delaySeconds, "Coming to the foreground should start the ad's own refresh")
         XCTAssertEqual(true, armedTimer?.isRunning, "And it should be running")
