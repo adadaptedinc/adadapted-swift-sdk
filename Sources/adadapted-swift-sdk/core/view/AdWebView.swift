@@ -10,6 +10,7 @@ class AdWebView: WKWebView, WKNavigationDelegate {
     weak var listener: AdWebViewListener?
     var currentAd: Ad = Ad()
     private var loaded: Bool = false
+    private var currentNavigation: WKNavigation?
 
     init(frame: CGRect, listener: AdWebViewListener) {
         self.listener = listener
@@ -36,16 +37,19 @@ class AdWebView: WKWebView, WKNavigationDelegate {
     func loadAd(ad: Ad) {
         currentAd = ad
         loaded = false
+        currentNavigation = nil
         if let url = URL(string: ad.url) {
             let request = URLRequest(url: url)
             DispatchQueue.main.async { [weak self] in
-                self?.load(request)
+                guard let self, self.currentAd === ad else { return }
+                self.currentNavigation = self.load(request)
             }
         }
     }
     
     func loadBlank() {
         currentAd = Ad()
+        currentNavigation = nil
         let dummyDocument = """
             <html><head><meta name="viewport" content="width=device-width, user-scalable=no" /></head><body></body></html>
         """
@@ -78,14 +82,27 @@ class AdWebView: WKWebView, WKNavigationDelegate {
     // MARK: - WKNavigationDelegate
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        if !currentAd.id.isEmpty && !loaded {
+        if isCurrentAdLoading(navigation) {
             loaded = true
             notifyAdLoaded()
         }
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-        if !currentAd.id.isEmpty && !loaded {
+        failIfCurrentAdLoading(navigation)
+    }
+
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        failIfCurrentAdLoading(navigation)
+    }
+
+    /// A load the next ad replaced can still report back, so only the navigation this ad started counts.
+    private func isCurrentAdLoading(_ navigation: WKNavigation?) -> Bool {
+        navigation != nil && navigation === currentNavigation && !currentAd.id.isEmpty && !loaded
+    }
+
+    private func failIfCurrentAdLoading(_ navigation: WKNavigation?) {
+        if isCurrentAdLoading(navigation) {
             loaded = true
             notifyAdLoadFailed()
         }

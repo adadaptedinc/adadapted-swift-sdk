@@ -9,17 +9,41 @@ extension UIView {
     var isPositionedInViewport: Bool {
         guard let window else { return false }
         var viewport = window.bounds
-        var ancestor = superview
-        while let view = ancestor {
-            if view.clipsToBounds { viewport = viewport.intersection(view.convert(view.bounds, to: window)) }
-            ancestor = view.superview
+        for view in ancestors where view.clipsToBounds {
+            viewport = viewport.intersection(view.convert(view.bounds, to: window))
         }
         return !viewport.isNull && convert(bounds, to: window).isPositioned(within: viewport)
+    }
+
+    var ancestors: DropFirstSequence<UnfoldFirstSequence<UIView>> {
+        sequence(first: self, next: \.superview).dropFirst()
+    }
+}
+
+final class ViewportWatcher {
+    private var observations: [NSKeyValueObservation] = []
+
+    func watch(_ view: UIView, onMove: @escaping () -> Void) {
+        guard observations.isEmpty else { return }
+        for case let scrollView as UIScrollView in view.ancestors {
+            observations.append(scrollView.observe(\.contentOffset) { _, _ in onMove() })
+        }
+    }
+
+    func stop() {
+        observations.forEach { $0.invalidate() }
+        observations = []
     }
 }
 
 private extension CGRect {
     func isPositioned(within visibleRect: CGRect) -> Bool {
-        maxX >= visibleRect.minX && minX < visibleRect.maxX && maxY >= visibleRect.minY && minY < visibleRect.maxY
+        spans(from: minX, to: maxX, within: visibleRect.minX, visibleRect.maxX)
+            && spans(from: minY, to: maxY, within: visibleRect.minY, visibleRect.maxY)
+    }
+
+    private func spans(from start: CGFloat, to end: CGFloat, within visibleStart: CGFloat, _ visibleEnd: CGFloat) -> Bool {
+        guard start < visibleEnd else { return false }
+        return start == end ? start >= visibleStart : end > visibleStart
     }
 }

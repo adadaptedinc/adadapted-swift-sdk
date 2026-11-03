@@ -86,6 +86,7 @@ struct AdWebViewRepresentable: UIViewRepresentable {
         var parent: AdWebViewRepresentable
         var listener: AdWebViewListener?
         private var shownAd: Ad?
+        private var shownAdNavigation: WKNavigation?
         
         init(_ parent: AdWebViewRepresentable, listener: AdWebViewListener?) {
             self.parent = parent
@@ -97,9 +98,10 @@ struct AdWebViewRepresentable: UIViewRepresentable {
             if let ad, let url = URL(string: ad.url) {
                 guard ad !== shownAd else { return }
                 shownAd = ad
-                webView.load(URLRequest(url: url))
+                shownAdNavigation = webView.load(URLRequest(url: url))
             } else {
                 shownAd = nil
+                shownAdNavigation = nil
                 webView.loadHTMLString(AdWebViewRepresentable.blankDocument, baseURL: nil)
             }
         }
@@ -115,12 +117,25 @@ struct AdWebViewRepresentable: UIViewRepresentable {
         }
         
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-            guard var ad = parent.currentAd, !ad.id.isEmpty else { return }
+            guard var ad = adLoading(by: navigation) else { return }
             listener?.onAdLoadedInWebView(ad: &ad)
         }
         
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+            guard adLoading(by: navigation) != nil else { return }
             listener?.onAdLoadInWebViewFailed()
+        }
+
+        func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+            guard adLoading(by: navigation) != nil else { return }
+            listener?.onAdLoadInWebViewFailed()
+        }
+
+        /// A load the next ad replaced can still report back, so only the navigation this ad started counts.
+        private func adLoading(by navigation: WKNavigation?) -> Ad? {
+            guard let navigation, navigation === shownAdNavigation, let ad = shownAd, !ad.id.isEmpty else { return nil }
+            shownAdNavigation = nil
+            return ad
         }
     }
 }

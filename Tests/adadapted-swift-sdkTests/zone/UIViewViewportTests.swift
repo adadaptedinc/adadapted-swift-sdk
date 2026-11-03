@@ -32,4 +32,25 @@ class UIViewViewportTests: XCTestCase {
 
         XCTAssertTrue(zone.isPositionedInViewport)
     }
+
+    @MainActor
+    func testAZoneWhoseEdgeOnlyTouchesTheViewportIsNotInIt() {
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 320, height: 480))
+        let aboveTheTop = UIView(frame: CGRect(x: 0, y: -100, width: 320, height: 100))
+        let leftOfTheLeftEdge = UIView(frame: CGRect(x: -320, y: 0, width: 320, height: 100))
+        window.addSubview(aboveTheTop)
+        window.addSubview(leftOfTheLeftEdge)
+
+        XCTAssertFalse(aboveTheTop.isPositionedInViewport)
+        XCTAssertFalse(leftOfTheLeftEdge.isPositionedInViewport)
+    }
+
+    @MainActor
+    func testAZoneCollapsedOnTheViewportsTopEdgeIsInIt() {
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 320, height: 480))
+        let collapsed = UIView(frame: CGRect(x: 0, y: 0, width: 320, height: 0))
+        window.addSubview(collapsed)
+
+        XCTAssertTrue(collapsed.isPositionedInViewport)
+    }
 }

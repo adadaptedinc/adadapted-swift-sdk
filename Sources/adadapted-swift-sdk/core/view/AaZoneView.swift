@@ -15,6 +15,8 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
     internal var isVisible = true
     private var isAdVisible = true
     private var webViewLoaded = false
+    private var isHiddenInHierarchy = false
+    private var hiddenObservations: [NSKeyValueObservation] = []
     
     // MARK: - Initializers
     public override init(frame: CGRect) {
@@ -120,7 +122,36 @@ public class AaZoneView: UIView, AdZonePresenterListener, AdWebViewListener {
     /// or not the host app got around to stopping it.
     public override func didMoveToWindow() {
         super.didMoveToWindow()
+        observeHiddenState()
         window == nil ? presenter.onExitedWindow() : presenter.onEnteredWindow()
+    }
+
+    public override func didMoveToSuperview() {
+        super.didMoveToSuperview()
+        if window != nil { observeHiddenState() }
+    }
+
+    /// Hiding the zone or any parent takes it off screen the way leaving the window does.
+    private func observeHiddenState() {
+        guard window != nil else {
+            hiddenObservations = []
+            return
+        }
+        hiddenObservations = viewsBelowWindow.map { view in
+            view.observe(\.isHidden) { [weak self] _, _ in self?.reportHiddenState() }
+        }
+        reportHiddenState()
+    }
+
+    private func reportHiddenState() {
+        let hidden = viewsBelowWindow.contains(where: \.isHidden)
+        guard hidden != isHiddenInHierarchy else { return }
+        isHiddenInHierarchy = hidden
+        hidden ? presenter.onHidden() : presenter.onShown()
+    }
+
+    private var viewsBelowWindow: [UIView] {
+        [self] + ancestors.prefix { !($0 is UIWindow) }
     }
     
     // MARK: - AdZonePresenterListener

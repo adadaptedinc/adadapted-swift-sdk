@@ -118,12 +118,37 @@ class AdZonePresenterImpressionEndTests: XCTestCase {
     func testAnImpressionEndsOnceWhenTheAppGoesInactiveAndThenToTheBackground() async {
         await displayAVisibleAd()
 
-        let ends = await impressionEndsFiledDuring {
+        let endsOnGoingInactive = await impressionEndsFiledDuring {
             NotificationCenter.default.post(name: UIApplication.willResignActiveNotification, object: nil)
+        }
+        let endsOnBackgrounding = await impressionEndsFiledDuring(expecting: 0) {
             NotificationCenter.default.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
         }
 
+        XCTAssertEqual(1, endsOnGoingInactive, "An app that is only inactive has already taken the ad off screen")
+        XCTAssertEqual(0, endsOnBackgrounding)
+    }
+
+    /// The fetch that replaces an ad can land after the zone came back and impressed it, past the end the fetch already ran.
+    func testAnImpressionEndsWhenTheNextAdArrives() async {
+        await displayAVisibleAd()
+
+        let ends = await impressionEndsFiledDuring {
+            self.testAdZonePresenter.onAdLoaded(AdZoneData(ad: Ad(id: "NextAdId", impressionId: "\(self.zoneId):124")))
+        }
+
         XCTAssertEqual(1, ends)
+    }
+
+    func testTheNextAdIsNotImpressedUntilItHasRenderedItself() async {
+        await displayAVisibleAd()
+        let nextAd = Ad(id: "NextAdId", impressionId: "\(zoneId):125")
+        await deliver(AdZoneData(ad: nextAd))
+
+        testAdZonePresenter.onAdVisibilityChanged(isAdVisible: false)
+        testAdZonePresenter.onAdVisibilityChanged(isAdVisible: true)
+
+        XCTAssertFalse(nextAd.impressionWasTracked(), "Rendering the ad before it does not render this one")
     }
 
     /// A click takes the ad off screen by fetching the next one, so a clicked impression closes out
@@ -275,6 +300,17 @@ class AdZonePresenterImpressionEndTests: XCTestCase {
         )
     }
 
+    func testAnAdRenderedWhileTheZoneIsHiddenReportsNoImpression() async {
+        await assertAnAdRenderedOffScreenReportsNoImpression(leaveTheScreen: { self.testAdZonePresenter.onHidden() })
+    }
+
+    func testAnAdRenderedWhileTheZoneIsHiddenIsImpressedOnceItIsShown() async {
+        await assertAnAdRenderedOffScreenIsImpressedOnceWhenItComesBack(
+            leaveTheScreen: { self.testAdZonePresenter.onHidden() },
+            comeBack: { self.testAdZonePresenter.onShown() }
+        )
+    }
+
     func testAnAdStillLoadingWhenTheUserComesBackIsNotImpressed() async {
         _ = await serveAnAd(id: "LoadingAdId", impressionId: "\(zoneId):790")
         testAdZonePresenter.onAppBackgrounded()
@@ -323,6 +359,13 @@ class AdZonePresenterImpressionEndTests: XCTestCase {
         await awaitCondition { testListener.testAd.id == id }
 
         return servedAd
+    }
+
+    private func deliver(_ adZoneData: AdZoneData) async {
+        testAdZonePresenter.onAdLoaded(adZoneData)
+        let landed = expectation(description: "The fetch has been handled")
+        DispatchQueue.main.async { landed.fulfill() }
+        await fulfillment(of: [landed], timeout: TestWait.timeout)
     }
 
     /// Waits for the ends that should have been filed and then leaves any further one the same window

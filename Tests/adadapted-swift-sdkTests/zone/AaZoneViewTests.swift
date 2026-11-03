@@ -7,6 +7,7 @@ import XCTest
 
 class AaZoneViewTests: XCTestCase {
     var testAaZoneView: AaZoneView!
+    private var containerWindows: [UIWindow] = []
 
     override class func setUp() {
         super.setUp()
@@ -24,6 +25,7 @@ class AaZoneViewTests: XCTestCase {
     override func tearDown() {
         testAaZoneView.onStop()
         testAaZoneView = nil
+        containerWindows = []
         super.tearDown()
     }
 
@@ -223,17 +225,14 @@ class AaZoneViewTests: XCTestCase {
     /// A zone can leave the view hierarchy without ever being hidden or stopped - a recycled cell, a
     /// torn down view controller - and the impression it was showing has ended either way.
     ///
-    /// The zone's fetch is never answered, so the ad under test is the one handed to the web view rather
-    /// than one a fetch could replace while the test is waiting on the impression.
+    /// The adapter hands back the very ad it was given, so the one rendered here is the one the presenter served.
     func testAZoneTakenOutOfTheWindowEndsTheImpressionItWasShowing() async {
-        AdClient.createInstance(adapter: UnansweredAdAdapter())
-        defer { AdClient.createInstance(adapter: TestAdAdapter()) }
         let zoneId = "windowZoneId"
         var servedAd = Ad(id: "DetachedAdId", impressionId: "\(zoneId):789")
+        defer { AdClient.createInstance(adapter: TestAdAdapter()) }
         let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 320, height: 50))
-        testAaZoneView.initialize(zoneId: zoneId)
-        testAaZoneView.onStart(listener: TestAaZoneViewListener())
         window.addSubview(testAaZoneView)
+        await start(testAaZoneView, inZone: zoneId, serving: servedAd)
         testAaZoneView.onAdLoadedInWebView(ad: &servedAd) //The impression only fires once the creative is up
 
         await awaitAdapterEvent { self.adEvents(ofType: AdEventTypes.IMPRESSION, forZone: zoneId).count == 1 }
@@ -245,7 +244,7 @@ class AaZoneViewTests: XCTestCase {
         XCTAssertEqual(1, adEvents(ofType: AdEventTypes.IMPRESSION_END, forZone: zoneId).count)
     }
 
-    /// Prefetched below the fold before the host reported its visibility, so nobody has seen it empty yet.
+    /// The host never reports visibility here, so scrolling alone has to bring the report in.
     @MainActor
     func testAZoneBelowTheFoldReportsItselfUnfilledOnlyOnceItIsScrolledIntoView() async {
         let noFillAdapter = MockAdAdapter()
@@ -271,7 +270,6 @@ class AaZoneViewTests: XCTestCase {
         XCTAssertTrue(adEvents(ofType: AdEventTypes.ZONE_UNFILLED, forZone: zoneId).isEmpty, "Nobody has seen the zone below the fold come up empty")
 
         scrollView.contentOffset = CGPoint(x: 0, y: 1300)
-        testAaZoneView.setAdZoneVisibility(isViewable: true)
 
         await awaitAdapterEvent { self.adEvents(ofType: AdEventTypes.ZONE_UNFILLED, forZone: zoneId).count == 1 }
         XCTAssertEqual(
@@ -280,10 +278,9 @@ class AaZoneViewTests: XCTestCase {
         )
     }
 
-    /// Rendered below the fold before the host reported its visibility, so nobody has seen the creative yet.
+    /// The host never reports visibility here, so scrolling alone has to bring the impression in.
     @MainActor
     func testACreativeRenderedBelowTheFoldIsImpressedOnlyOnceItIsScrolledIntoView() async {
-        AdClient.createInstance(adapter: UnansweredAdAdapter())
         defer { AdClient.createInstance(adapter: TestAdAdapter()) }
         let zoneId = "belowTheFoldImpressionZoneId"
         var servedAd = Ad(id: "BelowTheFoldAdId", impressionId: "\(zoneId):790")
@@ -295,17 +292,86 @@ class AaZoneViewTests: XCTestCase {
         scrollView.addSubview(testAaZoneView)
         testAaZoneView.layoutIfNeeded()
 
-        testAaZoneView.initialize(zoneId: zoneId)
-        testAaZoneView.onStart(listener: TestAaZoneViewListener())
+        await start(testAaZoneView, inZone: zoneId, serving: servedAd)
         testAaZoneView.onAdLoadedInWebView(ad: &servedAd)
 
         XCTAssertFalse(servedAd.impressionWasTracked(), "Nobody has seen the creative below the fold")
 
+        scrollView.contentOffset = CGPoint(x: 0, y: 1000)
+        XCTAssertFalse(servedAd.impressionWasTracked(), "Still below the fold")
+
         scrollView.contentOffset = CGPoint(x: 0, y: 1300)
-        testAaZoneView.setAdZoneVisibility(isViewable: true)
+        XCTAssertTrue(servedAd.impressionWasTracked())
 
         await awaitAdapterEvent { self.adEvents(ofType: AdEventTypes.IMPRESSION, forZone: zoneId).count == 1 }
         XCTAssertEqual(1, adEvents(ofType: AdEventTypes.IMPRESSION, forZone: zoneId).count)
+    }
+
+    /// The host only unhides the container here, with no scroll or visibility call to report it.
+    @MainActor
+    func testACreativeRenderedUnderAHiddenParentIsImpressedOnlyOnceItIsShown() async {
+        defer { AdClient.createInstance(adapter: TestAdAdapter()) }
+        let zoneId = "hiddenParentZoneId"
+        var servedAd = Ad(id: "HiddenParentAdId", impressionId: "\(zoneId):791")
+        let container = placeInAContainer(testAaZoneView)
+        await start(testAaZoneView, inZone: zoneId, serving: servedAd)
+
+        container.isHidden = true
+        testAaZoneView.onAdLoadedInWebView(ad: &servedAd)
+        XCTAssertFalse(servedAd.impressionWasTracked(), "Nobody can see a creative under a hidden parent")
+
+        container.isHidden = false
+        XCTAssertTrue(servedAd.impressionWasTracked())
+    }
+
+    @MainActor
+    func testHidingAParentEndsTheImpressionTheZoneWasShowing() async {
+        defer { AdClient.createInstance(adapter: TestAdAdapter()) }
+        let zoneId = "hiddenAfterImpressionZoneId"
+        var servedAd = Ad(id: "HiddenAfterImpressionAdId", impressionId: "\(zoneId):792")
+        let container = placeInAContainer(testAaZoneView)
+        await start(testAaZoneView, inZone: zoneId, serving: servedAd)
+        testAaZoneView.onAdLoadedInWebView(ad: &servedAd)
+        XCTAssertTrue(servedAd.impressionWasTracked())
+
+        container.isHidden = true
+
+        await awaitAdapterEvent { self.adEvents(ofType: AdEventTypes.IMPRESSION_END, forZone: zoneId).count == 1 }
+        XCTAssertEqual(1, adEvents(ofType: AdEventTypes.IMPRESSION_END, forZone: zoneId).count)
+    }
+
+    @MainActor
+    func testAZoneStartedUnderAHiddenParentWaitsToFetchUntilItIsShown() async {
+        let adapter = MockAdAdapter()
+        adapter.shouldSucceed = true
+        adapter.mockAdZoneData = AdZoneData(ad: Ad(id: "ShownLaterAdId"))
+        AdClient.createInstance(adapter: adapter)
+        defer { AdClient.createInstance(adapter: TestAdAdapter()) }
+        let container = placeInAContainer(testAaZoneView)
+        container.isHidden = true
+        let listener = TestAaZoneViewListener()
+        testAaZoneView.initialize(zoneId: "shownLaterZoneId")
+        testAaZoneView.onStart(listener: listener)
+
+        try? await Task.sleep(nanoseconds: 300_000_000) //The request is counted on its own task
+        XCTAssertEqual(0, adapter.requestCount, "A zone nobody can see has nothing to fetch for yet")
+
+        container.isHidden = false
+
+        await awaitCondition { listener.zoneAvailabilityReported }
+        XCTAssertEqual(1, adapter.requestCount)
+    }
+
+    @MainActor
+    private func placeInAContainer(_ zoneView: AaZoneView) -> UIView {
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 320, height: 480))
+        let container = UIView(frame: window.bounds)
+        window.addSubview(container)
+        zoneView.frame = CGRect(x: 0, y: 0, width: 320, height: 50)
+        container.addSubview(zoneView)
+        zoneView.layoutIfNeeded()
+        containerWindows.append(window)
+        return container
     }
 
     /// Hosts that keep the zone collapsed until it fills still have an empty zone on screen.
@@ -322,6 +388,17 @@ class AaZoneViewTests: XCTestCase {
 
         await awaitAdapterEvent { self.adEvents(ofType: AdEventTypes.ZONE_UNFILLED, forZone: zoneId).count == 1 }
         XCTAssertEqual(1, adEvents(ofType: AdEventTypes.ZONE_UNFILLED, forZone: zoneId).count)
+    }
+
+    private func start(_ zoneView: AaZoneView, inZone zoneId: String, serving ad: Ad) async {
+        let adapter = MockAdAdapter()
+        adapter.shouldSucceed = true
+        adapter.mockAdZoneData = AdZoneData(ad: ad)
+        AdClient.createInstance(adapter: adapter)
+        let listener = TestAaZoneViewListener()
+        zoneView.initialize(zoneId: zoneId)
+        zoneView.onStart(listener: listener)
+        await awaitCondition { listener.zoneAvailabilityReported }
     }
 
     /// Scoped to the zone under test, since `TestEventAdapter` is shared with every other suite
@@ -373,8 +450,4 @@ class TestAaZoneViewListener: ZoneViewListener {
 
 class TestAdAdapter: AdAdapter {
 
-}
-
-private class UnansweredAdAdapter: AdAdapter {
-    func requestAd(zoneId: String, listener: ZoneAdListener, storeId: String, contextId: String, extra: String) async {}
 }
