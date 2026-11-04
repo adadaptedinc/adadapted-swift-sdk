@@ -77,27 +77,23 @@ class AdZonePresenterTimerTests: XCTestCase {
         super.tearDown()
     }
 
-    /// The view can report a newer ad than the one the presenter last handled, and the impression
-    /// belongs to whatever is actually on screen.  Guards the `currentAd` sync in `onAdDisplayed`,
-    /// which the countdown no longer arms from - every fetch arms it in `handleAd` instead.
-    func testTheImpressionIsReportedForTheAdTheZoneActuallyDisplayed() async {
-        await loadZone(servingAd: Ad(id: "PreviousAdId", impressionId: "timerZoneId:1"))
+    /// A late finish from an earlier load can report an ad the presenter no longer serves, including
+    /// an earlier serve of the same creative.
+    func testARenderReportedForAnAdThePresenterIsNotServingIsIgnored() async {
+        let servedAd = await loadZone(servingAd: Ad(id: "ServedAdId", impressionId: "timerZoneId:2")).testAd
+        var earlierServeOfTheSameCreative = Ad(id: "ServedAdId", impressionId: "timerZoneId:1")
+        var replacedAd = Ad(id: "ReplacedAdId", impressionId: "timerZoneId:0")
 
-        var displayedAd = Ad(id: "DisplayedAdId", impressionId: "timerZoneId:2")
-        testAdZonePresenter.onAdDisplayed(ad: &displayedAd, isAdVisible: true)
+        testAdZonePresenter.onAdDisplayed(ad: &earlierServeOfTheSameCreative, isAdVisible: true)
+        testAdZonePresenter.onAdDisplayed(ad: &replacedAd, isAdVisible: true)
 
-        await awaitAdapterEvent { self.impressions(forAdId: "DisplayedAdId").count == 1 }
+        XCTAssertFalse(servedAd.impressionWasTracked(), "Nothing has rendered the served ad yet")
+        XCTAssertFalse(earlierServeOfTheSameCreative.impressionWasTracked())
+        XCTAssertFalse(replacedAd.impressionWasTracked())
 
-        XCTAssertEqual(
-            ["timerZoneId:2"],
-            impressions(forAdId: "DisplayedAdId").map { $0.impressionId },
-            "The impression should name the ad the zone displayed, not the one it replaced"
-        )
-        XCTAssertEqual([], impressions(forAdId: "PreviousAdId"), "The replaced ad was never on screen")
-    }
-
-    private func impressions(forAdId adId: String) -> [AdEvent] {
-        TestEventAdapter.shared.testAdEvents.filter { $0.eventType == AdEventTypes.IMPRESSION && $0.adId == adId }
+        var renderedAd = servedAd
+        testAdZonePresenter.onAdDisplayed(ad: &renderedAd, isAdVisible: true)
+        XCTAssertTrue(servedAd.impressionWasTracked())
     }
 
     /// A refetched ad carries its own refresh time, so the already running timer has to be rebuilt
@@ -176,6 +172,23 @@ class AdZonePresenterTimerTests: XCTestCase {
         )
     }
 
+    func testAFailedRequestKeepsTheLongerBackoffTheServerServed() async {
+        let noFillRefresh = 300
+        await loadZone(servingAd: Ad(refreshTime: noFillRefresh))
+
+        await failTheNextRequest()
+
+        XCTAssertEqual(noFillRefresh, armedTimer?.delaySeconds, "A failing server should not be retried faster than the backoff it served")
+    }
+
+    func testAFailedRequestAfterAFastAdRetriesOnTheDefault() async {
+        await displayAd(withRefreshTime: Ad.MINIMUM_REFRESH_TIME_SECONDS)
+
+        await failTheNextRequest()
+
+        XCTAssertEqual(Config.DEFAULT_AD_REFRESH_SECONDS, armedTimer?.delaySeconds, "A fast ad's refresh is not a retry rate for a failing server")
+    }
+
     func testTimerRejectsAServedRefreshBelowTheFloor() async {
         await displayAd(withRefreshTime: 1)
 
@@ -234,6 +247,13 @@ class AdZonePresenterTimerTests: XCTestCase {
         testAdZonePresenter.onAttach(adZonePresenterListener: testListener)
         await awaitCondition { !testListener.testAd.id.isEmpty }
         return testListener
+    }
+
+    private func failTheNextRequest() async {
+        testAdZonePresenter.onAdLoadFailed()
+        let failureLanded = expectation(description: "The failed request has been handled")
+        DispatchQueue.main.async { failureLanded.fulfill() }
+        await fulfillment(of: [failureLanded], timeout: TestWait.timeout)
     }
 
     private func displayAd(withRefreshTime refreshTime: Int) async {

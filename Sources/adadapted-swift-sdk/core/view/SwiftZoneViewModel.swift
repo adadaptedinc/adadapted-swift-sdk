@@ -16,12 +16,6 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
     @Binding var isZoneVisible: Bool
     @Binding var zoneContextId: String
     var zoneId: String
-    private let stateQueue = DispatchQueue(label: "SwiftZoneViewModel.stateQueue")
-    private var _isStopped = false
-    var isStopped: Bool {
-        get { stateQueue.sync { _isStopped } }
-        set { stateQueue.sync { _isStopped = newValue } }
-    }
     
     // MARK: - Initializer
     public init(zoneId: String, adContentListener: AdContentListener, zoneViewListener: ZoneViewListener, isZoneVisible: Binding<Bool>, zoneContextId: Binding<String>) {
@@ -86,22 +80,18 @@ public class SwiftZoneViewModel: ObservableObject, AdZonePresenterListener, AdWe
     
     // MARK: - Start & Stop Handling
     func onStart() {
-        isStopped = false
         presenter.onEnteredWindow()
     }
 
     func onStop() {
-        isStopped = true
         presenter.onExitedWindow()
     }
     
     func onAttach() {
-        isStopped = false
         presenter.onAttach(adZonePresenterListener: self)
     }
     
     func onDetach() {
-        isStopped = true
         AdContentPublisher.getInstance().removeListener(listener: adContentListener)
         presenter.onDetach()
     }

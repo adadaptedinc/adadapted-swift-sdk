@@ -7,6 +7,7 @@
 
 import XCTest
 import SwiftUI
+import WebKit
 @preconcurrency @testable import adadapted_swift_sdk
 
 final class SwiftZoneViewModelTests: XCTestCase {
@@ -183,6 +184,86 @@ final class SwiftZoneViewModelTests: XCTestCase {
         XCTAssertTrue(TestEventAdapter.shared.testAdEvents.contains { $0.eventType == AdEventTypes.ZONE_UNMOUNTED && $0.zoneId == zoneId })
     }
 
+    /// A load the next ad replaced can still finish or fail, and neither is the next ad's.
+    @MainActor
+    func testOnlyTheLoadTheShownAdStartedReportsBack() {
+        let listener = RecordingAdWebViewListener()
+        let webView = RecordingWebView()
+        let coordinator = AdWebViewRepresentable(adWebViewListener: listener, currentAd: .constant(nil), webViewHandler: { _ in }).makeCoordinator()
+        coordinator.show(Ad(id: "ReplacedAdId", url: "https://example.com/replaced"), in: webView)
+        let replacedLoad = webView.lastNavigation
+        coordinator.show(Ad(id: "LoadedAdId", url: "https://example.com/loaded"), in: webView)
+
+        coordinator.webView(webView, didFinish: replacedLoad)
+        coordinator.webView(webView, didFailProvisionalNavigation: replacedLoad, withError: URLError(.cancelled))
+        XCTAssertEqual([], listener.loadedAdIds)
+        XCTAssertEqual(0, listener.failedLoadCount)
+
+        coordinator.webView(webView, didFinish: webView.lastNavigation)
+        XCTAssertEqual(["LoadedAdId"], listener.loadedAdIds)
+    }
+
+    @MainActor
+    func testALoadThatFailsBeforeItStartsIsReportedAsAFailedLoad() {
+        let listener = RecordingAdWebViewListener()
+        let webView = RecordingWebView()
+        let coordinator = AdWebViewRepresentable(adWebViewListener: listener, currentAd: .constant(nil), webViewHandler: { _ in }).makeCoordinator()
+        coordinator.show(Ad(id: "UnreachableAdId", url: "https://example.com/unreachable"), in: webView)
+
+        coordinator.webView(webView, didFailProvisionalNavigation: webView.lastNavigation, withError: URLError(.cannotFindHost))
+
+        XCTAssertEqual(1, listener.failedLoadCount)
+    }
+
+    @MainActor
+    func testAFinishedLoadImpressesTheAdTheRealPresenterServed() async {
+        let adapter = MockAdAdapter()
+        adapter.shouldSucceed = true
+        let servedAd = Ad(id: "SwiftUIRenderedAdId", impressionId: "swiftUIRenderedZoneId:1", url: "https://example.com/rendered")
+        adapter.mockAdZoneData = AdZoneData(ad: servedAd)
+        AdClient.createInstance(adapter: adapter)
+        defer { AdClient.createInstance(adapter: TestAdAdapter()) }
+        let realViewModel = SwiftZoneViewModel(
+            zoneId: "swiftUIRenderedZoneId",
+            adContentListener: mockAdContentListener,
+            zoneViewListener: mockZoneViewListener,
+            isZoneVisible: .constant(true),
+            zoneContextId: .constant("")
+        )
+        defer { realViewModel.onDetach() }
+        await awaitCondition { realViewModel.currentAd === servedAd }
+
+        let webView = RecordingWebView()
+        let coordinator = AdWebViewRepresentable(
+            adWebViewListener: realViewModel,
+            currentAd: Binding(get: { realViewModel.currentAd }, set: { realViewModel.currentAd = $0 }),
+            webViewHandler: { _ in }
+        ).makeCoordinator()
+        coordinator.show(realViewModel.currentAd, in: webView)
+        XCTAssertFalse(servedAd.impressionWasTracked(), "Nothing has rendered yet")
+
+        coordinator.webView(webView, didFinish: webView.lastNavigation)
+
+        XCTAssertTrue(servedAd.impressionWasTracked())
+    }
+
+    /// A refresh can serve the same creative again, and without a fresh load there is no finished load
+    /// to mark the new impression rendered. SwiftUI re-running the update for the same ad must not reload it.
+    @MainActor
+    func testTheWebViewReloadsAnotherServedAdEvenWhenItsCreativeIsTheSame() {
+        let webView = RecordingWebView()
+        let coordinator = AdWebViewRepresentable(adWebViewListener: nil, currentAd: .constant(nil), webViewHandler: { _ in }).makeCoordinator()
+        let firstAd = Ad(id: "SameCreativeAdId", impressionId: "zone:1", url: "https://example.com/creative")
+        let refreshedAd = Ad(id: "SameCreativeAdId", impressionId: "zone:2", url: "https://example.com/creative")
+
+        coordinator.show(firstAd, in: webView)
+        coordinator.show(firstAd, in: webView)
+        XCTAssertEqual(1, webView.loadCount, "The same served ad should not reload on every SwiftUI update")
+
+        coordinator.show(refreshedAd, in: webView)
+        XCTAssertEqual(2, webView.loadCount, "A newly served ad should reload even with the same creative URL")
+    }
+
     /// A zone id holds one view model. When two for the same id are built at once, one of them has to
     /// come out detached, or the id runs a duplicate pair that both fetch and both report impressions.
     ///
@@ -264,3 +345,23 @@ class TestableSwiftZoneViewModel: SwiftZoneViewModel {
     }
 }
 
+private class RecordingAdWebViewListener: AdWebViewListener {
+    private(set) var loadedAdIds: [String] = []
+    private(set) var failedLoadCount = 0
+
+    func onAdLoadedInWebView(ad: inout Ad) { loadedAdIds.append(ad.id) }
+    func onAdLoadInWebViewFailed() { failedLoadCount += 1 }
+    func onAdInWebViewClicked(ad: Ad) {}
+    func onBlankAdInWebViewLoaded() {}
+}
+
+private class RecordingWebView: WKWebView {
+    private(set) var loadCount = 0
+    private(set) var lastNavigation: WKNavigation?
+
+    override func load(_ request: URLRequest) -> WKNavigation? {
+        loadCount += 1
+        lastNavigation = loadHTMLString("", baseURL: nil)
+        return lastNavigation
+    }
+}

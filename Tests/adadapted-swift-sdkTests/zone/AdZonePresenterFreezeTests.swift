@@ -79,6 +79,29 @@ class AdZonePresenterFreezeTests: XCTestCase {
         )
     }
 
+    func testAHiddenZoneFreezesItsRefreshAndPicksUpTheTimeItHadLeft() async {
+        await assertTheRefreshFreezesAndPicksBackUp(
+            freeze: { self.testAdZonePresenter.onHidden() },
+            unfreeze: { self.testAdZonePresenter.onShown() }
+        )
+    }
+
+    func testAZoneAttachedWhileHiddenWaitsToFetchUntilItIsShown() async {
+        testAdZonePresenter.onHidden()
+        let requestsBeforeAttaching = adapter.requestCount
+        let testListener = TestAdZonePresenterListener()
+        testAdZonePresenter.onAttach(adZonePresenterListener: testListener)
+        try? await Task.sleep(nanoseconds: 300_000_000) //The request is counted on its own task
+        XCTAssertEqual(requestsBeforeAttaching, adapter.requestCount, "Nobody can see a hidden zone, so it has nothing to fetch for yet")
+
+        testAdZonePresenter.onShown()
+        testAdZonePresenter.onShown()
+
+        await awaitCondition { !testListener.testAd.id.isEmpty }
+        try? await Task.sleep(nanoseconds: 300_000_000)
+        XCTAssertEqual(requestsBeforeAttaching + 1, adapter.requestCount, "Shown, it fetches its first ad, and only once")
+    }
+
     /// The countdown is only ever armed for the time it still has to run, so what it was armed with
     /// on the way back is what proves the freeze kept the remainder instead of restarting it.
     private func assertTheRefreshFreezesAndPicksBackUp(freeze: () -> Void, unfreeze: () -> Void) async {
@@ -129,6 +152,33 @@ class AdZonePresenterFreezeTests: XCTestCase {
         )
     }
 
+    /// A recycled or re-shown zone attaches again, and a no-fill leaves it with no Ad to show. Neither
+    /// is a reason to cut the server's backoff short.
+    func testReattachingAZoneDoesNotSkipTheNoFillBackoff() async {
+        let noFillRefreshSeconds = 300
+        adapter.mockAdZoneData = AdZoneData(ad: Ad(refreshTime: noFillRefreshSeconds))
+        let testListener = TestAdZonePresenterListener()
+        testAdZonePresenter.onAttach(adZonePresenterListener: testListener)
+        await awaitCondition { testListener.testAd.id == "NoAdAvail" }
+        let requestsAfterNoFill = adapter.requestCount
+
+        for _ in 0..<3 {
+            advanceClock(bySeconds: 10)
+            testAdZonePresenter.onDetach()
+            testAdZonePresenter.onAttach(adZonePresenterListener: TestAdZonePresenterListener())
+        }
+        try? await Task.sleep(nanoseconds: 200_000_000) //Lets any fetch the re-attaches dispatched land
+        XCTAssertEqual(requestsAfterNoFill, adapter.requestCount, "Re-attaching inside the backoff should not refetch")
+
+        testAdZonePresenter.onDetach()
+        advanceClock(bySeconds: noFillRefreshSeconds)
+        testAdZonePresenter.onAttach(adZonePresenterListener: TestAdZonePresenterListener())
+
+        await awaitCondition { [self] in adapter.requestCount > requestsAfterNoFill }
+        try? await Task.sleep(nanoseconds: 200_000_000) //Lets a second, duplicate fetch land if there is one
+        XCTAssertEqual(requestsAfterNoFill + 1, adapter.requestCount, "Re-attaching after the backoff should refetch exactly once")
+    }
+
     /// Backgrounding an app whose zone is also out of view must not arm anything on the way back in.
     func testAZoneOutOfViewStaysFrozenWhenTheAppComesBackToTheForeground() async {
         await displayAVisibleAd(refreshSeconds: 300)
@@ -140,6 +190,19 @@ class AdZonePresenterFreezeTests: XCTestCase {
         advanceClock(bySeconds: 301)
 
         XCTAssertEqual(false, armedTimer?.isRunning, "A zone still out of view should stay frozen no matter what the app does")
+        XCTAssertEqual(requestsBeforeHiding, adapter.requestCount, "And it should not have fetched anything")
+    }
+
+    func testAHiddenZoneStaysFrozenWhenTheAppComesBackToTheForeground() async {
+        await displayAVisibleAd(refreshSeconds: 300)
+        let requestsBeforeHiding = adapter.requestCount
+
+        testAdZonePresenter.onHidden()
+        testAdZonePresenter.onAppBackgrounded()
+        testAdZonePresenter.onAppForegrounded()
+        advanceClock(bySeconds: 301)
+
+        XCTAssertEqual(false, armedTimer?.isRunning, "A zone still hidden should stay frozen no matter what the app does")
         XCTAssertEqual(requestsBeforeHiding, adapter.requestCount, "And it should not have fetched anything")
     }
 
@@ -158,6 +221,19 @@ class AdZonePresenterFreezeTests: XCTestCase {
 
         await awaitCondition { [self] in armedTimer?.isRunning == true }
         XCTAssertEqual(true, armedTimer?.isRunning, "Coming back to the foreground should start it up again")
+    }
+
+    /// Control Center, Notification Center or a system alert only make the app inactive, and the ad keeps running under them.
+    func testTheRefreshKeepsRunningWhileTheAppIsOnlyInactive() async {
+        await displayAVisibleAd(refreshSeconds: 300)
+        let countdown = armedTimer
+
+        NotificationCenter.default.post(name: UIApplication.willResignActiveNotification, object: nil)
+        NotificationCenter.default.post(name: UIApplication.didBecomeActiveNotification, object: nil)
+        try? await Task.sleep(nanoseconds: 200_000_000)
+
+        XCTAssertTrue(countdown === armedTimer, "The countdown should not have been re-armed")
+        XCTAssertEqual(true, armedTimer?.isRunning)
     }
 
     /// The countdown fires on a background queue and hops to the main one to do its work, so a zone
@@ -228,6 +304,48 @@ class AdZonePresenterFreezeTests: XCTestCase {
 
         XCTAssertEqual(300, armedTimer?.delaySeconds, "Coming to the foreground should start the ad's own refresh")
         XCTAssertEqual(true, armedTimer?.isRunning, "And it should be running")
+    }
+
+    /// A UIKit zone stopped while its fetch was in flight would otherwise keep the old creative up until the next refresh.
+    func testAZoneReattachedAfterMissingAnAdIsHandedTheAdItMissed() async {
+        await displayAVisibleAd(refreshSeconds: 300)
+        testAdZonePresenter.onDetach()
+        await deliver(AdZoneData(ad: Ad(id: "MissedAdId", impressionId: "\(zoneId):2", refreshTime: 300)))
+
+        let reattachedListener = TestAdZonePresenterListener()
+        testAdZonePresenter.onAttach(adZonePresenterListener: reattachedListener)
+
+        XCTAssertEqual("MissedAdId", reattachedListener.testAd.id)
+        XCTAssertTrue(reattachedListener.testZone.hasAd())
+    }
+
+    func testAZoneReattachedAfterMissingANoFillIsToldItHasNoAd() async {
+        await displayAVisibleAd(refreshSeconds: 300)
+        testAdZonePresenter.onDetach()
+        await deliver(AdZoneData())
+
+        let reattachedListener = TestAdZonePresenterListener()
+        testAdZonePresenter.onAttach(adZonePresenterListener: reattachedListener)
+
+        XCTAssertEqual("NoAdAvail", reattachedListener.testAd.id)
+        XCTAssertFalse(reattachedListener.testZone.hasAd())
+    }
+
+    func testAZoneReattachedWithNothingMissedIsNotHandedItsAdAgain() async {
+        await displayAVisibleAd(refreshSeconds: 300)
+        testAdZonePresenter.onDetach()
+
+        let reattachedListener = TestAdZonePresenterListener()
+        testAdZonePresenter.onAttach(adZonePresenterListener: reattachedListener)
+
+        XCTAssertEqual("", reattachedListener.testAd.id)
+    }
+
+    private func deliver(_ adZoneData: AdZoneData) async {
+        testAdZonePresenter.onAdLoaded(adZoneData)
+        let landed = expectation(description: "The fetch has been handled")
+        DispatchQueue.main.async { landed.fulfill() }
+        await fulfillment(of: [landed], timeout: TestWait.timeout)
     }
 
     private func displayAVisibleAd(refreshSeconds: Int) async {

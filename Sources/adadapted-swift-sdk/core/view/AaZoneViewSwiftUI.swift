@@ -20,7 +20,7 @@ public struct AaZoneViewSwiftUI: View {
     // MARK: - Body
     public var body: some View {
         ZStack(alignment: .topTrailing) {
-            AdWebViewRepresentable(adWebViewListener: viewModel, currentAd: $viewModel.currentAd, isStopped: $viewModel.isStopped, webViewHandler: { webView in
+            AdWebViewRepresentable(adWebViewListener: viewModel, currentAd: $viewModel.currentAd, webViewHandler: { webView in
                 viewModel.setupWebView(webView: webView)
             })
             ReportButton(action: viewModel.reportButtonTapped).opacity(viewModel.currentAd != nil ? 1 : 0)
@@ -45,7 +45,6 @@ public struct AaZoneViewSwiftUI: View {
 struct AdWebViewRepresentable: UIViewRepresentable {
     var adWebViewListener: AdWebViewListener?
     @Binding var currentAd: Ad?
-    @Binding var isStopped: Bool
     var webViewHandler: (WKWebView) -> Void
 
     private static let blankDocument = """
@@ -75,30 +74,36 @@ struct AdWebViewRepresentable: UIViewRepresentable {
     }
     
     func updateUIView(_ uiView: WKWebView, context: Context) {
-        if let ad = currentAd, let url = URL(string: ad.url) {
-            // Load ad URL only if it's different from the current URL
-            if uiView.url != url {
-                uiView.load(URLRequest(url: url))
-            }
-        } else {
-            uiView.loadHTMLString(AdWebViewRepresentable.blankDocument, baseURL: nil)
-        }
+        context.coordinator.show(currentAd, in: uiView)
     }
     
     func makeCoordinator() -> Coordinator {
-        Coordinator(self, listener: adWebViewListener, isStopped: $isStopped)
+        Coordinator(self, listener: adWebViewListener)
     }
     
     @MainActor
     class Coordinator: NSObject, WKNavigationDelegate, UIGestureRecognizerDelegate {
         var parent: AdWebViewRepresentable
         var listener: AdWebViewListener?
-        @Binding var isStopped: Bool
+        private var shownAd: Ad?
+        private var shownAdNavigation: WKNavigation?
         
-        init(_ parent: AdWebViewRepresentable, listener: AdWebViewListener?, isStopped: Binding<Bool>) {
+        init(_ parent: AdWebViewRepresentable, listener: AdWebViewListener?) {
             self.parent = parent
             self.listener = listener
-            self._isStopped = isStopped
+        }
+        
+        /// Reloads per served ad rather than per URL, so a refresh that serves the same creative still renders its impression.
+        func show(_ ad: Ad?, in webView: WKWebView) {
+            if let ad, let url = URL(string: ad.url) {
+                guard ad !== shownAd else { return }
+                shownAd = ad
+                shownAdNavigation = webView.load(URLRequest(url: url))
+            } else {
+                shownAd = nil
+                shownAdNavigation = nil
+                webView.loadHTMLString(AdWebViewRepresentable.blankDocument, baseURL: nil)
+            }
         }
         
         @objc func handleTap() {
@@ -112,12 +117,25 @@ struct AdWebViewRepresentable: UIViewRepresentable {
         }
         
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-            guard !isStopped, var ad = parent.currentAd, !ad.id.isEmpty else { return }
+            guard var ad = adLoading(by: navigation) else { return }
             listener?.onAdLoadedInWebView(ad: &ad)
         }
         
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+            guard adLoading(by: navigation) != nil else { return }
             listener?.onAdLoadInWebViewFailed()
+        }
+
+        func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+            guard adLoading(by: navigation) != nil else { return }
+            listener?.onAdLoadInWebViewFailed()
+        }
+
+        /// A load the next ad replaced can still report back, so only the navigation this ad started counts.
+        private func adLoading(by navigation: WKNavigation?) -> Ad? {
+            guard let navigation, navigation === shownAdNavigation, let ad = shownAd, !ad.id.isEmpty else { return nil }
+            shownAdNavigation = nil
+            return ad
         }
     }
 }

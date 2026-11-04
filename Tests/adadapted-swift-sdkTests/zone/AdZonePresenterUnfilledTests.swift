@@ -115,6 +115,48 @@ class AdZonePresenterUnfilledTests: XCTestCase {
         XCTAssertEqual([], unfilledEvents().map { $0.eventName })
     }
 
+    func testAZoneThatComesBackIntoViewStillEmptyReportsItselfUnfilled() async {
+        adapter.mockAdZoneData = AdZoneData(ad: Ad(id: "TestAdId"))
+        let testListener = TestAdZonePresenterListener()
+        testAdZonePresenter.onAttach(adZonePresenterListener: testListener)
+        await awaitCondition { testListener.testAd.id == "TestAdId" }
+
+        testAdZonePresenter.onAdVisibilityChanged(isAdVisible: false)
+        testAdZonePresenter.onAdLoadFailed()
+        let failureLanded = expectation(description: "The failed fetch has been handled")
+        DispatchQueue.main.async { failureLanded.fulfill() }
+        await fulfillment(of: [failureLanded], timeout: TestWait.timeout)
+
+        testAdZonePresenter.onAdVisibilityChanged(isAdVisible: true)
+
+        await awaitAdapterEvent { self.unfilledEvents().count == 1 }
+        XCTAssertEqual([ZoneUnfilledReasons.REQUEST_FAILED], unfilledEvents().map { $0.eventName })
+    }
+
+    /// Replaying the missed no-fill must not report it a second time under `NO_AD`.
+    func testAZoneReattachedAfterMissingAFailedRequestReportsTheRequestFailure() async {
+        adapter.mockAdZoneData = AdZoneData(ad: Ad(id: "TestAdId"))
+        let firstListener = TestAdZonePresenterListener()
+        testAdZonePresenter.onAttach(adZonePresenterListener: firstListener)
+        await awaitCondition { firstListener.testAd.id == "TestAdId" }
+        testAdZonePresenter.onDetach()
+        testAdZonePresenter.onAdLoadFailed()
+        let failureLanded = expectation(description: "The failed fetch has been handled")
+        DispatchQueue.main.async { failureLanded.fulfill() }
+        await fulfillment(of: [failureLanded], timeout: TestWait.timeout)
+
+        let reattachedListener = PresentationCountingListener()
+        testAdZonePresenter.onAttach(adZonePresenterListener: reattachedListener)
+
+        XCTAssertEqual(1, reattachedListener.noAdAvailableCount)
+        XCTAssertEqual(0, reattachedListener.zoneAvailableCount, "A live failure sends no zone update, so the replay should not either")
+        await awaitAdapterEvent { self.unfilledEvents().count == 1 }
+        try? await Task.sleep(nanoseconds: 300_000_000)
+        EventClient.getInstance()?.onPublishEvents()
+        try? await Task.sleep(nanoseconds: 200_000_000)
+        XCTAssertEqual([ZoneUnfilledReasons.REQUEST_FAILED], unfilledEvents().map { $0.eventName })
+    }
+
     /// A backgrounded app is as good as an off screen zone - the host app never told the zone it went
     /// invisible, but no one saw the ad that failed to arrive.
     func testAZoneInABackgroundedAppDoesNotReportItselfUnfilled() async {
@@ -147,6 +189,20 @@ class AdZonePresenterUnfilledTests: XCTestCase {
         XCTAssertEqual([], unfilledEvents().map { $0.eventName })
     }
 
+    func testAHiddenZoneDoesNotReportItselfUnfilled() async {
+        adapter.mockAdZoneData = AdZoneData(ad: Ad(id: "TestAdId"))
+        let testListener = TestAdZonePresenterListener()
+        testAdZonePresenter.onAttach(adZonePresenterListener: testListener)
+        await awaitCondition { testListener.testAd.id == "TestAdId" }
+
+        testAdZonePresenter.onHidden()
+        testAdZonePresenter.onAdLoadFailed()
+
+        await awaitAdapterEvent { self.adEvents(ofType: AdEventTypes.ZONE_MOUNTED).count == 1 }
+
+        XCTAssertEqual([], unfilledEvents().map { $0.eventName })
+    }
+
     /// One report per fetch attempt, not one per zone. A zone that refetches into another no-fill is
     /// unfilled again.
     func testEveryFetchThatFillsNothingReportsItsOwnUnfilledEvent() async {
@@ -171,4 +227,14 @@ class AdZonePresenterUnfilledTests: XCTestCase {
     private func adEvents(ofType eventType: String) -> [AdEvent] {
         TestEventAdapter.shared.testAdEvents.filter { $0.eventType == eventType && $0.zoneId == zoneId }
     }
+}
+
+private class PresentationCountingListener: AdZonePresenterListener {
+    var zoneAvailableCount = 0
+    var noAdAvailableCount = 0
+
+    func onZoneAvailable(adZoneData: AdZoneData) { zoneAvailableCount += 1 }
+    func onAdAvailable(ad: Ad) {}
+    func onNoAdAvailable() { noAdAvailableCount += 1 }
+    func onAdVisibilityChanged(ad: Ad) {}
 }
